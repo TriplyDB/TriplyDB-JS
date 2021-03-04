@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "es2017",
+    "lib": ["es6", "esnext"],
+    "module": "commonjs",
+    "declaration": true,
+
+    "strict": true,
+    "esModuleInterop": true,
+    "noUnusedLocals": true,
+
+    "removeComments": true,
+    "rootDir": "./src",
+    "sourceMap": true,
+    "listFiles": false,
+    "outDir": "./lib",
+    "experimentalDecorators": true,
+    "types": ["mocha"]
+  },
+  "compileOnSave": true,
+  "include": [".eslintrc.js","src/**/**/*.ts"],
+  "exclude": [
+    "**/*.d.ts"
+]
+}

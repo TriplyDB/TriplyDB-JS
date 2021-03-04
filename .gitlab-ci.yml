@@ -1,0 +1,24 @@
+stages:
+  - build
+  - test
+  - publish
+
+image: triply/ci:20200903-4
+
+build:
+  stage: build
+  script:
+    - ./bin/ci/build
+
+test:
+  stage: test
+  script:
+    - ./bin/ci/test
+
+publish:
+  stage: publish
+  only:
+    refs:
+      - /^v-.*$/
+  script:
+    - ./bin/ci/publish

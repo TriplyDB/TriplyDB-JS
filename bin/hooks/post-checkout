@@ -1,0 +1,26 @@
+#!/bin/bash
+
+. "$(dirname "$0")/_/husky.sh"
+
+refA=${1}
+refB=${2}
+changed_files="$(git diff-tree -r --name-only --no-commit-id ${refA} ${refB})"
+
+shouldRun() {
+  if echo "$changed_files" | grep -E --quiet "$1"; then
+    return 0;
+  else
+    return 1;
+  fi
+}
+
+check_run() {
+  # We don't want to actually run this here, since it might interfere with
+  # interactive rebases and stuff.
+  if shouldRun "$1"; then
+  	echowarn "Detected change during checkout in '${1}'"
+  	echowarn "You might want to execute '${2}'"
+  fi
+}
+REPO_ROOT=`git rev-parse --show-toplevel`
+check_run ^yarn.lock "cd ${REPO_ROOT} && yarn install --frozen-lockfile"

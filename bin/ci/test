@@ -1,0 +1,15 @@
+#!/bin/bash
+set -e
+
+source ./bin/ci/.env
+echoinfo "Testing image ${DOCKER_CI_IMAGE}"
+# Need to use the `/triplydb-js` directory here. The `/triplydb-js-packed` wont include a lint file, or tsconfig files
+# Also not using the unit tests here. These are meant to only run locally (dont want to have a triplydb instance as ci test dependency)
+docker run --rm ${DOCKER_CI_IMAGE} bash -c "cd /triplydb-js \
+    && yarn run util:lint \
+    && yarn run util:validateTs";
+
+echoinfo "Testing CLI scripts in yarn-packed directory of ${DOCKER_CI_IMAGE}"
+echoinfo "If something fails here (but not locally) then this is most probably caused by the .npmignore file"
+docker run --rm ${DOCKER_CI_IMAGE} bash -c "cd /triplydb-js-packed \
+    && node ./lib/bin/triplydb.js --help"

@@ -1,0 +1,12 @@
+node_modules/
+yarn-error.log
+.direnv
+.cache
+.vscode
+/*.log
+.envrc-local
+/lib
+.triplydb-js.err
+uploadFiles-*
+uploadAssets-*
+/triplydb*

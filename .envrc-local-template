@@ -1,0 +1,6 @@
+#!/bin/bash
+export UNITTEST_NAMESPACE= #Add a namespace here, e.g. `laurens` or `eirik`. This way we wont create conflicting resources such as organizations when running the test suite
+export UNITTEST_TOKEN_READ= #<read-token of your account>
+export UNITTEST_TOKEN_WRITE= #<write-token of your account>
+export UNITTEST_TOKEN_ACCOUNT= #<token with all privileges of your account>
+export UNITTEST_API_URL=https://api.triplydb.com
