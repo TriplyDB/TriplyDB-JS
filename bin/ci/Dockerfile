@@ -1,5 +1,5 @@
 FROM triply/ci:20200630
-MAINTAINER support@triply.cc
+MAINTAINER info@triply.cc
 
 
 #Use this as first arg. That way we force the image to build

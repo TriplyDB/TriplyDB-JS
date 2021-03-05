@@ -185,10 +185,7 @@ describe("Dataset", function () {
       expect(await testDs.getGraphs().toArray()).to.have.lengthOf(2);
       const ds2 = user.getDataset((await testDs.getInfo()).name);
 
-      // the graphs are there
       expect(await ds2.getGraphs().toArray()).to.have.lengthOf(2);
-
-      // the graph count is 0 anyway
       expect((await ds2.getInfo()).graphCount).to.equal(2);
     });
   });

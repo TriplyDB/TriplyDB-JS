@@ -2,7 +2,7 @@
 
 ## Documentation
 
-See [here](https://triply.cc/docs/triplydb-js) for the TriplyDB javascript client documentation.
+See [here](https://triply.cc/docs/triplydb-js) for the TriplyDB JavaScript client documentation.
 
 ## Local development
 
@@ -33,4 +33,4 @@ Recommendations for these tokens:
 ### Building the TriplyDB-js binaries
 
 TriplyDB-js is also available as a CLI. This CLI supports uploading files to TriplyDB from the command-line. To build the executable, run `yarn run package`.
-Run the stored execuble (e.g. `./triplydb-linux`) with a `--help` argument to find the supported command line arguments.
+Run the stored executable (e.g. `./triplydb-linux`) with a `--help` argument to find the supported command line arguments.

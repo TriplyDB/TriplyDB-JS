@@ -592,7 +592,6 @@ async function waitForJobToFinish(app: App, jobUrl: string, dsId: string) {
       app: app,
       url: jobUrl,
     });
-    // export type JobStatuses = "created" | "cleaning" | "indexing" | "finished" | "canceled" | "error";
     if (info.status === "error") throw new Error(info.error?.message || "Failed to upload file");
     if (info.status === "canceled" || info.status === "finished") return info;
     await wait(waitFor);
