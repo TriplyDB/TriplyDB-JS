@@ -1,4 +1,4 @@
-FROM triply/ci:20200630
+FROM triply/ci14:20210118
 MAINTAINER info@triply.cc
 
 

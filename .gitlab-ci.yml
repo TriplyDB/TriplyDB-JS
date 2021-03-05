@@ -3,7 +3,7 @@ stages:
   - test
   - publish
 
-image: triply/ci:20200903-4
+image: triply/ci14:20210118
 
 build:
   stage: build
