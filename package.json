@@ -4,6 +4,7 @@
   "main": "lib/App.js",
   "author": "Triply <info@triply.cc>",
   "license": "MIT",
+  "repository": "github:TriplyDB/TriplyDB-JS",
   "bin": {
     "triplydb": "./lib/bin/triplydb.js"
   },
