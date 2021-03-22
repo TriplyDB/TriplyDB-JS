@@ -50,6 +50,7 @@
     "@types/pumpify": "^1.4.1",
     "@types/rdf-js": "^4.0.1",
     "@types/semver": "^7.3.4",
+    "@types/sparqljs": "^3.1.1",
     "colors": "^1.4.0",
     "commander": "^7.1.0",
     "cross-fetch": "^3.0.6",
@@ -63,6 +64,7 @@
     "pumpify": "^2.0.1",
     "query-string": "^6.14.1",
     "semver": "^7.3.4",
+    "sparqljs": "^3.4.1",
     "ts-essentials": "^7.0.0"
   },
   "devDependencies": {

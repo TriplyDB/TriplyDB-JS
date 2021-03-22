@@ -2405,7 +2405,7 @@ source-map@^0.6.0, source-map@~0.6.1:
   resolved "https://registry.yarnpkg.com/source-map/-/source-map-0.6.1.tgz#74722af32e9614e9c287a8d0bbde48b5e2f1a263"
   integrity sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g==
 
-sparqljs@3.4.1:
+sparqljs@3.4.1, sparqljs@^3.4.1:
   version "3.4.1"
   resolved "https://registry.yarnpkg.com/sparqljs/-/sparqljs-3.4.1.tgz#1da48bd1b7d71507108417a7fc111e8949c1ce23"
   integrity sha512-JKcKPFdpPLiNnZU4i3f2MUk3LBIh0pCd1mWIP1Zi+Te7umurJLDBYCygsRNPK9Pz8ZI5n66StiQRxzSPYqdxjQ==

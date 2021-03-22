@@ -3,7 +3,11 @@ import App from "./App";
 import { _get, _patch, _delete } from "./RequestHandler";
 import { Account } from "./Account";
 import { getErr } from "./utils/Error";
-
+import AsyncIteratorHelper from "./utils/AsyncIteratorHelper";
+import * as n3 from "n3";
+import sparqljs from "sparqljs";
+import { stringify as stringifyQueryObj } from "query-string";
+import AsyncIteratorHelperWithToFile from "./utils/AsyncIteratorHelperWithToFile";
 export default class Query {
   private _app: App;
   private _info: Models.Query;
@@ -14,7 +18,17 @@ export default class Query {
     this._info = info;
     this._owner = owner;
   }
-
+  private _getQueryType() {
+    const queryString = this["_info"].requestConfig?.payload.query;
+    if (!queryString) throw new Error("This query has no versions.");
+    const parser = new sparqljs.Parser();
+    const parsed = parser.parse(queryString);
+    if (parsed.type === "query") {
+      return parsed.queryType;
+    } else {
+      throw new Error("Update-queries are not supported");
+    }
+  }
   private async _getPath() {
     const ownerName = await this._owner.getName();
     return "/queries/" + ownerName + "/" + this._info.name;
@@ -59,5 +73,51 @@ export default class Query {
       path: await this._getPath(),
       expectedResponseBody: "empty",
     });
+  }
+
+  public results(variableValues?: { [variable: string]: string }) {
+    const queryType = this._getQueryType();
+
+    const queryString = stringifyQueryObj({
+      page: 1,
+      ...(variableValues || {}),
+    });
+
+    const iteratorOptions = {
+      error: getErr(`Failed to run query`),
+      getErrorMessage: async () => `Failed to get results for query ${await this.getInfo().then((i) => i.name)}.`,
+      app: this._app,
+    };
+
+    return {
+      statements: () => {
+        if (queryType !== "CONSTRUCT" && queryType !== "DESCRIBE") {
+          throw new Error("Statements are only supported for CONSTRUCT and DESCRIBE queries.");
+        }
+        const parser = new n3.Parser();
+        return new AsyncIteratorHelperWithToFile<n3.Quad, n3.Quad>({
+          ...iteratorOptions,
+          mapResult: async (result) => result,
+          // use .ttl since it works both for jena and virtuoso.
+          getUrl: async () => this._app["_config"].url + ((await this._getPath()) + "/run.ttl?" + queryString),
+          parsePage: async (page: string) => {
+            if (page === "OK") return []; // empty page (jena);
+            // empty page (virtuoso) is a valid empty turtle doc, no check needed.
+            return parser.parse(page);
+          },
+        });
+      },
+      bindings: () => {
+        if (queryType !== "SELECT") {
+          throw new Error("Bindings are only supported for SELECT queries.");
+        }
+        type Bindings = { [key: string]: string }[];
+        return new AsyncIteratorHelper<Bindings, Bindings>({
+          ...iteratorOptions,
+          mapResult: async (result) => result,
+          getUrl: async () => this._app["_config"].url + ((await this._getPath()) + "/run?" + queryString),
+        });
+      },
+    };
   }
 }
