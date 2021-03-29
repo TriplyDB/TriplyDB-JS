@@ -31,7 +31,7 @@ export async function resetUnittestAccount(user: User) {
   }
 
   //empty pinned datasetes
-  await user.pinDatasets([]);
+  await user.pinItems([]);
 }
 /**
  * Rewrite a build path (e.g. /home/...../api/build/src/_data) to a src path

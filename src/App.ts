@@ -7,6 +7,7 @@ import { getUserOrOrg } from "./Account";
 import jwt_decode from "jwt-decode";
 import { _get } from "./RequestHandler";
 import { getErr } from "./utils/Error";
+import * as calver from "@triply/utils/lib/calver";
 import semver from "semver";
 
 export interface AppConfig {
@@ -83,7 +84,12 @@ export default class App {
   public async isCompatible(minimumVersion: string) {
     const apiVersion = await this.getApiInfo().then((info) => info.version);
     if (!apiVersion) throw new Error("API does not report its version.");
-    return apiVersion === "unset" || semver.gte(apiVersion, minimumVersion);
+    if (apiVersion === "unset") return true;
+    if (calver.isSemver(apiVersion) && calver.isSemver(minimumVersion)) {
+      return semver.gte(apiVersion, minimumVersion);
+    } else {
+      return calver.gte(apiVersion, minimumVersion);
+    }
   }
 
   /**

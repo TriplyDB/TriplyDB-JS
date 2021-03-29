@@ -12,8 +12,8 @@ import {
   getQuery,
   getDatasets,
   addDataset,
-  pinDatasets,
-  getPinnedDatasets,
+  pinItems,
+  getPinnedItems,
   setAvatar,
   getDataset,
   exists,
@@ -46,8 +46,8 @@ export default class Org implements AccountBase {
   public addQuery = addQuery;
   public getDatasets = getDatasets;
   public addDataset = addDataset;
-  public getPinnedDatasets = getPinnedDatasets;
-  public pinDatasets = pinDatasets;
+  public getPinnedItems = getPinnedItems;
+  public pinItems = pinItems;
   public getName = getName;
   public ensureDs = ensureDs;
 

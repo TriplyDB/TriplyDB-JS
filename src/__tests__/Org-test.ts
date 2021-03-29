@@ -66,7 +66,7 @@ describe("Orgs", function () {
 
     describe("pinning datasets", function () {
       it("Should have none by default", async function () {
-        const pinned = await org.getPinnedDatasets();
+        const pinned = await org.getPinnedItems();
         expect(pinned.length).to.equal(0);
       });
       it("Should be able to add / remove", async function () {
@@ -74,8 +74,8 @@ describe("Orgs", function () {
          * adding 1
          */
         const ds1 = await org.addDataset({ name: `${CommonUnittestPrefix}-pinned1` });
-        await org.pinDatasets([ds1]);
-        let pinned = await org.getPinnedDatasets();
+        await org.pinItems([ds1]);
+        let pinned = await org.getPinnedItems();
         expect(pinned.length).to.equal(1);
 
         /**
@@ -83,9 +83,9 @@ describe("Orgs", function () {
          */
         const ds2 = await org.addDataset({ name: `${CommonUnittestPrefix}-pinned2` });
         const ds3 = await org.addDataset({ name: `${CommonUnittestPrefix}-pinned3` });
-        await org.pinDatasets([ds2, ds3]);
+        await org.pinItems([ds2, ds3]);
 
-        pinned = await org.getPinnedDatasets();
+        pinned = await org.getPinnedItems();
         expect(pinned.length).to.equal(2);
       });
     });

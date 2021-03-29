@@ -8,7 +8,7 @@ import { _get, _post, _patch } from "./RequestHandler";
 import Dataset from "./Dataset";
 import { MarkRequired } from "ts-essentials";
 import { getErr } from "./utils/Error";
-import { NewDataset } from "@triply/utils/lib/Models";
+import { NewDataset, PinnedItemUpdate } from "@triply/utils/lib/Models";
 
 /* This file contains functions that are shared by the Org and User classes.
 Since the classes are implementing an interface rather than extending a class,
@@ -108,24 +108,51 @@ export async function addDataset<T extends Account>(this: T, ds: MarkRequired<Mo
   return new Dataset(app, this, createdDs.name, createdDs);
 }
 
-export async function getPinnedDatasets<T extends Account>(this: T) {
+export async function getPinnedItems<T extends Account>(this: T): Promise<Array<Dataset | Story | Query>> {
   const app = (this as User)["_app"];
   const info = await this.getInfo();
-  if (!info.pinnedDatasets) return [];
-  return info.pinnedDatasets.map((ds) => new Dataset(app, this, ds.name, ds));
+  if (!info.pinnedItems) return [];
+  return info.pinnedItems.map((pinnedItem) => {
+    if (pinnedItem.type === "Dataset") {
+      return new Dataset(app, this, pinnedItem.item.name, pinnedItem.item);
+    } else if (pinnedItem.type === "Query") {
+      return new Query(app, pinnedItem.item, this);
+    } else if (pinnedItem.type === "Story") {
+      return new Story(app, pinnedItem.item, this);
+    } else {
+      throw new Error("Unexpected pinned item type: " + pinnedItem);
+    }
+  });
 }
 
-export async function pinDatasets<T extends Account>(this: T, datasets: Dataset[]) {
+export async function pinItems<T extends Account>(this: T, items: Array<Dataset | Story | Query>) {
   const app = (this as User)["_app"];
-  const info = await Promise.all(datasets.map((ds) => ds.getInfo()));
+  const pinnedItems: PinnedItemUpdate[] = await Promise.all(
+    items.map(async (item) => {
+      let pinnedItemUpdate: PinnedItemUpdate;
+      if (item instanceof Dataset) {
+        const info = await item.getInfo();
+        pinnedItemUpdate = { type: "Dataset", item: info.id };
+      } else if (item instanceof Story) {
+        const info = await item.getInfo();
+        pinnedItemUpdate = { type: "Story", item: info.id };
+      } else if (item instanceof Query) {
+        const info = await item.getInfo();
+        pinnedItemUpdate = { type: "Query", item: info.id };
+      } else {
+        throw new Error("Unrecognized pinned item " + item);
+      }
+      return pinnedItemUpdate;
+    })
+  );
   const accountName = await this.getName();
   (this as User)["_setInfo"](
     (await _patch<Routes.accounts._account.Patch>({
-      errorWithCleanerStack: getErr(`Failed to pin ${datasets.length} datasets in ${accountName}`),
+      errorWithCleanerStack: getErr(`Failed to pin ${items.length} items in ${accountName}`),
       app: app,
       path: "/accounts/" + accountName,
       data: {
-        pinnedDatasets: info.map((i) => i.id),
+        pinnedItems: pinnedItems,
       },
       query: { verbose: "" },
     })) as Models.User

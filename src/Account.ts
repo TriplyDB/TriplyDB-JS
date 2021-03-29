@@ -25,8 +25,8 @@ export interface AccountBase {
   getQueries(): AsyncIteratorHelper<Models.Query, Query>;
   getStory(name: string): Promise<Story>;
   getStories(): AsyncIteratorHelper<Models.Story, Story>;
-  getPinnedDatasets(): Promise<Dataset[]>;
-  pinDatasets(datasets: Dataset[]): Promise<User | Org>;
+  getPinnedItems(): Promise<Array<Dataset | Story | Query>>;
+  pinItems(datasets: Array<Dataset | Story | Query>): Promise<User | Org>;
 }
 export type Account = User | Org;
 export async function getUserOrOrg(accountName: string, app: App): Promise<User | Org> {
