@@ -27,10 +27,6 @@
     "prepare": "husky install ./bin/hooks"
   },
   "lint-staged": {
-    "*.ts?(x)": [
-      "prettier --parser typescript --write",
-      "yarn run util:lint:precommit"
-    ],
     "*.js": [
       "prettier --write"
     ],
