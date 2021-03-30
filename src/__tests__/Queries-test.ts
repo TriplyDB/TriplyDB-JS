@@ -160,7 +160,9 @@ describe("Queries", function () {
       });
 
       it("Should support query variables in select-queries", async function () {
-        expect((await selectQuery.results({ s: "s:s1" }).bindings().toArray()).length).to.equal(1);
+        const results = await selectQuery.results({ s: "s:s1" }).bindings().toArray();
+        expect(results.length).to.equal(1);
+        expect(results[0]["p"]).to.not.be.undefined;
       });
 
       it("Should not support statements", async function () {

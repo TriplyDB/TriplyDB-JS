@@ -111,8 +111,8 @@ export default class Query {
         if (queryType !== "SELECT") {
           throw new Error("Bindings are only supported for SELECT queries.");
         }
-        type Bindings = { [key: string]: string }[];
-        return new AsyncIteratorHelper<Bindings, Bindings>({
+        type Binding = { [key: string]: string };
+        return new AsyncIteratorHelper<Binding, Binding>({
           ...iteratorOptions,
           mapResult: async (result) => result,
           getUrl: async () => this._app["_config"].url + ((await this._getPath()) + "/run?" + queryString),
