@@ -58,7 +58,7 @@ export function getQueries<T extends Account>(this: T): AsyncIteratorHelper<Mode
     error: getErr(`Failed to get queries`),
     getErrorMessage: async () => `Failed to get queries of ${await this.getName()}`,
     app: app,
-    getUrl: async () => app["_config"].url! + `/stories/${await this.getName()}`,
+    getUrl: async () => app["_config"].url! + `/queries/${await this.getName()}`,
     mapResult: async (queryInfo) => new Query(app, queryInfo, this),
   });
 }
