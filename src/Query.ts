@@ -80,6 +80,7 @@ export default class Query {
 
     const queryString = stringifyQueryObj({
       page: 1,
+      pageSize: 5000,
       ...(variableValues || {}),
     });
 
