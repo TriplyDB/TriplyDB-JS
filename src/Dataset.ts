@@ -108,7 +108,7 @@ export default class Dataset {
       if (!graph) break;
       if ((await graph.getInfo()).graphName === graphName) return graph;
     }
-    throw new Error("Graph not found");
+    throw new Error(`Graph '${graphName}' not found in dataset ${await this._getDatasetNameWithOwner()}`);
   }
   public async deleteGraph(graphNameOrIri: string | NamedNode) {
     const graphName = typeof graphNameOrIri === "string" ? graphNameOrIri : graphNameOrIri.value;
