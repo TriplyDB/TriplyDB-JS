@@ -32,6 +32,7 @@ export default class AsyncIteratorHelper<ResultType, OutputClass> {
     const url = this._next || (await this._config.getUrl());
     try {
       const resp = await fetch(url, reqConfig);
+      this._config.error.statusCode = resp.status;
       const pageString = await resp.text();
       if (resp.status >= 400) {
         const contentType = resp.headers.get("content-type");
@@ -40,7 +41,7 @@ export default class AsyncIteratorHelper<ResultType, OutputClass> {
           response = JSON.parse(pageString);
         }
         this._config.error.message = await this._config.getErrorMessage();
-        let context: any = { method: "GET", url, status: resp.status };
+        let context: any = { method: "GET", url };
         if (response) context.response = response;
         throw this._config.error.addContext(context).setCause(resp, response);
       }
