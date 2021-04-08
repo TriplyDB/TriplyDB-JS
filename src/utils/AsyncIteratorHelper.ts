@@ -32,15 +32,30 @@ export default class AsyncIteratorHelper<ResultType, OutputClass> {
     const url = this._next || (await this._config.getUrl());
     try {
       const resp = await fetch(url, reqConfig);
+      const pageString = await resp.text();
+      if (resp.status >= 400) {
+        const contentType = resp.headers.get("content-type");
+        let response: {} | undefined;
+        if (contentType && contentType.indexOf("application/json") === 0) {
+          response = JSON.parse(pageString);
+        }
+        this._config.error.message = await this._config.getErrorMessage();
+        let context: any = { method: "GET", url, status: resp.status };
+        if (response) context.response = response;
+        throw this._config.error.addContext(context).setCause(resp, response);
+      }
       const linkHeaders = parseLinkHeader(resp.headers.get("link") || "");
       this._next = linkHeaders?.["next"] && linkHeaders["next"].url ? linkHeaders["next"].url : null;
       const parsePage = this._config.parsePage || JSON.parse;
-      const pageString = await resp.text();
+
       this._page = pageString;
-      const results = await parsePage(pageString);
-      if (resp.status >= 400) {
-        this._config.error.message = await this._config.getErrorMessage();
-        throw this._config.error.addContext({ method: "GET", url }).setCause(resp, results);
+      let results: any;
+      try {
+        results = await parsePage(pageString);
+      } catch (e) {
+        this._config.error.message = (await this._config.getErrorMessage()) + ": Failed to parse response.";
+        this._config.error.addContext({ method: "GET", url }).setCause(resp, results);
+        throw this._config.error;
       }
       return results;
     } catch (e) {
