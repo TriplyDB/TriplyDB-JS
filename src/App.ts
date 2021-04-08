@@ -35,7 +35,7 @@ export default class App {
         // Skip old hardcoded issuer
         if (decodedToken && decodedToken.iss !== "triply.cc") this._config.url = decodedToken.iss;
       } catch {
-        throw new Error("Invalid token");
+        throw getErr("Invalid token").addContext({ token: this._config.token, useTokenForUrl: this._config.url });
       }
     }
     this._config = {
@@ -46,8 +46,8 @@ export default class App {
   }
 
   private validateConf(): void {
-    if (!this._config) throw new Error("No configuration object set");
-    if (!this._config.url) throw new Error("No domain specified in configuration");
+    if (!this._config) throw getErr("No TriplyDB-JS configuration object set");
+    if (!this._config.url) throw getErr("No domain specified in TriplyDB-JS configuration");
   }
 
   public async getApiInfo() {
@@ -82,13 +82,13 @@ export default class App {
     return new Dataset(this, account, dsName);
   }
   public async isCompatible(minimumVersion: string) {
-    const apiVersion = await this.getApiInfo().then((info) => info.version);
-    if (!apiVersion) throw new Error("API does not report its version.");
-    if (apiVersion === "unset") return true;
-    if (calver.isSemver(apiVersion) && calver.isSemver(minimumVersion)) {
-      return semver.gte(apiVersion, minimumVersion);
+    const apiInfo = await this.getApiInfo();
+    if (!apiInfo.version) throw getErr(`The TriplyDB API ${apiInfo.apiUrl} does not report its version.`);
+    if (apiInfo.version === "unset") return true;
+    if (calver.isSemver(apiInfo.version) && calver.isSemver(minimumVersion)) {
+      return semver.gte(apiInfo.version, minimumVersion);
     } else {
-      return calver.gte(apiVersion, minimumVersion);
+      return calver.gte(apiInfo.version, minimumVersion);
     }
   }
 

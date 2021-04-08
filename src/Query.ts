@@ -20,13 +20,13 @@ export default class Query {
   }
   private _getQueryType() {
     const queryString = this["_info"].requestConfig?.payload.query;
-    if (!queryString) throw new Error("This query has no versions.");
+    if (!queryString) throw getErr(`Query ${this._info.name} has no versions.`);
     const parser = new sparqljs.Parser();
     const parsed = parser.parse(queryString);
     if (parsed.type === "query") {
       return parsed.queryType;
     } else {
-      throw new Error("Update-queries are not supported");
+      throw getErr("Update-queries are not supported");
     }
   }
   private async _getPath() {
@@ -93,7 +93,7 @@ export default class Query {
     return {
       statements: () => {
         if (queryType !== "CONSTRUCT" && queryType !== "DESCRIBE") {
-          throw new Error("Statements are only supported for CONSTRUCT and DESCRIBE queries.");
+          throw getErr("Statements are only supported for CONSTRUCT and DESCRIBE queries.");
         }
         const parser = new n3.Parser();
         return new AsyncIteratorHelperWithToFile<n3.Quad, n3.Quad>({
@@ -110,7 +110,7 @@ export default class Query {
       },
       bindings: () => {
         if (queryType !== "SELECT") {
-          throw new Error("Bindings are only supported for SELECT queries.");
+          throw getErr("Bindings are only supported for SELECT queries.");
         }
         type Binding = { [key: string]: string };
         return new AsyncIteratorHelper<Binding, Binding>({

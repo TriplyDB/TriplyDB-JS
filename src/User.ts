@@ -58,7 +58,7 @@ export default class User implements AccountBase {
     return this;
   }
   public asOrg(): Org {
-    throw new Error(`${this._info?.accountName || "This"} is a user. Cannot fetch this as an organization.`);
+    throw getErr(`${this._info?.accountName || "This"} is a user. Cannot fetch this as an organization.`);
   }
   public async getInfo(refresh = false) {
     if (refresh || !this._info) {
@@ -100,7 +100,7 @@ export default class User implements AccountBase {
       path: "/accounts/" + this._name + "/orgs",
     });
     return orgs.map((o) => {
-      if (!o.accountName) throw new Error("Expected accountname to exist for org");
+      if (!o.accountName) throw getErr("Expected accountname to exist for org");
       return new Org(this._app, o.accountName, o);
     });
   }

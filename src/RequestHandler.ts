@@ -1,6 +1,6 @@
 import { HttpMethodTemplate, RequestTemplate } from "@triply/utils/lib/Routes";
 import App from "./App";
-import { TriplyDbJsError } from "./utils/Error";
+import { getErr, TriplyDbJsError } from "./utils/Error";
 import fetch from "cross-fetch";
 import FormData from "form-data";
 import debug from "debug";
@@ -28,7 +28,7 @@ export function getUrl(opts: ReqOptsObj): string {
   } else {
     if (opts.path?.startsWith("http")) {
       // There is a bug in triplydb-js: we should use `url:` instead of `path:` for these cases
-      throw new Error("Expected a path, but got a URL instead");
+      throw new Error(`Expected a path, but got URL ${opts.path} instead`);
     }
     const apiUrl = opts.app["_config"].url;
     if (!apiUrl) throw new Error("Expected a url or path to be set");

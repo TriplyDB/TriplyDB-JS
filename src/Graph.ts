@@ -28,12 +28,12 @@ export default class Graph {
   public async toFile(destinationPath: string, opts?: { compressed?: boolean }) {
     const parsedPath = path.parse(destinationPath);
     if (SUPPORTED_EXTENSIONS.findIndex((e) => parsedPath.base.endsWith(e)) === -1) {
-      throw new Error(
+      throw getErr(
         `Failed so save graph as \`${parsedPath.base}\`. Supported extensions: [ ${SUPPORTED_EXTENSIONS.join(", ")} ]`
       );
     }
     if (!(await fs.pathExists(path.resolve(parsedPath.dir)))) {
-      throw new Error(`Directory doesn't exist: ${parsedPath.dir}`);
+      throw getErr(`Directory doesn't exist: ${parsedPath.dir}`);
     }
     let extension = parsedPath.ext;
     let storeCompressed: boolean;

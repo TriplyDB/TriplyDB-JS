@@ -21,7 +21,7 @@ export async function getName<T extends Account>(this: T) {
   const name = (this as User)["_name"];
   if (name) return name;
   const info = await this.getInfo();
-  if (!info.accountName) throw new Error("This account has no name");
+  if (!info.accountName) throw getErr("This account has no name");
   return info.accountName;
 }
 
@@ -120,7 +120,7 @@ export async function getPinnedItems<T extends Account>(this: T): Promise<Array<
     } else if (pinnedItem.type === "Story") {
       return new Story(app, pinnedItem.item, this);
     } else {
-      throw new Error("Unexpected pinned item type: " + pinnedItem);
+      throw getErr("Unexpected pinned item type: " + pinnedItem);
     }
   });
 }
@@ -140,7 +140,7 @@ export async function pinItems<T extends Account>(this: T, items: Array<Dataset 
         const info = await item.getInfo();
         pinnedItemUpdate = { type: "Query", item: info.id };
       } else {
-        throw new Error("Unrecognized pinned item " + item);
+        throw getErr("Unrecognized pinned item " + item);
       }
       return pinnedItemUpdate;
     })

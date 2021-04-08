@@ -85,7 +85,7 @@ export default class Dataset {
         } else if (typeToClear === "services") {
           for await (let service of this.getServices()) await service?.delete();
         } else {
-          throw new Error(`Unrecognized resource type: ${typeToClear}`);
+          throw getErr(`Unrecognized resource type: ${typeToClear}`);
         }
       })
     );
@@ -108,7 +108,7 @@ export default class Dataset {
       if (!graph) break;
       if ((await graph.getInfo()).graphName === graphName) return graph;
     }
-    throw new Error(`Graph '${graphName}' not found in dataset ${await this._getDatasetNameWithOwner()}`);
+    throw getErr(`Graph '${graphName}' not found in dataset ${await this._getDatasetNameWithOwner()}`);
   }
   public async deleteGraph(graphNameOrIri: string | NamedNode) {
     const graphName = typeof graphNameOrIri === "string" ? graphNameOrIri : graphNameOrIri.value;
@@ -179,12 +179,12 @@ export default class Dataset {
   public async graphsToFile(destinationPath: string, opts?: { compressed?: boolean }) {
     const parsedPath = path.parse(destinationPath);
     if (SUPPORTED_EXTENSIONS.findIndex((e) => parsedPath.base.endsWith(e)) === -1) {
-      throw new Error(
+      throw getErr(
         `Failed so save graph as \`${parsedPath.base}\`. Supported extensions: [ ${SUPPORTED_EXTENSIONS.join(", ")} ]`
       );
     }
     if (!(await fs.pathExists(path.resolve(parsedPath.dir)))) {
-      throw new Error(`Directory doesn't exist: ${parsedPath.dir}`);
+      throw getErr(`Directory doesn't exist: ${parsedPath.dir}`);
     }
     let extension = parsedPath.ext;
     let storeCompressed: boolean;
@@ -349,7 +349,7 @@ export default class Dataset {
   }
   private _throwIfJobRunning(dsId: string) {
     if (datasetsWithOngoingJob[dsId]) {
-      throw new Error("There is already an ongoing job for this dataset. Await that one first.");
+      throw getErr("There is already an ongoing job for this dataset. Await that one first.");
     }
   }
   public async importFromFiles(...files: File[]): Promise<Dataset>;
@@ -592,7 +592,7 @@ async function waitForJobToFinish(app: App, jobUrl: string, dsId: string) {
       app: app,
       url: jobUrl,
     });
-    if (info.status === "error") throw new Error(info.error?.message || "Failed to upload file");
+    if (info.status === "error") throw getErr(info.error?.message || "Failed to upload file");
     if (info.status === "canceled" || info.status === "finished") return info;
     await wait(waitFor);
     if (waitFor < 10 * 1000) waitFor = waitFor * 2; //max 10 seconds
@@ -650,7 +650,7 @@ export class JobUpload {
     if (typeof fileOrPath === "string") {
       // We can't use 'fs' outside of node, let's warn the dev about this
       if (fs.createReadStream === undefined) {
-        throw new Error('"fs" is not loaded in this environment, use a "File" instead');
+        throw getErr('"fs" is not loaded in this environment, use a "File" instead');
       }
       rs = fs.createReadStream(fileOrPath);
       fileSize = (await fs.stat(fileOrPath)).size;
@@ -703,7 +703,7 @@ export class JobUpload {
     return this;
   }
   private async refresh() {
-    if (!this.jobUrl) throw new Error("Cannot refresh uninstantiated job");
+    if (!this.jobUrl) throw getErr("Cannot refresh uninstantiated job");
     this._info = await _get<Routes.datasets._account._dataset.jobs._jobId.Get>({
       errorWithCleanerStack: getErr(
         `Failed to get job information for dataset ${this._config.datasetNameWithOwner}.`
@@ -716,7 +716,7 @@ export class JobUpload {
   }
 
   public async exec() {
-    if (!this.jobUrl) throw new Error("Cannot start uninstantiated job");
+    if (!this.jobUrl) throw getErr("Cannot start uninstantiated job");
     this._info = await _post<Routes.datasets._account._dataset.jobs._jobId.start.Post>({
       errorWithCleanerStack: getErr(`Failed to start job in dataset ${this._config.datasetNameWithOwner}.`).addContext({
         jobUrl: this.jobUrl,

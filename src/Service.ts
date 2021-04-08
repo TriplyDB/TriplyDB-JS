@@ -81,7 +81,9 @@ export default class Service {
       if (info.status === "running") {
         return;
       } else if (info.error) {
-        throw new Error(`Service failed to restart: ${info.error.message}`);
+        throw getErr(
+          `Failed to restart service ${this.name} of dataset ${this.datasetNameWithOwner}: ${info.error.message}`
+        );
       }
     }
   }

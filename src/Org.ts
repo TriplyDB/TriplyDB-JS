@@ -52,14 +52,14 @@ export default class Org implements AccountBase {
   public ensureDs = ensureDs;
 
   public asUser(): User {
-    throw new Error(`${this._info?.accountName || "This"} is an organization. Cannot fetch this as a user.`);
+    throw getErr(`${this._info?.accountName || "This"} is an organization. Cannot fetch this as a user.`);
   }
   public asOrg(): this {
     return this;
   }
   public async getInfo(refresh = false) {
     if (!refresh && this._info) return this._info;
-    if (!this._name) throw new Error("Missing name for organization");
+    if (!this._name) throw getErr("Missing name for organization");
     this._setInfo(
       (await _get<Routes.accounts._account.Get>({
         errorWithCleanerStack: getErr(`Failed to get information of organization ${this._name}.`),

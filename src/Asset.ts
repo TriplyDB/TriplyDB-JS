@@ -27,7 +27,7 @@ export default class Asset {
   }
 
   private async _getUrl(versionInfo?: Models.AssetVersion) {
-    if (this._deleted) throw new Error("This asset does not exist.");
+    if (this._deleted) throw getErr("This asset does not exist.");
     const urlparts = [
       this._app["_config"].url,
       await this._dataset["_getDatasetPath"](),
@@ -39,7 +39,7 @@ export default class Asset {
   }
 
   public async toFile(destinationPath: string, versionNumber?: number) {
-    if (this._deleted) throw new Error("This asset does not exist.");
+    if (this._deleted) throw getErr("This asset does not exist.");
     if (versionNumber === undefined) versionNumber = this._selectedVersion;
     const url = await this._getUrl(
       versionNumber === undefined ? this._getLastVersionInfo() : this.getVersionInfo(versionNumber)
@@ -52,27 +52,27 @@ export default class Asset {
     });
   }
   public async toStream(versionNumber?: number) {
-    if (this._deleted) throw new Error("This asset does not exist.");
+    if (this._deleted) throw getErr("This asset does not exist.");
     if (versionNumber === undefined) versionNumber = this._selectedVersion;
     const url = await this._getUrl(versionNumber === undefined ? undefined : this.getVersionInfo(versionNumber));
     const res = await fetch(url, { method: "get", headers: { authorization: `bearer ${this._app["_config"].token}` } });
     return (res.body as any) as NodeJS.WriteStream;
   }
   private _getLastVersionInfo() {
-    if (this._deleted) throw new Error("This asset does not exist.");
+    if (this._deleted) throw getErr("This asset does not exist.");
     const lastVersion = last(this._info.versions);
-    if (!lastVersion) throw new Error("This asset has no versions");
+    if (!lastVersion) throw getErr("This asset has no versions");
     return lastVersion;
   }
   public getVersionInfo(versionNumber: number) {
-    if (this._deleted) throw new Error("This asset does not exist.");
+    if (this._deleted) throw getErr("This asset does not exist.");
     const version = this._info.versions[versionNumber];
-    if (!version) throw new Error(`This asset has no version ${versionNumber}`);
+    if (!version) throw getErr(`This asset has no version ${versionNumber}`);
     return version;
   }
 
   public getInfo(versionNumber?: number): Models.Asset & Omit<Models.AssetVersion, "id"> {
-    if (this._deleted) throw new Error("This asset does not exist.");
+    if (this._deleted) throw getErr("This asset does not exist.");
     if (versionNumber === undefined) versionNumber = this._selectedVersion;
     let versionInfo = versionNumber === undefined ? this._getLastVersionInfo() : this.getVersionInfo(versionNumber);
     return { ...this._info, ...omit(versionInfo, "id") };
@@ -92,7 +92,7 @@ export default class Asset {
   }
   public selectVersion(versionNumber: number) {
     if (!this.getInfo().versions[versionNumber])
-      throw new Error(
+      throw getErr(
         `Tried to select version ${versionNumber} but asset '${this.getInfo().assetName}' only has ${
           this.getInfo().versions.length
         } versions. (version numbering starts at 0) `
@@ -101,13 +101,13 @@ export default class Asset {
     return this;
   }
   public async addVersion(fileOrPath: File | string) {
-    if (this._deleted) throw new Error("This asset does not exist.");
+    if (this._deleted) throw getErr("This asset does not exist.");
     await Asset.uploadAsset({ fileOrPath, dataset: this._dataset, versionOf: this._info.identifier });
     await this.refreshInfo();
     return this;
   }
   public async delete(versionNumber?: number) {
-    if (this._deleted) throw new Error("This asset does not exist.");
+    if (this._deleted) throw getErr("This asset does not exist.");
     if (versionNumber === undefined) versionNumber = this._selectedVersion;
     const dsInfo = await this._dataset.getInfo();
     await _delete<Routes.datasets._account._dataset.assets._assetId.Delete>({
@@ -145,7 +145,7 @@ export default class Asset {
     let fileSize: number;
     if (typeof opts.fileOrPath === "string") {
       if (fs.createReadStream === undefined) {
-        throw new Error('"fs" is not loaded in this environment, use a "File" instead');
+        throw getErr('"fs" is not loaded in this environment, use a "File" instead');
       }
       rs = fs.createReadStream(opts.fileOrPath);
       fileSize = (await fs.stat(opts.fileOrPath)).size;
@@ -167,7 +167,7 @@ export default class Asset {
         onError: (error: any) => reject(error),
         onProgress: (_bytesUploaded: number, _bytesTotal: number) => {},
         onSuccess: (stringifiedJson: string) => {
-          if (stringifiedJson === "") return reject(new Error("No response or upload already finished"));
+          if (stringifiedJson === "") return reject(getErr("No response or upload already finished"));
           resolve(JSON.parse(stringifiedJson));
         },
       });
