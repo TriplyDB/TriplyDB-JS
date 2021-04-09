@@ -35,7 +35,7 @@ export default class App {
         // Skip old hardcoded issuer
         if (decodedToken && decodedToken.iss !== "triply.cc") this._config.url = decodedToken.iss;
       } catch {
-        throw getErr("Invalid token").addContext({ token: this._config.token, useTokenForUrl: this._config.url });
+        throw getErr("Invalid token").addContext({ token: this._config.token });
       }
     }
     this._config = {

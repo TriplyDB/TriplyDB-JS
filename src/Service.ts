@@ -82,7 +82,7 @@ export default class Service {
         return;
       } else if (info.error) {
         throw getErr(
-          `Failed to restart service ${this.name} of dataset ${this.datasetNameWithOwner}: ${info.error.message}`
+          `Failed to start service ${this.name} of dataset ${this.datasetNameWithOwner}: ${info.error.message}`
         );
       }
     }
