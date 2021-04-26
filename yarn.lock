@@ -2405,10 +2405,17 @@ source-map@^0.6.0, source-map@~0.6.1:
   resolved "https://registry.yarnpkg.com/source-map/-/source-map-0.6.1.tgz#74722af32e9614e9c287a8d0bbde48b5e2f1a263"
   integrity sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g==
 
-sparqljs@3.4.1, sparqljs@^3.4.1:
+sparqljs@3.4.1:
   version "3.4.1"
   resolved "https://registry.yarnpkg.com/sparqljs/-/sparqljs-3.4.1.tgz#1da48bd1b7d71507108417a7fc111e8949c1ce23"
   integrity sha512-JKcKPFdpPLiNnZU4i3f2MUk3LBIh0pCd1mWIP1Zi+Te7umurJLDBYCygsRNPK9Pz8ZI5n66StiQRxzSPYqdxjQ==
+  dependencies:
+    rdf-data-factory "^1.0.4"
+
+sparqljs@^3.4.2:
+  version "3.4.2"
+  resolved "https://registry.yarnpkg.com/sparqljs/-/sparqljs-3.4.2.tgz#ad69eb1ff62b3d1152f41ed50f01fae8638d18fa"
+  integrity sha512-MmmZ6cMuvhf4Eh2FXX21dalgADUiZ9WN8XKMedwhTFg0r7W09/o8wvoZ8C4yA6FptnjjAjm+mGnxAEpkSRY3QQ==
   dependencies:
     rdf-data-factory "^1.0.4"
 
