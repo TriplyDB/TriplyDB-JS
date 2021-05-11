@@ -46,7 +46,7 @@
   },
   "dependencies": {
     "@triply/tus-js-client": "^1.4.6-1",
-    "@triply/utils": "^1.3.79",
+    "@triply/utils": "^1.3.80",
     "@types/pumpify": "^1.4.1",
     "@types/rdf-js": "^4.0.1",
     "@types/semver": "^7.3.4",
