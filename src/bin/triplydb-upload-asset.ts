@@ -4,7 +4,8 @@ import program from "commander";
 import colors from "colors";
 import App from "../App";
 import Dataset from "../Dataset";
-
+import { TriplyDbJsError } from "../utils/Error";
+import statuses from "http-status-codes";
 let defaultTriplyDBToken = process.env["TRIPLYDB_TOKEN"];
 let defaultTriplyDBAccount = process.env["TRIPLYDB_ACCOUNT"];
 let defaultTriplyDBDataset = process.env["TRIPLYDB_DATASET"];
@@ -52,7 +53,15 @@ const command = program
     console.info(`Uploading ${files.length} files`);
     for (const file of files) {
       const filename = file.indexOf("/") === -1 ? file : file.split("/").pop();
-      await dataset.uploadAsset(file, filename || "unknown");
+      const assetName = filename || "unknown";
+      try {
+        await dataset.uploadAsset(file, assetName);
+      } catch (e) {
+        if (e instanceof TriplyDbJsError && e.statusCode === statuses.CONFLICT) {
+          const asset = await dataset.getAsset(assetName);
+          await asset.addVersion(assetName);
+        }
+      }
       console.info("Uploaded", filename);
     }
     console.info("Done");

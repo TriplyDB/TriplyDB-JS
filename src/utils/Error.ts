@@ -12,6 +12,10 @@ export class TriplyDbJsError extends Error {
     this.context = { ...this.context, ...data };
     return this;
   }
+  public setStatusCode(statusCode: number) {
+    this.statusCode = statusCode;
+    return this;
+  }
 
   public setCause(error: Error | Response, jsonResult?: any) {
     if (error instanceof Error) {

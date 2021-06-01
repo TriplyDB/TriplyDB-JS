@@ -22,6 +22,7 @@ import AsyncIteratorHelper from "./utils/AsyncIteratorHelper";
 import Asset from "./Asset";
 import Graph, { SUPPORTED_EXTENSIONS } from "./Graph";
 import { stringify as stringifyQueryObj } from "query-string";
+import statuses from "http-status-codes";
 import fetch from "cross-fetch";
 import { NamedNode } from "rdf-js";
 interface JobDefaultsConfig {
@@ -508,9 +509,9 @@ export default class Dataset {
       }
     }
     if (assetAlreadyExists) {
-      throw Error(
+      throw new TriplyDbJsError(
         `Tried to add asset '${assetName}' to dataset ${await this._getDatasetNameWithOwner()}, but an asset with that name already exists.`
-      );
+      ).setStatusCode(statuses.CONFLICT);
     }
     return new Asset(this, await Asset["uploadAsset"]({ fileOrPath, assetName, dataset: this }));
   }
