@@ -3,12 +3,15 @@ import { Account } from "../Account";
 import Dataset from "../Dataset";
 import * as fs from "fs-extra";
 import * as chai from "chai";
+import chaiAsPromised from "chai-as-promised";
+chai.use(chaiAsPromised);
+const expect = chai.expect;
 import { resetUnittestAccount, CommonUnittestPrefix, buildPathToSrcPath } from "./utils";
 import User from "../User";
 import path from "path";
 import * as n3 from "n3";
 import Query from "../Query";
-const expect = chai.expect;
+import { BadArgumentsError } from "@triply/utils/lib/sparqlVarUtils";
 process.on("unhandledRejection", function (reason: any, p: any) {
   console.warn("Possibly Unhandled Rejection at: Promise ", p, " reason: ", reason);
 });
@@ -74,7 +77,7 @@ describe("Queries", function () {
           .getQuery(constructQueryName)
           .then((q) => q.delete())
           .catch((e) => {
-            if (e.status === 404) return;
+            if (e.statusCode === 404) return;
             throw e;
           });
         constructQuery = await user.addQuery({
@@ -83,8 +86,21 @@ describe("Queries", function () {
           // a construct query that gives same number of statements as there are in the dataset
           requestConfig: { payload: { query: "construct {?s?p?o} where {?s?p?o}" } },
           renderConfig: { output: "?" },
-          variables: [{ name: "s", termType: "NamedNode" }],
+          variables: [{ name: "s", termType: "NamedNode", required: true }],
           dataset: await dataset.getInfo().then((d) => d.id),
+        });
+      });
+      describe("Fetching query string", function () {
+        it("Should return stringified query", async function () {
+          const populatedString = await constructQuery.getString({ s: "http://blaaa" });
+          expect(populatedString.trim()).to.equal(
+            `CONSTRUCT { <http://blaaa> ?p ?o. }
+WHERE { <http://blaaa> ?p ?o. }
+`.trim()
+          );
+        });
+        it("Should throw error when insufficient vars are passed", async function () {
+          await expect(constructQuery.getString()).eventually.rejectedWith(BadArgumentsError);
         });
       });
       it("Should query a saved construct-query (quad iterator)", async function () {

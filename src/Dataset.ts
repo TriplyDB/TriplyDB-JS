@@ -48,7 +48,7 @@ export default class Dataset {
   }
 
   public getServices() {
-    return new AsyncIteratorHelper<Models.ServiceMetadata, Service>({
+    return new AsyncIteratorHelper<Models.ServiceMetadataV1, Service>({
       error: getErr(`Failed to get services`),
       getErrorMessage: async () => `Failed to get services for dataset ${await this._getDatasetNameWithOwner()}.`,
       app: this._app,
@@ -516,7 +516,7 @@ export default class Dataset {
     return new Asset(this, await Asset["uploadAsset"]({ fileOrPath, assetName, dataset: this }));
   }
 
-  async addService(type: Models.ServiceType, name: string, reasoner?: Models.JenaReasoners) {
+  async addService(type: Models.ServiceTypeV1, name: string, reasoner?: Models.JenaReasoners) {
     return await new Service({
       app: this._app,
       datasetPath: await this._getDatasetPath(),

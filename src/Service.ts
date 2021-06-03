@@ -10,14 +10,14 @@ export default class Service {
   private datasetPath: string;
   private datasetNameWithOwner: string;
   private name: string;
-  private type: Models.ServiceType;
+  private type: Models.ServiceTypeV1;
   private reasoner?: Models.JenaReasoners;
   constructor(conf: {
     app: App;
     name: string;
     datasetPath: string;
     datasetNameWithOwner: string;
-    type: Models.ServiceType;
+    type: Models.ServiceTypeV1;
     reasoner?: Models.JenaReasoners;
   }) {
     this._app = conf.app;

@@ -1,4 +1,5 @@
 import { Models, Routes } from "@triply/utils";
+import { parse, inject, stringify, validate } from "@triply/utils/lib/sparqlVarUtils";
 import App from "./App";
 import { _get, _patch, _delete } from "./RequestHandler";
 import { Account } from "./Account";
@@ -74,7 +75,20 @@ export default class Query {
       expectedResponseBody: "empty",
     });
   }
-
+  public async getString(variableValues?: { [variable: string]: string }) {
+    const info = await this.getInfo();
+    if (!info.requestConfig?.payload.query) {
+      throw getErr(`Query ${this._info.name} has no versions.`);
+    }
+    if (!info.variables) return info.requestConfig.payload.query;
+    validate({ variableDefinitions: info.variables, variableValues: variableValues || {} });
+    return stringify(
+      inject(parse(info.requestConfig.payload.query), {
+        variableDefinitions: info.variables,
+        variableValues: variableValues || {},
+      })
+    );
+  }
   public results(variableValues?: { [variable: string]: string }) {
     const queryType = this._getQueryType();
 
