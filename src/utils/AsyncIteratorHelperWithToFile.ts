@@ -23,7 +23,7 @@ export default class AsyncIteratorHelperWithToFile<ResultType, OutputClass> exte
     while ((results = await this["_getNextPage"]())) {
       if (results && results.length && this["_page"]) {
         if (opts?.compressed) {
-          await fs.write(f, this.compress(this["_page"]));
+          await fs.write(f, await this.compress(this["_page"]));
         } else {
           await fs.write(f, this["_page"]);
         }
