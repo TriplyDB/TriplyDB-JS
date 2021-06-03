@@ -113,8 +113,7 @@ export default class Query {
         return new AsyncIteratorHelperWithToFile<n3.Quad, n3.Quad>({
           ...iteratorOptions,
           mapResult: async (result) => result,
-          // use .ttl since it works both for jena and virtuoso.
-          getUrl: async () => this._app["_config"].url + ((await this._getPath()) + "/run.ttl?" + queryString),
+          getUrl: async () => this._app["_config"].url + ((await this._getPath()) + "/run.nt?" + queryString),
           parsePage: async (page: string) => {
             if (page === "OK") return []; // empty page (jena);
             // empty page (virtuoso) is a valid empty turtle doc, no check needed.

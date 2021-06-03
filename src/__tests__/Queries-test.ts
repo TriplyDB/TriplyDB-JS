@@ -11,7 +11,6 @@ import User from "../User";
 import path from "path";
 import * as n3 from "n3";
 import Query from "../Query";
-import { BadArgumentsError } from "@triply/utils/lib/sparqlVarUtils";
 process.on("unhandledRejection", function (reason: any, p: any) {
   console.warn("Possibly Unhandled Rejection at: Promise ", p, " reason: ", reason);
 });
@@ -86,7 +85,7 @@ describe("Queries", function () {
           // a construct query that gives same number of statements as there are in the dataset
           requestConfig: { payload: { query: "construct {?s?p?o} where {?s?p?o}" } },
           renderConfig: { output: "?" },
-          variables: [{ name: "s", termType: "NamedNode", required: true }],
+          variables: [{ name: "s", termType: "NamedNode" }],
           dataset: await dataset.getInfo().then((d) => d.id),
         });
       });
@@ -98,9 +97,6 @@ describe("Queries", function () {
 WHERE { <http://blaaa> ?p ?o. }
 `.trim()
           );
-        });
-        it("Should throw error when insufficient vars are passed", async function () {
-          await expect(constructQuery.getString()).eventually.rejectedWith(BadArgumentsError);
         });
       });
       it("Should query a saved construct-query (quad iterator)", async function () {
