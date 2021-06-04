@@ -5,6 +5,7 @@ import { _get, _patch, _delete } from "./RequestHandler";
 import { Account } from "./Account";
 import { getErr } from "./utils/Error";
 import AsyncIteratorHelper from "./utils/AsyncIteratorHelper";
+import { Cache } from "./utils/cache";
 import * as n3 from "n3";
 import sparqljs from "sparqljs";
 import { stringify as stringifyQueryObj } from "query-string";
@@ -110,19 +111,20 @@ export default class Query {
       })
     );
   }
-  public results(variableValues?: { [variable: string]: string }) {
+  public results(variables?: { [variable: string]: string }, opts?: { cache?: Cache }) {
     const queryType = this._getQueryType();
 
     const queryString = stringifyQueryObj({
       page: 1,
       pageSize: 5000,
-      ...(variableValues || {}),
+      ...(variables || {}),
     });
 
     const iteratorOptions = {
       error: getErr(`Failed to run query`),
       getErrorMessage: async () => `Failed to get results for query ${await this.getInfo().then((i) => i.name)}.`,
       app: this._app,
+      cache: opts?.cache,
     };
 
     return {
