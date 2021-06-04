@@ -12,6 +12,7 @@ import path from "path";
 import * as n3 from "n3";
 import Query from "../Query";
 import { TriplyDbJsError } from "../utils/Error";
+import md5 from "md5";
 process.on("unhandledRejection", function (reason: any, p: any) {
   console.warn("Possibly Unhandled Rejection at: Promise ", p, " reason: ", reason);
 });
@@ -118,7 +119,7 @@ WHERE { <http://blaaa> ?p ?o. }
 
       it("Should query a saved construct-query (to file)", async function () {
         this.timeout(30000);
-        const targetFile = path.resolve(tmpDir, "query-test-results.ttl");
+        const targetFile = path.resolve(tmpDir, "query-test-results.nt");
         await constructQuery.results().statements().toFile(targetFile);
         const fileContent = await fs.readFile(targetFile, "utf-8");
         const parser = new n3.Parser();
@@ -170,6 +171,36 @@ WHERE { <http://blaaa> ?p ?o. }
           .toArray()
           .then((a) => a.length);
         expect(count).to.equal(asArrayCount);
+      });
+      it("Should cache page when needed", async function () {
+        this.timeout(60000);
+
+        const expectedStatements = await selectQuery.getInfo().then((info) => info.dataset?.statements);
+        let count = 0;
+
+        const results = selectQuery.results(
+          {},
+          {
+            cache: {
+              read: async (req) => {
+                const cacheFile = path.resolve(tmpDir, md5(JSON.stringify({ req })));
+                if (await fs.pathExists(cacheFile)) {
+                  return JSON.parse(await fs.readFile(cacheFile, "utf8"));
+                }
+              },
+              write: async (req, result) => {
+                const cacheFile = path.resolve(tmpDir, md5(JSON.stringify(req)));
+                await fs.writeFile(cacheFile, JSON.stringify(result));
+              },
+            },
+          }
+        );
+        for await (const _ of results.bindings()) {
+          count++;
+        }
+        expect(expectedStatements).to.equal(count);
+        const array = await selectQuery.results().bindings().toArray();
+        expect(array).to.have.lengthOf(count);
       });
 
       it("Should support query variables in select-queries", async function () {

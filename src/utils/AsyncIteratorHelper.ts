@@ -7,6 +7,19 @@ if (!Symbol.asyncIterator) {
   (<any>Symbol).asyncIterator = Symbol.for("Symbol.asyncIterator");
 }
 
+export interface CachedResult {
+  statusCode: number;
+  responseText: string;
+  nextPage: string | null;
+  contentType: string | null;
+  statusText: string;
+}
+export type FromCacheFn = (req: { url: string; config?: RequestInit }) => Promise<CachedResult | undefined>;
+export type ToCacheFn = (req: { url: string; config?: RequestInit }, result: CachedResult) => Promise<void>;
+export type Cache = {
+  write: ToCacheFn;
+  read: FromCacheFn;
+};
 export interface AsyncConfig<ResultType, OutputType> {
   getUrl: () => Promise<string>;
   mapResult: (resource: ResultType) => Promise<OutputType>;
@@ -14,50 +27,72 @@ export interface AsyncConfig<ResultType, OutputType> {
   error: TriplyDbJsError;
   getErrorMessage: () => Promise<string>;
   parsePage?: (page: string) => Promise<ResultType[]>;
+  cache?: Cache;
 }
 
 export default class AsyncIteratorHelper<ResultType, OutputClass> {
   private _next: string | undefined | null;
   private _config: AsyncConfig<ResultType, OutputClass>;
   private _currentPage: ResultType[] = [];
+  // @ts-ignore Used in AsyncIteratorHelperWithToFile
   private _page: string | undefined;
-
   constructor(conf: AsyncConfig<ResultType, OutputClass>) {
     this._config = conf;
   }
 
-  private async _getNextPage(): Promise<ResultType[] | void> {
+  private async possiblyCachedResults(url: string, reqConfig?: RequestInit): Promise<CachedResult> {
+    if (this._config.cache?.read) {
+      const cached = await this._config.cache.read({ url, config: reqConfig });
+      if (cached) return cached;
+    }
+    const res = await fetch(url, reqConfig);
+    const statusCode = res.status;
+    const responseText = await res.text();
+    const contentType = res.headers.get("content-type");
+    const linkHeaders = parseLinkHeader(res.headers.get("link") || "");
+    const nextPage = linkHeaders?.["next"] && linkHeaders["next"].url ? linkHeaders["next"].url : null;
+    const result: CachedResult = {
+      statusCode,
+      responseText,
+      contentType,
+      nextPage,
+      statusText: res.statusText,
+    };
+    if (this._config.cache?.write) {
+      await this._config.cache.write({ url, config: reqConfig }, result);
+    }
+    return result;
+  }
+
+  private async _getPage(): Promise<ResultType[] | void> {
     if (this._next === null) return;
     const reqConfig = requestConfigToFetchConfig("GET", {
       app: this._config.app,
     });
     const url = this._next || (await this._config.getUrl());
+    const pageResponseInfo = await this.possiblyCachedResults(url, reqConfig);
     try {
-      const resp = await fetch(url, reqConfig);
-      this._config.error.statusCode = resp.status;
-      const pageString = await resp.text();
-      if (resp.status >= 400) {
-        const contentType = resp.headers.get("content-type");
+      // const resp = await fetch(url, reqConfig);
+      this._config.error.statusCode = pageResponseInfo.statusCode;
+      if (pageResponseInfo.statusCode >= 400) {
         let response: {} | undefined;
-        if (contentType && contentType.indexOf("application/json") === 0) {
-          response = JSON.parse(pageString);
+        if (pageResponseInfo.contentType && pageResponseInfo.contentType.indexOf("application/json") === 0) {
+          response = JSON.parse(pageResponseInfo.responseText);
         }
         this._config.error.message = await this._config.getErrorMessage();
         let context: any = { method: "GET", url };
         if (response) context.response = response;
-        throw this._config.error.addContext(context).setCause(resp, response);
+        throw this._config.error.addContext(context).setCause(pageResponseInfo, response);
       }
-      const linkHeaders = parseLinkHeader(resp.headers.get("link") || "");
-      this._next = linkHeaders?.["next"] && linkHeaders["next"].url ? linkHeaders["next"].url : null;
+      this._next = pageResponseInfo.nextPage;
       const parsePage = this._config.parsePage || JSON.parse;
-
-      this._page = pageString;
+      this._page = pageResponseInfo.responseText;
       let results: any;
       try {
-        results = await parsePage(pageString);
+        results = await parsePage(pageResponseInfo.responseText);
       } catch (e) {
         this._config.error.message = (await this._config.getErrorMessage()) + ": Failed to parse response.";
-        this._config.error.addContext({ method: "GET", url }).setCause(resp, results);
+        this._config.error.addContext({ method: "GET", url }).setCause(pageResponseInfo, results);
         throw this._config.error;
       }
       return results;
@@ -69,7 +104,7 @@ export default class AsyncIteratorHelper<ResultType, OutputClass> {
   }
 
   private async _get(): Promise<ResultType | void> {
-    if (!this._currentPage.length) this._currentPage = (await this._getNextPage()) || [];
+    if (!this._currentPage.length) this._currentPage = (await this._getPage()) || [];
     if (this._currentPage.length) return this._currentPage.shift();
   }
   public async toArray() {

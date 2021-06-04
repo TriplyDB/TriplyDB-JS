@@ -84,7 +84,7 @@ export function requestConfigToFetchConfig(
   if (config.data) {
     headers["Content-Type"] = "application/json";
     reqConfig.body = JSON.stringify(config.data);
-  } else if (config.attach) {
+  } else if (config?.attach) {
     const data = new FormData();
     for (const [name, body] of Object.entries(config.attach)) {
       if (typeof body === "string") {
