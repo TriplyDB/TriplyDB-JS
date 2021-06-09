@@ -6,7 +6,7 @@ import FormData from "form-data";
 import debug from "debug";
 const log = debug("triply:triplydb-js:http");
 
-type ReqMethod = "GET" | "PUT" | "PATCH" | "DELETE" | "POST";
+type ReqMethod = "GET" | "PUT" | "PATCH" | "DELETE" | "POST" | "HEAD";
 
 export interface ReqOptsObj<E extends RequestTemplate = any> {
   app: App;
