@@ -60,6 +60,7 @@ export default class AsyncIteratorHelper<ResultType, OutputClass> {
       }
       return results;
     } catch (e) {
+      if (e instanceof TriplyDbJsError) throw e;
       this._config.error.message = await this._config.getErrorMessage();
       throw this._config.error.addContext({ method: "GET", url }).setCause(e);
     }
