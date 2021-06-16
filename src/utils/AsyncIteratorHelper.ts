@@ -107,8 +107,9 @@ export default class AsyncIteratorHelper<ResultType, OutputClass> {
   }
 
   private async _get(): Promise<ResultType | void> {
-    if (!this._currentPage.length) this._currentPage = (await this._getPage()) || [];
-    if (this._currentPage.length) return this._currentPage.shift();
+    // Reverse and use `.pop`, as `shift` is an O(n) operation.
+    if (!this._currentPage.length) this._currentPage = ((await this._getPage()) || []).reverse();
+    if (this._currentPage.length) return this._currentPage.pop();
   }
   public async toArray() {
     const results: OutputClass[] = [];
