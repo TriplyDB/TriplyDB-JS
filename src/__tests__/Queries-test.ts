@@ -11,6 +11,7 @@ import User from "../User";
 import path from "path";
 import * as n3 from "n3";
 import Query from "../Query";
+import { fileCache } from "../utils/cache";
 import { TriplyDbJsError } from "../utils/Error";
 import md5 from "md5";
 process.on("unhandledRejection", function (reason: any, p: any) {
@@ -177,27 +178,12 @@ WHERE { <http://blaaa> ?p ?o. }
 
         const expectedStatements = await selectQuery.getInfo().then((info) => info.dataset?.statements);
         let count = 0;
-
-        const results = selectQuery.results(
-          {},
-          {
-            cache: {
-              read: async (req) => {
-                const cacheFile = path.resolve(tmpDir, md5(JSON.stringify({ req })));
-                if (await fs.pathExists(cacheFile)) {
-                  return JSON.parse(await fs.readFile(cacheFile, "utf8"));
-                }
-              },
-              write: async (req, result) => {
-                const cacheFile = path.resolve(tmpDir, md5(JSON.stringify(req)));
-                await fs.writeFile(cacheFile, JSON.stringify(result));
-              },
-            },
-          }
-        );
+        expect((await fs.readdir(tmpDir)).length).to.equal(0);
+        const results = selectQuery.results({}, { cache: fileCache({ cacheDir: tmpDir, compression: "gz" }) });
         for await (const _ of results.bindings()) {
           count++;
         }
+        expect((await fs.readdir(tmpDir)).length).to.not.equal(0);
         expect(expectedStatements).to.equal(count);
         const array = await selectQuery.results().bindings().toArray();
         expect(array).to.have.lengthOf(count);

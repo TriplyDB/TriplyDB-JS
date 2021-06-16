@@ -1,4 +1,4 @@
-import { CachedResult } from "./AsyncIteratorHelper";
+import { CachedResult } from "./cache";
 import { Response } from "cross-fetch";
 type Context = { [key: string]: any };
 export class IncompatibleError extends Error {}

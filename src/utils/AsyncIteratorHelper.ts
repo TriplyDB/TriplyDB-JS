@@ -3,23 +3,11 @@ import { _get, requestConfigToFetchConfig } from "../RequestHandler";
 import { TriplyDbJsError } from "./Error";
 import App from "../App";
 import fetch from "cross-fetch";
+import { CachedResult, Cache } from "./cache";
 if (!Symbol.asyncIterator) {
   (<any>Symbol).asyncIterator = Symbol.for("Symbol.asyncIterator");
 }
 
-export interface CachedResult {
-  statusCode: number;
-  responseText: string;
-  nextPage: string | null;
-  contentType: string | null;
-  statusText: string;
-}
-export type FromCacheFn = (req: { url: string; config?: RequestInit }) => Promise<CachedResult | undefined>;
-export type ToCacheFn = (req: { url: string; config?: RequestInit }, result: CachedResult) => Promise<void>;
-export type Cache = {
-  write: ToCacheFn;
-  read: FromCacheFn;
-};
 export interface AsyncConfig<ResultType, OutputType> {
   getUrl: () => Promise<string>;
   mapResult: (resource: ResultType) => Promise<OutputType>;
@@ -31,6 +19,10 @@ export interface AsyncConfig<ResultType, OutputType> {
 }
 
 export default class AsyncIteratorHelper<ResultType, OutputClass> {
+  /**
+   *  undefined:  iteration hasn't started
+   *  null:       iteration has finished
+   */
   private _next: string | undefined | null;
   private _config: AsyncConfig<ResultType, OutputClass>;
   private _currentPage: ResultType[] = [];
@@ -41,7 +33,7 @@ export default class AsyncIteratorHelper<ResultType, OutputClass> {
   }
 
   private async possiblyCachedResults(url: string, reqConfig?: RequestInit): Promise<CachedResult> {
-    if (this._config.cache?.read) {
+    if (this._config.cache) {
       const cached = await this._config.cache.read({ url, config: reqConfig });
       if (cached) return cached;
     }
@@ -58,21 +50,20 @@ export default class AsyncIteratorHelper<ResultType, OutputClass> {
       nextPage,
       statusText: res.statusText,
     };
-    if (this._config.cache?.write) {
+    if (this._config.cache) {
       await this._config.cache.write({ url, config: reqConfig }, result);
     }
     return result;
   }
 
   private async _getPage(): Promise<ResultType[] | void> {
-    if (this._next === null) return;
+    if (this._next === null) return; // iteration has finished
     const reqConfig = requestConfigToFetchConfig("GET", {
       app: this._config.app,
     });
     const url = this._next || (await this._config.getUrl());
-    const pageResponseInfo = await this.possiblyCachedResults(url, reqConfig);
     try {
-      // const resp = await fetch(url, reqConfig);
+      const pageResponseInfo = await this.possiblyCachedResults(url, reqConfig);
       this._config.error.statusCode = pageResponseInfo.statusCode;
       if (pageResponseInfo.statusCode >= 400) {
         let response: {} | undefined;
