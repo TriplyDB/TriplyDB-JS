@@ -39,7 +39,7 @@ describe("App", function () {
     const app = App.get({ url: "https://api.triplydb.com" });
     expect(await app.isCompatible("1.1.1")).to.equal(true);
     expect(await app.isCompatible("1.1.1-9")).to.equal(true);
-    expect(await app.isCompatible("9.9.9")).to.equal(false);
-    expect(await app.isCompatible("9.9.9-9")).to.equal(false);
+    expect(await app.isCompatible("9.9.9")).to.equal(true);
+    expect(await app.isCompatible("9.9.9-9")).to.equal(true);
   });
 });

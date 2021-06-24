@@ -13,8 +13,8 @@ export default class Query {
   private _app: App;
   private _info: Models.Query;
   private _owner: Account;
-
-  constructor(app: App, info: Models.Query, owner: Account) {
+  private _version: number | undefined;
+  public constructor(app: App, info: Models.Query, owner: Account) {
     this._app = app;
     this._info = info;
     this._owner = owner;
@@ -30,9 +30,12 @@ export default class Query {
       throw getErr("Update-queries are not supported");
     }
   }
-  private async _getPath() {
-    const ownerName = await this._owner.getName();
-    return "/queries/" + ownerName + "/" + this._info.name;
+  private async _getPath(opts?: { ignoreVersion?: boolean }) {
+    const pathChunks: string[] = ["queries", await this._owner.getName(), this._info.name];
+    if (!opts?.ignoreVersion && typeof this._version === "number") {
+      pathChunks.push(String(this._version));
+    }
+    return "/" + pathChunks.join("/");
   }
   private async _getQueryNameWithOwner() {
     const ownerName = await this._owner.getName();
@@ -52,6 +55,24 @@ export default class Query {
     this._info = info;
     return this;
   }
+  public async useVersion(version: number | "latest") {
+    const numVersions = this._info.numberOfVersions;
+    if (!numVersions) throw getErr(`Query ${this._info.name} has no versions.`);
+    if (version === "latest") {
+      this._version = undefined;
+      return this;
+    }
+    if (version > numVersions || version < 0) {
+      throw getErr(
+        `Query ${this._info.name} has ${numVersions} ${
+          numVersions > 1 ? "versions" : "version"
+        }. Version ${version} does not exist.`
+      );
+    }
+    this._version = version;
+    await this.getInfo(true);
+    return this;
+  }
   public async update(config: Models.QueryMetaUpdate) {
     const updateData = { ...config };
     if (!updateData.dataset) {
@@ -61,7 +82,7 @@ export default class Query {
       await _patch<Routes.queries._account._query.Patch>({
         errorWithCleanerStack: getErr(`Failed to update query information of ${this._info.name}.`),
         app: this._app,
-        path: await this._getPath(),
+        path: await this._getPath({ ignoreVersion: true }),
         data: updateData,
       })
     );
@@ -71,7 +92,7 @@ export default class Query {
     await _delete<Routes.queries._account._query.Delete>({
       errorWithCleanerStack: getErr(`Failed to delete query ${this._info.name}.`),
       app: this._app,
-      path: await this._getPath(),
+      path: await this._getPath({ ignoreVersion: true }),
       expectedResponseBody: "empty",
     });
   }

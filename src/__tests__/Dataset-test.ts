@@ -57,7 +57,7 @@ describe("Dataset", function () {
       try {
         await user.addDataset({ name: "____", accessLevel: "private" });
       } catch (e) {
-        expect(e.message).to.contain("Dataset names can only contain");
+        expect(e.message).to.contain("A dataset name can only contain");
         return;
       }
       throw new Error("Expected an err");
