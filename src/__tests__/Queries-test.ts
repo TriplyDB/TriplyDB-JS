@@ -11,6 +11,7 @@ import User from "../User";
 import path from "path";
 import * as n3 from "n3";
 import Query from "../Query";
+import { TriplyDbJsError } from "../utils/Error";
 process.on("unhandledRejection", function (reason: any, p: any) {
   console.warn("Possibly Unhandled Rejection at: Promise ", p, " reason: ", reason);
 });
@@ -76,7 +77,7 @@ describe("Queries", function () {
           .getQuery(constructQueryName)
           .then((q) => q.delete())
           .catch((e) => {
-            if (e.statusCode === 404) return;
+            if (e instanceof TriplyDbJsError && e.statusCode === 404) return;
             throw e;
           });
         constructQuery = await user.addQuery({
@@ -141,7 +142,7 @@ WHERE { <http://blaaa> ?p ?o. }
           .getQuery(selectQueryName)
           .then((q) => q.delete())
           .catch((e) => {
-            if (e.status === 404) return;
+            if (e instanceof TriplyDbJsError && e.statusCode === 404) return;
             throw e;
           });
         selectQuery = await user.addQuery({
