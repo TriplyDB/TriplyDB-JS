@@ -136,7 +136,7 @@ WHERE { <http://blaaa> ?p ?o. }
     describe("Select-queries", async function () {
       let selectQuery: Query;
       before(async function () {
-        const selectQueryName = `${CommonUnittestPrefix}-construct`;
+        const selectQueryName = `${CommonUnittestPrefix}-select`;
         await user
           .getQuery(selectQueryName)
           .then((q) => q.delete())
