@@ -2,7 +2,7 @@ import { Models, Routes } from "@triply/utils";
 import Dataset from "./Dataset";
 import App from "./App";
 import * as fs from "fs-extra";
-import { _delete, _get } from "./RequestHandler";
+import { _delete, _get, getFetchOpts } from "./RequestHandler";
 import pumpify from "pumpify";
 import fetch from "cross-fetch";
 import { getErr } from "./utils/Error";
@@ -44,7 +44,15 @@ export default class Asset {
     const url = await this._getUrl(
       versionNumber === undefined ? this._getLastVersionInfo() : this.getVersionInfo(versionNumber)
     );
-    const res = await fetch(url, { method: "get", headers: { authorization: `bearer ${this._app["_config"].token}` } });
+    const res = await fetch(
+      url,
+      getFetchOpts(
+        {
+          method: "get",
+        },
+        { app: this._app }
+      )
+    );
     const stream = new pumpify(res.body as any, fs.createWriteStream(destinationPath));
     await new Promise((resolve, reject) => {
       stream.on("error", reject);
@@ -55,7 +63,15 @@ export default class Asset {
     if (this._deleted) throw getErr("This asset does not exist.");
     if (versionNumber === undefined) versionNumber = this._selectedVersion;
     const url = await this._getUrl(versionNumber === undefined ? undefined : this.getVersionInfo(versionNumber));
-    const res = await fetch(url, { method: "get", headers: { authorization: `bearer ${this._app["_config"].token}` } });
+    const res = await fetch(
+      url,
+      getFetchOpts(
+        {
+          method: "get",
+        },
+        { app: this._app }
+      )
+    );
     return (res.body as any) as NodeJS.WriteStream;
   }
   private _getLastVersionInfo() {

@@ -16,7 +16,7 @@ import pumpify from "pumpify";
 import { Account } from "./Account";
 import { fromPairs, toPairs, pick, size, uniq, zipObject } from "lodash";
 import { TriplyDbJsError, getErr, IncompatibleError } from "./utils/Error";
-import { _get, _delete, _patch, _post, handleFetchAsStream, getUrl } from "./RequestHandler";
+import { _get, _delete, _patch, _post, handleFetchAsStream, getUrl, getFetchOpts } from "./RequestHandler";
 import { ReadStream } from "fs-extra";
 import AsyncIteratorHelper from "./utils/AsyncIteratorHelper";
 import Asset from "./Asset";
@@ -199,8 +199,8 @@ export default class Dataset {
     }
     const downloadUrlPath = await this._getDownloadPath(extension);
     const res = await fetch(
-      getUrl({ app: this._app, errorWithCleanerStack: getErr("Failed to download graphs"), path: downloadUrlPath }),
-      { method: "get", compress: false, headers: { authorization: `bearer ${this._app["_config"].token}` } } as any
+      getUrl({ app: this._app, path: downloadUrlPath }),
+      getFetchOpts({ method: "get", compress: false }, { app: this._app })
     );
     const stream = new pumpify(
       res.body as any,

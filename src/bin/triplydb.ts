@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-
+require("source-map-support/register");
 import program from "commander";
 import importFromFiles from "./triplydb-import-from-file";
 import uploadAssets from "./triplydb-upload-asset";

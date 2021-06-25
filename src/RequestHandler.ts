@@ -5,9 +5,9 @@ import fetch from "cross-fetch";
 import FormData from "form-data";
 import debug from "debug";
 const log = debug("triply:triplydb-js:http");
-
+const HttpsProxyAgent = require("https-proxy-agent");
+const HttpProxyAgent = require("http-proxy-agent");
 type ReqMethod = "GET" | "PUT" | "PATCH" | "DELETE" | "POST" | "HEAD";
-
 export interface ReqOptsObj<E extends RequestTemplate = any> {
   app: App;
   errorWithCleanerStack: TriplyDbJsError;
@@ -21,7 +21,7 @@ export interface ReqOptsObj<E extends RequestTemplate = any> {
 export function normalizePath(path = "") {
   return `/${path}`.replace(new RegExp("//", "g"), "/");
 }
-export function getUrl(opts: ReqOptsObj): string {
+export function getUrl(opts: Pick<ReqOptsObj, "url" | "path" | "app" | "query">): string {
   let url: URL;
   if (opts.url) {
     url = new URL(opts.url);
@@ -54,14 +54,30 @@ export function _post<T extends HttpMethodTemplate>(opts: ReqOptsObj<T["Req"]>) 
 export function _patch<T extends HttpMethodTemplate>(opts: ReqOptsObj<T["Req"]>) {
   return handleFetchAsPromise("PATCH", opts);
 }
-export function getRequestConfig(method: ReqMethod, config: ReqOptsObj): RequestInit {
-  const token = config.app["_config"].token;
-  const headers: { [key: string]: string } = { "X-Triply-Client": "triplydb-js" };
+type SimpleRequestInit = Omit<RequestInit, "headers"> & {
+  // For ease of use, always use objects
+  headers?: { [key: string]: string };
+  compress?: boolean; // This is missing from the typescript def
+  agent?: typeof HttpProxyAgent | typeof HttpsProxyAgent; // This is missing from the typescript def
+};
+export function getFetchOpts(requestInit: SimpleRequestInit, opts: { app: App }): SimpleRequestInit {
+  const token = opts.app["_config"].token;
+  if (!requestInit.headers) requestInit.headers = {};
+  requestInit.headers["X-Triply-Client"] = "triplydb-js";
   if (token) {
-    headers["Authorization"] = "Bearer " + token;
+    requestInit.headers["Authorization"] = "Bearer " + token;
   }
-  const reqConfig: RequestInit = { method };
+  if (opts.app["_config"].httpsProxy) {
+    requestInit.agent = new HttpsProxyAgent(opts.app["_config"].httpsProxy);
+  } else if (opts.app["_config"].httpProxy) {
+    requestInit.agent = new HttpProxyAgent(opts.app["_config"].httpProxy);
+  }
 
+  return requestInit;
+}
+export function requestConfigToFetchConfig(method: ReqMethod, config: ReqOptsObj): SimpleRequestInit {
+  const reqConfig: SimpleRequestInit = { method };
+  const headers: { [key: string]: string } = {};
   if (config.data) {
     headers["Content-Type"] = "application/json";
     reqConfig.body = JSON.stringify(config.data);
@@ -77,7 +93,7 @@ export function getRequestConfig(method: ReqMethod, config: ReqOptsObj): Request
     reqConfig.body = data as any;
   }
   reqConfig.headers = headers;
-  return reqConfig;
+  return getFetchOpts(reqConfig, { app: config.app });
 }
 async function handleFetchAsPromise<T extends HttpMethodTemplate>(
   method: ReqMethod,
@@ -85,7 +101,7 @@ async function handleFetchAsPromise<T extends HttpMethodTemplate>(
 ): Promise<T["Res"]["Body"]> {
   const url = getUrl(opts);
   log(`_${method.toLowerCase()}`, url);
-  const reqOpts = getRequestConfig(method, opts);
+  const reqOpts = requestConfigToFetchConfig(method, opts);
   const context = { method, url };
   const errorContext = { errorToThrow: opts.errorWithCleanerStack, context: { method, url } };
   let response: Response;
@@ -141,7 +157,7 @@ export async function handleFetchAsStream<T extends HttpMethodTemplate>(
 ): Promise<ReadableStream<Uint8Array>> {
   const url = getUrl(opts);
   log(`_${method.toLowerCase()}`, url);
-  const reqOpts = getRequestConfig(method, opts);
+  const reqOpts = requestConfigToFetchConfig(method, opts);
   const errorContext = { method, url };
   let response: Response;
   try {

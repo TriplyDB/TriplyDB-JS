@@ -19,6 +19,14 @@ export interface AppConfig {
    * Api URL
    */
   url?: string;
+  /**
+   * HTTP proxy
+   */
+  httpProxy?: string;
+  /**
+   * HTTPS proxy
+   */
+  httpsProxy?: string;
 }
 const APP_CONFIG_DEFAULTS = {
   url: "https://api.triplydb.com",

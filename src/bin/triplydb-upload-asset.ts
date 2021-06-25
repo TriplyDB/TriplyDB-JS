@@ -9,6 +9,8 @@ import statuses from "http-status-codes";
 let defaultTriplyDBToken = process.env["TRIPLYDB_TOKEN"];
 let defaultTriplyDBAccount = process.env["TRIPLYDB_ACCOUNT"];
 let defaultTriplyDBDataset = process.env["TRIPLYDB_DATASET"];
+let defaultHttpsProxy = process.env["HTTPS_PROXY"];
+let defaultHttpProxy = process.env["HTTP_PROXY"];
 const command = program
   .createCommand("upload-asset")
   .description("load files as assets into a TriplyDB dataset")
@@ -24,6 +26,8 @@ const command = program
     defaultTriplyDBAccount
   )
   .option("-u, --url <url>", "Optional: Url of the triply API. (default: the API where the token was created)", String)
+  .option("--http-proxy <proxy>", "TriplyDB access token (default: $HTTP_PROXY)", defaultHttpProxy || undefined)
+  .option("--https-proxy <proxy>", "TriplyDB access token (default: $HTTPS_PROXY)", defaultHttpsProxy || undefined)
   .action(async () => {
     function sanityCheckError(msg: string) {
       console.error(colors.red(msg));
@@ -35,7 +39,12 @@ const command = program
     if (!options.token) sanityCheckError("Missing token as argument");
     if (!options.dataset) sanityCheckError("Missing dataset as argument");
     if (!files.length) sanityCheckError("No files given to upload for");
-    const c = App.get({ url: options.url, token: options.token });
+    const c = App.get({
+      url: options.url,
+      token: options.token,
+      httpProxy: options.httpProxy,
+      httpsProxy: options.httpsProxy,
+    });
     const account = await c.getAccount(options.account);
 
     // check whether account name exists

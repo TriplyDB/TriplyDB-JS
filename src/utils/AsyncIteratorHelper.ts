@@ -1,5 +1,5 @@
 import parseLinkHeader from "parse-link-header";
-import { _get, getRequestConfig } from "../RequestHandler";
+import { _get, requestConfigToFetchConfig } from "../RequestHandler";
 import { TriplyDbJsError } from "./Error";
 import App from "../App";
 import fetch from "cross-fetch";
@@ -28,7 +28,10 @@ export default class AsyncIteratorHelper<ResultType, OutputClass> {
 
   private async _getNextPage(): Promise<ResultType[] | void> {
     if (this._next === null) return;
-    const reqConfig = getRequestConfig("GET", { app: this._config.app, errorWithCleanerStack: this._config.error });
+    const reqConfig = requestConfigToFetchConfig("GET", {
+      app: this._config.app,
+      errorWithCleanerStack: this._config.error,
+    });
     const url = this._next || (await this._config.getUrl());
     try {
       const resp = await fetch(url, reqConfig);

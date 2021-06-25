@@ -1,6 +1,6 @@
 import { Models, Routes } from "@triply/utils";
 import App from "./App";
-import { _delete, _patch, _get, handleFetchAsStream } from "./RequestHandler";
+import { _delete, _patch, _get, handleFetchAsStream, getFetchOpts } from "./RequestHandler";
 import Dataset from "./Dataset";
 import * as n3 from "n3";
 import fetch from "cross-fetch";
@@ -48,11 +48,16 @@ export default class Graph {
     }
 
     const url = await this._getDownloadUrl(extension);
-    const res = await fetch(url, {
-      method: "get",
-      compress: false,
-      headers: { authorization: `bearer ${this._app["_config"].token}` },
-    } as any);
+    const res = await fetch(
+      url,
+      getFetchOpts(
+        {
+          method: "get",
+          compress: false,
+        },
+        { app: this._app }
+      )
+    );
     if (res.status >= 400) {
       throw getErr(`Failed to download graph ${this._info.graphName}: [#${res.status}] ${res.statusText}`);
     }
