@@ -25,8 +25,16 @@ const command = program
     defaultTriplyDBAccount
   )
   .option("-u, --url <url>", "Optional: Url of the triply API. (default: the API where the token was created)", String)
-  .option("--http-proxy <proxy>", "TriplyDB access token (default: $HTTP_PROXY)", defaultHttpProxy || undefined)
-  .option("--https-proxy <proxy>", "TriplyDB access token (default: $HTTPS_PROXY)", defaultHttpsProxy || undefined)
+  .option(
+    "--http-proxy <proxy>",
+    "Use HTTP proxy for all requests (default: $HTTP_PROXY)",
+    defaultHttpProxy || undefined
+  )
+  .option(
+    "--https-proxy <proxy>",
+    "Use HTTP proxy for all requests (default: $HTTPS_PROXY)",
+    defaultHttpsProxy || undefined
+  )
   .option("-p, --append", "Optional: Append the graphs. (default: false)")
   .action(async () => {
     const files = command.args;
