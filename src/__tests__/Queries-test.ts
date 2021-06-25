@@ -182,5 +182,56 @@ WHERE { <http://blaaa> ?p ?o. }
         expect(() => selectQuery.results().statements()).to.throw();
       });
     });
+    describe.skip("Queries with an error", async function () {
+      let tooLargeQuery: Query;
+      before(async function () {
+        const tooLargeQueryName = `${CommonUnittestPrefix}-too-large`;
+        await user
+          .getQuery(tooLargeQueryName)
+          .then((q) => q.delete())
+          .catch((e) => {
+            if (e instanceof TriplyDbJsError && e.statusCode === 404) return;
+            throw e;
+          });
+        tooLargeQuery = await user.addQuery({
+          name: tooLargeQueryName,
+          accessLevel: "private",
+          requestConfig: { payload: { query: "CONSTRUCT WHERE {?s?p?o} ORDER BY ?s LIMIT 10000 OFFSET 12000" } },
+          renderConfig: { output: "?" },
+          variables: [{ name: "s", termType: "NamedNode" }],
+          dataset: await dataset.getInfo().then((d) => d.id),
+        });
+      });
+
+      it("should report the problem for async iterator", async function () {
+        try {
+          for await (const _ of tooLargeQuery.results().statements()) {
+          }
+          throw new Error("This query shouldn't have finished returning results");
+        } catch (e) {
+          expect(e).to.be.instanceof(TriplyDbJsError);
+          const ee = e as TriplyDbJsError;
+          expect(ee.message).to.match(/Sorted TOP clause specifies more then \d+ rows to sort./);
+          return;
+        }
+        throw new Error("Expected an error to be thrown");
+      });
+      it("should report the problem for toFile", async function () {
+        const tempfile = "./test-output.nt";
+        try {
+          await tooLargeQuery.results().statements().toFile(tempfile);
+        } catch (e) {
+          expect(e).to.be.instanceof(TriplyDbJsError);
+          const ee = e as TriplyDbJsError;
+          expect(ee.message).to.match(/Sorted TOP clause specifies more then \d+ rows to sort./);
+          return;
+        } finally {
+          if (await fs.pathExists(tempfile)) {
+            await fs.remove(tempfile);
+          }
+        }
+        throw new Error("Expected an error to be thrown");
+      });
+    });
   });
 });
