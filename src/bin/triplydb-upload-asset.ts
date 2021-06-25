@@ -55,13 +55,14 @@ const command = program
       dataset = account.getDataset(options.dataset);
       await dataset.getInfo();
     } catch {
-      console.info("Creating dataset");
+      console.info(`> Creating dataset ${options.dataset} in account ${await account.getName()}`);
       dataset = await account.addDataset({ name: options.dataset, accessLevel: "public" });
     }
 
-    console.info(`Uploading ${files.length} files`);
+    console.info(`> Uploading ${files.length} files`);
     for (const file of files) {
       const filename = file.indexOf("/") === -1 ? file : file.split("/").pop();
+      console.info("  - Uploading", filename);
       const assetName = filename || "unknown";
       try {
         await dataset.uploadAsset(file, assetName);
@@ -69,11 +70,16 @@ const command = program
         if (e instanceof TriplyDbJsError && e.statusCode === statuses.CONFLICT) {
           const asset = await dataset.getAsset(assetName);
           await asset.addVersion(assetName);
+          continue;
         }
+        throw e;
       }
-      console.info("Uploaded", filename);
     }
-    console.info("Done");
+    console.info(
+      `> Finished uploading ${files.length} ${files.length > 2 ? "files" : "file"} to dataset ${
+        options.dataset
+      } in account ${await account.getName()}`
+    );
   });
 
 export default command;
