@@ -75,7 +75,10 @@ export function getFetchOpts(requestInit: SimpleRequestInit, opts: { app: App })
 
   return requestInit;
 }
-export function requestConfigToFetchConfig(method: ReqMethod, config: ReqOptsObj): SimpleRequestInit {
+export function requestConfigToFetchConfig(
+  method: ReqMethod,
+  config: Pick<ReqOptsObj, "app" | "data" | "attach">
+): SimpleRequestInit {
   const reqConfig: SimpleRequestInit = { method };
   const headers: { [key: string]: string } = {};
   if (config.data) {

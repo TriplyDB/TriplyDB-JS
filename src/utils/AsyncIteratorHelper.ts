@@ -30,7 +30,6 @@ export default class AsyncIteratorHelper<ResultType, OutputClass> {
     if (this._next === null) return;
     const reqConfig = requestConfigToFetchConfig("GET", {
       app: this._config.app,
-      errorWithCleanerStack: this._config.error,
     });
     const url = this._next || (await this._config.getUrl());
     try {
