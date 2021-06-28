@@ -5,8 +5,6 @@ import fetch from "cross-fetch";
 import FormData from "form-data";
 import debug from "debug";
 const log = debug("triply:triplydb-js:http");
-const HttpsProxyAgent = require("https-proxy-agent");
-const HttpProxyAgent = require("http-proxy-agent");
 type ReqMethod = "GET" | "PUT" | "PATCH" | "DELETE" | "POST" | "HEAD";
 export interface ReqOptsObj<E extends RequestTemplate = any> {
   app: App;
@@ -58,7 +56,6 @@ type SimpleRequestInit = Omit<RequestInit, "headers"> & {
   // For ease of use, always use objects
   headers?: { [key: string]: string };
   compress?: boolean; // This is missing from the typescript def
-  agent?: typeof HttpProxyAgent | typeof HttpsProxyAgent; // This is missing from the typescript def
 };
 export function getFetchOpts(requestInit: SimpleRequestInit, opts: { app: App }): SimpleRequestInit {
   const token = opts.app["_config"].token;
@@ -66,11 +63,6 @@ export function getFetchOpts(requestInit: SimpleRequestInit, opts: { app: App })
   requestInit.headers["X-Triply-Client"] = "triplydb-js";
   if (token) {
     requestInit.headers["Authorization"] = "Bearer " + token;
-  }
-  if (opts.app["_config"].httpsProxy) {
-    requestInit.agent = new HttpsProxyAgent(opts.app["_config"].httpsProxy);
-  } else if (opts.app["_config"].httpProxy) {
-    requestInit.agent = new HttpProxyAgent(opts.app["_config"].httpProxy);
   }
 
   return requestInit;

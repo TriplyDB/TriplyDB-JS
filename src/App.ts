@@ -8,6 +8,9 @@ import jwt_decode from "jwt-decode";
 import { _get } from "./RequestHandler";
 import { getErr } from "./utils/Error";
 import * as calver from "@triply/utils/lib/calver";
+import { bootstrap } from "global-agent";
+
+bootstrap();
 import semver from "semver";
 
 export interface AppConfig {
@@ -51,6 +54,14 @@ export default class App {
       ...this._config,
     };
     this.validateConf();
+    if (conf.httpProxy || conf.httpsProxy) {
+      /**
+       * We cannot set the proxy per request, as we're not using fetch alone, but e.g. tus uses the http/https module directly.
+       */
+      bootstrap();
+      (global as any).GLOBAL_AGENT.HTTP_PROXY = conf.httpsProxy || conf.httpProxy;
+      (global as any).GLOBAL_AGENT.HTTPS_PROXY = conf.httpsProxy;
+    }
   }
 
   private validateConf(): void {
