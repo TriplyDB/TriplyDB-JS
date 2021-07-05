@@ -14,12 +14,12 @@ See [here](https://triply.cc/docs/triplydb-js) for the TriplyDB JavaScript clien
 
 ### Setting up test environment
 
-To run the tests you need to set the API server URL and a access token in your `./envrc-local` variable first: `UNITTEST_TOKEN_READ`, `UNITTEST_TOKEN_WRITE`, `UNITTEST_TOKEN_ACCOUNT` and `UNITTEST_API_URL`.
+To run the tests you need to set the API server URL and a access token in your `./envrc-private` variable first: `UNITTEST_TOKEN_READ`, `UNITTEST_TOKEN_WRITE`, `UNITTEST_TOKEN_ACCOUNT` and `UNITTEST_API_URL`.
 
 Recommendations for these tokens:
 
 - Create a separate user (e.g. `<MyUserName>-triplydb-js`) the TriplyDB instance you're using, as the unittest will thoroughly **removes all datasets** from this account before starting the test
-- Create the tokens for that one, and use these tokens in `./envrc-local`
+- Create the tokens for that one, and use these tokens in `./envrc-private`
 
 ### Running the tests
 
