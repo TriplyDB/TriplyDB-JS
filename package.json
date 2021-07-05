@@ -12,7 +12,7 @@
     "build": "rm -rf ./lib  && tsc -p tsconfig-build.json && chmod +x ./lib/bin/*",
     "build:watch": "rm -rf ./lib && tsc -p tsconfig-build.json --watch --preserveWatchOutput",
     "dev": "rm -rf ./lib && tsc -p tsconfig-build.json --watch --preserveWatchOutput",
-    "test": "bash -c \"source ./.envrc-local && mocha $(find ./lib -name '*-test.js' -exec echo -n {}' ' \\;) --require source-map-support/register\"",
+    "test": "bash -c \"source ./.envrc-private && mocha $(find ./lib -name '*-test.js' -exec echo -n {}' ' \\;) --require source-map-support/register\"",
     "package": "pkg ./lib/bin/triplydb.js",
     "preversion": "isCleanBranch",
     "postversion": "versionToBranch",
