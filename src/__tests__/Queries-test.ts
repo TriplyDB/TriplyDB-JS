@@ -13,7 +13,7 @@ import * as n3 from "n3";
 import Query from "../Query";
 import { fileCache } from "../utils/cache";
 import { TriplyDbJsError } from "../utils/Error";
-import md5 from "md5";
+
 process.on("unhandledRejection", function (reason: any, p: any) {
   console.warn("Possibly Unhandled Rejection at: Promise ", p, " reason: ", reason);
 });
@@ -175,6 +175,9 @@ WHERE { <http://blaaa> ?p ?o. }
       });
       it("Should cache page when needed", async function () {
         this.timeout(60000);
+
+        await fs.remove(tmpDir);
+        await fs.mkdir(tmpDir);
 
         const expectedStatements = await selectQuery.getInfo().then((info) => info.dataset?.statements);
         let count = 0;
