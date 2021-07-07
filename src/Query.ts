@@ -114,7 +114,7 @@ export default class Query {
   public results(variables?: { [variable: string]: string }, opts?: { cache?: Cache }) {
     const queryType = this._getQueryType();
 
-    const queryString = stringifyQueryObj({
+    const variablesInUrlString = stringifyQueryObj({
       page: 1,
       pageSize: 5000,
       ...(variables || {}),
@@ -136,7 +136,7 @@ export default class Query {
         return new AsyncIteratorHelperWithToFile<n3.Quad, n3.Quad>({
           ...iteratorOptions,
           mapResult: async (result) => result,
-          getUrl: async () => this._app["_config"].url + ((await this._getPath()) + "/run.nt?" + queryString),
+          getUrl: async () => this._app["_config"].url + ((await this._getPath()) + "/run.nt?" + variablesInUrlString),
           parsePage: async (page: string) => {
             if (page === "OK") return []; // empty page (jena);
             // empty page (virtuoso) is a valid empty turtle doc, no check needed.
@@ -152,7 +152,7 @@ export default class Query {
         return new AsyncIteratorHelper<Binding, Binding>({
           ...iteratorOptions,
           mapResult: async (result) => result,
-          getUrl: async () => this._app["_config"].url + ((await this._getPath()) + "/run?" + queryString),
+          getUrl: async () => this._app["_config"].url + ((await this._getPath()) + "/run?" + variablesInUrlString),
         });
       },
     };
