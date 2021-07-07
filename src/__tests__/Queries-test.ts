@@ -13,6 +13,7 @@ import * as n3 from "n3";
 import Query from "../Query";
 import { fileCache } from "../utils/cache";
 import { TriplyDbJsError } from "../utils/Error";
+import { gzip, gunzip } from "zlib";
 
 process.on("unhandledRejection", function (reason: any, p: any) {
   console.warn("Possibly Unhandled Rejection at: Promise ", p, " reason: ", reason);
@@ -188,8 +189,39 @@ WHERE { <http://blaaa> ?p ?o. }
         }
         expect((await fs.readdir(tmpDir)).length).to.not.equal(0);
         expect(expectedStatements).to.equal(count);
-        const array = await selectQuery.results().bindings().toArray();
+        const array = await selectQuery
+          .results({}, { cache: fileCache({ cacheDir: tmpDir, compression: "gz" }) })
+          .bindings()
+          .toArray();
         expect(array).to.have.lengthOf(count);
+        // break the cache file to make sure that it is being used
+        for (let file of await fs.readdir(tmpDir)) {
+          file = path.resolve(tmpDir, file);
+          const data = await new Promise<any>(async (resolve, reject) =>
+            gunzip(await fs.readFile(file), (error, result) => {
+              if (error) return reject(error);
+              resolve(result.toJSON());
+            })
+          );
+          data.responseText = "[]";
+          await fs.writeFile(
+            file,
+            await new Promise<Buffer>((resolve, reject) =>
+              gzip(JSON.stringify(data), (error, result) => {
+                if (error) return reject(error);
+                resolve(result);
+              })
+            )
+          );
+        }
+
+        count = 0;
+        for await (const _ of selectQuery
+          .results({}, { cache: fileCache({ cacheDir: tmpDir, compression: "gz" }) })
+          .bindings()) {
+          count++;
+        }
+        expect(count).to.equal(0);
       });
 
       it("Should support query variables in select-queries", async function () {

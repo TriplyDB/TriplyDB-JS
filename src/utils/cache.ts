@@ -40,24 +40,24 @@ export function fileCache({
   const compress =
     compression === "gz"
       ? async (data: string) =>
-          new Promise<string>((resolve, reject) =>
+          new Promise<Buffer>((resolve, reject) =>
             gzip(data, (error, result) => {
-              if (error) reject(error);
-              resolve(result.toString());
+              if (error) return reject(error);
+              resolve(result);
             })
           )
-      : (data: string) => data;
+      : (data: string) => Buffer.from(data);
 
   const inflate =
     compression === "gz"
-      ? async (data: string) =>
+      ? async (data: Buffer) =>
           new Promise<string>((resolve, reject) =>
             gunzip(data, (error, result) => {
-              if (error) reject(error);
-              resolve(result.toString());
+              if (error) return reject(error);
+              resolve(result.toString("utf-8"));
             })
           )
-      : (data: string) => data;
+      : (data: Buffer) => data.toString("utf-8");
 
   function getCacheFile(key: CacheKey) {
     return path.resolve(cacheDir, md5(JSON.stringify(key) + cacheId));
@@ -66,7 +66,7 @@ export function fileCache({
     read: async (key) => {
       const cacheFile = getCacheFile(key);
       if (await fs.pathExists(cacheFile)) {
-        return JSON.parse(await inflate(await fs.readFile(cacheFile, "utf8")));
+        return JSON.parse(await inflate(await fs.readFile(cacheFile)));
       }
     },
     write: async (key, result) => {
