@@ -34,8 +34,17 @@ export default class AsyncIteratorHelper<ResultType, OutputClass> {
 
   private async possiblyCachedResults(url: string, reqConfig?: RequestInit): Promise<CachedResult> {
     if (this._config.cache) {
-      const cached = await this._config.cache.read({ url, config: reqConfig });
-      if (cached) return cached;
+      try {
+        const cached = await this._config.cache.read({ url, config: reqConfig });
+        if (cached) {
+          return cached;
+        }
+      } catch (e) {
+        if ("message" in e) {
+          e.message = "Error while reading from the cache: " + e.message;
+        }
+        throw e;
+      }
     }
     const res = await fetch(url, reqConfig);
     const statusCode = res.status;
@@ -50,7 +59,21 @@ export default class AsyncIteratorHelper<ResultType, OutputClass> {
       nextPage,
       statusText: res.statusText,
     };
+
+    this._config.error.statusCode = result.statusCode;
+    if (result.statusCode >= 400) {
+      let response: {} | undefined;
+      if (result.contentType && result.contentType.indexOf("application/json") === 0) {
+        response = JSON.parse(result.responseText);
+      }
+      this._config.error.message = await this._config.getErrorMessage();
+      let context: any = { method: "GET", url };
+      if (response) context.response = response;
+      throw this._config.error.addContext(context).setCause(result, response);
+    }
+
     if (this._config.cache) {
+      // only write to cache after we check the status
       await this._config.cache.write({ url, config: reqConfig }, result);
     }
     return result;
@@ -64,17 +87,6 @@ export default class AsyncIteratorHelper<ResultType, OutputClass> {
     const url = this._next || (await this._config.getUrl());
     try {
       const pageResponseInfo = await this.possiblyCachedResults(url, reqConfig);
-      this._config.error.statusCode = pageResponseInfo.statusCode;
-      if (pageResponseInfo.statusCode >= 400) {
-        let response: {} | undefined;
-        if (pageResponseInfo.contentType && pageResponseInfo.contentType.indexOf("application/json") === 0) {
-          response = JSON.parse(pageResponseInfo.responseText);
-        }
-        this._config.error.message = await this._config.getErrorMessage();
-        let context: any = { method: "GET", url };
-        if (response) context.response = response;
-        throw this._config.error.addContext(context).setCause(pageResponseInfo, response);
-      }
       this._next = pageResponseInfo.nextPage;
       const parsePage = this._config.parsePage || JSON.parse;
       this._page = pageResponseInfo.responseText;
