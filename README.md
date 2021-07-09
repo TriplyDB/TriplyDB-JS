@@ -30,6 +30,10 @@ Recommendations for these tokens:
 - `yarn build` transpiles the typescript code, and stores the JS results in the `./lib` directory
 - `yarn dev` does the same, but watches for any changes to the typescript files and incrementally transpiles them when needed
 
+### Releasing
+
+`yarn version [--patch|--minor|--major]`
+
 ### Building the TriplyDB-js binaries
 
 TriplyDB-js is also available as a CLI. This CLI supports uploading files to TriplyDB from the command-line. To build the executable, run `yarn run package`.
