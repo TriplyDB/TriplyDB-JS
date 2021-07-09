@@ -74,9 +74,8 @@ export default class Service {
     return this;
   }
 
-  private async waitUntilRunning() {
+  public async waitUntilRunning() {
     while (true) {
-      await wait(5000);
       const info = await this.getInfo(true);
       if (info.status === "running") {
         return;
@@ -84,7 +83,12 @@ export default class Service {
         throw getErr(
           `Failed to start service ${this.name} of dataset ${this.datasetNameWithOwner}: ${info.error.message}`
         );
+      } else if (!["starting", "updating"].includes(info.status)) {
+        throw getErr(
+          `Failed to start service ${this.name} of dataset ${this.datasetNameWithOwner} as it is being stopped or removed.`
+        );
       }
+      await wait(5000);
     }
   }
 
