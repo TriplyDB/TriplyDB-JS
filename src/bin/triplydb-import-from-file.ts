@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import program from "commander";
+import { program } from "commander";
 import colors from "colors";
 import App from "../App";
 import Dataset from "../Dataset";

@@ -5,7 +5,7 @@
 .triplydb-js.err
 lib
 node_modules
-triplydb*
+/triplydb*
 uploadAssets-*
 uploadFiles-*
 yarn-error.log

@@ -214,7 +214,6 @@ WHERE { <http://blaaa> ?p ?o. }
           expect(ee.message).to.match(/Sorted TOP clause specifies more then \d+ rows to sort./);
           return;
         }
-        throw new Error("Expected an error to be thrown");
       });
       it("should report the problem for toFile", async function () {
         const tempfile = "./test-output.nt";
