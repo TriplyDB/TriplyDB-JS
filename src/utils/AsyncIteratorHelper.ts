@@ -18,7 +18,7 @@ export interface AsyncConfig<ResultType, OutputType> {
   cache?: Cache;
 }
 
-export default class AsyncIteratorHelper<ResultType, OutputClass> {
+export default class AsyncIteratorHelper<ResultType, OutputClass> implements AsyncIterable<OutputClass> {
   /**
    *  undefined:  iteration hasn't started
    *  null:       iteration has finished
@@ -130,6 +130,7 @@ export default class AsyncIteratorHelper<ResultType, OutputClass> {
         } else {
           return {
             done: true,
+            value: undefined,
           } as const;
         }
       },
