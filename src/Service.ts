@@ -7,11 +7,12 @@ import { getErr } from "./utils/Error";
 export default class Service {
   private _app: App;
   private _info?: Models.Service;
-  private datasetPath: string;
-  private datasetNameWithOwner: string;
-  private name: string;
-  private type: Models.ServiceTypeV1;
-  private reasoner?: Models.JenaReasoners;
+  private _datasetPath: string;
+  private _datasetNameWithOwner: string;
+  private _name: string;
+  private _type: Models.ServiceTypeV1;
+  private _reasoner?: Models.JenaReasoners;
+  public readonly type = "Service";
   constructor(conf: {
     app: App;
     name: string;
@@ -21,18 +22,18 @@ export default class Service {
     reasoner?: Models.JenaReasoners;
   }) {
     this._app = conf.app;
-    this.name = conf.name;
-    this.datasetPath = conf.datasetPath;
-    this.datasetNameWithOwner = conf.datasetNameWithOwner;
-    this.type = conf.type;
-    this.reasoner = conf.reasoner;
+    this._name = conf.name;
+    this._datasetPath = conf.datasetPath;
+    this._datasetNameWithOwner = conf.datasetNameWithOwner;
+    this._type = conf.type;
+    this._reasoner = conf.reasoner;
   }
 
   public async getInfo(refresh = false): Promise<Models.Service> {
     if (!refresh && this._info) return this._info;
     this._info = await _get<Routes.datasets._account._dataset.services._serviceName.Get>({
       errorWithCleanerStack: getErr(
-        `Failed to get information of service ${this.name} in dataset ${this.datasetNameWithOwner}.`
+        `Failed to get information of service ${this._name} in dataset ${this._datasetNameWithOwner}.`
       ),
       app: this._app,
       path: await this._getServicePath(),
@@ -47,7 +48,7 @@ export default class Service {
 
   public async delete() {
     this._info = await _delete<Routes.datasets._account._dataset.services._serviceName.Get>({
-      errorWithCleanerStack: getErr(`Failed to delete service ${this.name} of dataset ${this.datasetNameWithOwner}.`),
+      errorWithCleanerStack: getErr(`Failed to delete service ${this._name} of dataset ${this._datasetNameWithOwner}.`),
       app: this._app,
       path: await this._getServicePath(),
       expectedResponseBody: "empty",
@@ -56,16 +57,16 @@ export default class Service {
 
   public async create() {
     await _post({
-      errorWithCleanerStack: getErr(`Failed to create service ${this.name} in dataset ${this.datasetNameWithOwner}.`),
+      errorWithCleanerStack: getErr(`Failed to create service ${this._name} in dataset ${this._datasetNameWithOwner}.`),
       app: this._app,
-      path: `${this.datasetPath}/services`,
+      path: `${this._datasetPath}/services`,
       data: {
-        name: this.name,
-        type: this.type,
+        name: this._name,
+        type: this._type,
         config:
-          this.type === "sparql-jena" && this.reasoner
+          this._type === "sparql-jena" && this._reasoner
             ? {
-                reasonerType: this.reasoner,
+                reasonerType: this._reasoner,
               }
             : {},
       },
@@ -81,11 +82,11 @@ export default class Service {
         return;
       } else if (info.error) {
         throw getErr(
-          `Failed to start service ${this.name} of dataset ${this.datasetNameWithOwner}: ${info.error.message}`
+          `Failed to start service ${this._name} of dataset ${this._datasetNameWithOwner}: ${info.error.message}`
         );
       } else if (!["starting", "updating"].includes(info.status)) {
         throw getErr(
-          `Failed to start service ${this.name} of dataset ${this.datasetNameWithOwner} as it is being stopped or removed.`
+          `Failed to start service ${this._name} of dataset ${this._datasetNameWithOwner} as it is being stopped or removed.`
         );
       }
       await wait(5000);
@@ -94,7 +95,7 @@ export default class Service {
 
   public async update() {
     await _post({
-      errorWithCleanerStack: getErr(`Failed to update service ${this.name} of dataset ${this.datasetNameWithOwner}.`),
+      errorWithCleanerStack: getErr(`Failed to update service ${this._name} of dataset ${this._datasetNameWithOwner}.`),
       app: this._app,
       path: await this._getServicePath(),
       data: { recreate: true },
@@ -103,6 +104,6 @@ export default class Service {
   }
 
   private async _getServicePath() {
-    return `${this.datasetPath}/services/${this.name}`;
+    return `${this._datasetPath}/services/${this._name}`;
   }
 }

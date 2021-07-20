@@ -7,8 +7,7 @@ const expect = chai.expect;
 process.on("unhandledRejection", function (reason: any, p: any) {
   console.warn("Possibly Unhandled Rejection at: Promise ", p, " reason: ", reason);
 });
-//Skipped. These are tests that are difficult to isolate and run on production
-describe.skip("User", function () {
+describe("User", function () {
   let app: App;
   let user: User;
   before(async function () {
@@ -19,12 +18,25 @@ describe.skip("User", function () {
     user = await app.getUser();
     await user.getInfo();
   });
-  it("rename account", async function () {
-    const originalName = (await user.getInfo()).accountName;
-    const newName = CommonUnittestPrefix + times(20, () => random(35).toString(36)).join("");
-    await user.update({ accountName: newName });
-    expect((await user.getInfo()).accountName).to.equal(newName);
-    await user.update({ accountName: originalName as string });
-    expect((await user.getInfo()).accountName).to.equal(originalName);
+  it("get all users", async function () {
+    // Expect that there is at least one user on the instance that they're testing.
+    const accounts = await app.getAccounts().toArray();
+    expect(accounts).to.have.length.greaterThan(0);
+    expect(accounts.map((x) => (x as User)["_name"])).to.contain((await user.getInfo()).accountName);
+  });
+
+  // Skipped as these tests are difficult to isolate and run on production
+  it.skip("unused", async function () {
+    it("rename account", async function () {
+      const originalName = (await user.getInfo()).accountName;
+      const newName = CommonUnittestPrefix + times(20, () => random(35).toString(36)).join("");
+      await user.update({ accountName: newName });
+      expect((await user.getInfo()).accountName).to.equal(newName);
+      await user.update({ accountName: originalName });
+      expect((await user.getInfo()).accountName).to.equal(originalName);
+    });
+    it("ensure that we get an error when the user doesn't exist", async function () {
+      await expect(app.getAccount("maocpwnuzrls")).to.eventually.be.rejectedWith(/404: Account/);
+    });
   });
 });

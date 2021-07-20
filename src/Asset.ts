@@ -17,6 +17,7 @@ export default class Asset {
   private _dataset: Dataset;
   private _deleted = false;
   private _selectedVersion?: number;
+  public readonly type = "Asset";
   constructor(dataset: Dataset, info: Models.Asset, selectedVersion?: number) {
     this._info = info;
     this._dataset = dataset;
@@ -72,7 +73,7 @@ export default class Asset {
         { app: this._app }
       )
     );
-    return (res.body as any) as NodeJS.WriteStream;
+    return res.body as any as NodeJS.WriteStream;
   }
   private _getLastVersionInfo() {
     if (this._deleted) throw getErr("This asset does not exist.");

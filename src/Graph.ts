@@ -18,6 +18,7 @@ export default class Graph {
   private _info: Models.Graph;
   private _app: App;
   private _dataset: Dataset;
+  public readonly type = "Graph";
 
   constructor(dataset: Dataset, info: Models.Graph) {
     this._app = dataset["_app"];

@@ -25,14 +25,14 @@ describe("Orgs", function () {
   });
   it("create org", async function () {
     const name = `${CommonUnittestPrefix}-someorg1`;
-    const someorg = await user.createOrganization({ accountName: name });
-    expect(await someorg.getName()).to.equal(name);
+    const someorg = await user.createOrganization(name);
+    expect((await someorg.getInfo()).accountName).to.equal(name);
   });
   describe("Updating org metadata", async function () {
     let org: Org;
     const name = `${CommonUnittestPrefix}-someorg2`;
     before(async function () {
-      org = await user.createOrganization({ accountName: name });
+      org = await user.createOrganization(name);
     });
     it("renaming should work", async function () {
       const newName = CommonUnittestPrefix + times(20, () => random(35).toString(36)).join("");
@@ -52,7 +52,7 @@ describe("Orgs", function () {
       /**
        * Adding a new member
        */
-      members = await org.addMembers({ user: otherUser, role: "member" });
+      members = await org.addMember(otherUser);
       expect(members.length).to.equal(2);
       expect(members.filter((m) => m.role === "member").length).to.equal(1);
 
@@ -73,7 +73,7 @@ describe("Orgs", function () {
         /**
          * adding 1
          */
-        const ds1 = await org.addDataset({ name: `${CommonUnittestPrefix}-pinned1` });
+        const ds1 = await org.addDataset(`${CommonUnittestPrefix}-pinned1`);
         await org.pinItems([ds1]);
         let pinned = await org.getPinnedItems();
         expect(pinned.length).to.equal(1);
@@ -81,8 +81,8 @@ describe("Orgs", function () {
         /**
          * adding 2 and removing 1
          */
-        const ds2 = await org.addDataset({ name: `${CommonUnittestPrefix}-pinned2` });
-        const ds3 = await org.addDataset({ name: `${CommonUnittestPrefix}-pinned3` });
+        const ds2 = await org.addDataset(`${CommonUnittestPrefix}-pinned2`);
+        const ds3 = await org.addDataset(`${CommonUnittestPrefix}-pinned3`);
         await org.pinItems([ds2, ds3]);
 
         pinned = await org.getPinnedItems();

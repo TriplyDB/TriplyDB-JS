@@ -18,6 +18,7 @@ export default class Query {
   private _info: Models.Query;
   private _owner: Account;
   private _version: number | undefined;
+  public readonly type = "Query";
   public constructor(app: App, info: Models.Query, owner: Account) {
     this._app = app;
     this._info = info;
@@ -35,14 +36,15 @@ export default class Query {
     }
   }
   private async _getPath(opts?: { ignoreVersion?: boolean }) {
-    const pathChunks: string[] = ["queries", await this._owner.getName(), this._info.name];
+    const accountName = (await this._owner.getInfo()).accountName;
+    const pathChunks: string[] = ["queries", accountName, this._info.name];
     if (!opts?.ignoreVersion && typeof this._version === "number") {
       pathChunks.push(String(this._version));
     }
     return "/" + pathChunks.join("/");
   }
   private async _getQueryNameWithOwner() {
-    const ownerName = await this._owner.getName();
+    const ownerName = (await this._owner.getInfo()).accountName;
     return `${ownerName}/${this._info.name}`;
   }
   public async getInfo(refresh = false): Promise<Models.Query> {

@@ -21,11 +21,11 @@ const tmpDir = buildPathToSrcPath(__dirname, "tmp");
 const datasetsToClean: Dataset[] = [];
 let testDsIndex = 0;
 const getNewTestDs = async (account: Account, accessLevel: "public" | "private") => {
-  const ds = await account.addDataset({
+  const ds = await account.addDataset(
     // keep the name short to avoid hitting the 40-character limit
-    name: `${CommonUnittestPrefix}-${testDsIndex++}`,
-    accessLevel: accessLevel,
-  });
+    `${CommonUnittestPrefix}-${testDsIndex++}`,
+    { accessLevel: accessLevel }
+  );
   datasetsToClean.push(ds);
   return ds;
 };
@@ -55,7 +55,7 @@ describe("Dataset", function () {
     });
     it("create dataset with invalid name", async function () {
       try {
-        await user.addDataset({ name: "____", accessLevel: "private" });
+        await user.addDataset("____", { accessLevel: "private" });
       } catch (e) {
         expect(e.message).to.contain("A dataset name can only contain");
         return;
@@ -73,19 +73,24 @@ describe("Dataset", function () {
   describe("Ensuring dataset", function () {
     it("Should create when not already existing", async function () {
       const t = Date.now();
-      const ensuredDs = await user.ensureDs(`${CommonUnittestPrefix}-ensured`, { license: "PDDL" });
+      const ensuredDs = await user.ensureDataset(`${CommonUnittestPrefix}-ensured`, { license: "PDDL" });
       const dsInfo = await ensuredDs.getInfo();
       expect(new Date(dsInfo.createdAt).getTime()).to.be.greaterThan(t);
       expect(dsInfo.license).to.equal("PDDL");
     });
     it("Should get existing when already existing", async function () {
-      const firstDataset = await user.addDataset({ name: `${CommonUnittestPrefix}-ensured2` });
+      const firstDataset = await user.addDataset(`${CommonUnittestPrefix}-ensured2`);
       const firstDatasetInfo = await firstDataset.getInfo();
-      const ensuredDs = await user.ensureDs(`${CommonUnittestPrefix}-ensured2`, { license: "PDDL" });
+      const ensuredDs = await user.ensureDataset(`${CommonUnittestPrefix}-ensured2`, { license: "PDDL" });
       const secondDsInfo = await ensuredDs.getInfo();
       expect(firstDatasetInfo.id).to.equal(secondDsInfo.id);
       // since the ensuredDs was not new, the newDsInfo should not have been applied
       expect(secondDsInfo.license).to.equal(undefined);
+    });
+    it("Should throw when access level doesn't match", async function () {
+      await user.addDataset(`${CommonUnittestPrefix}-ensured3`);
+      const ensuredDs = user.ensureDataset(`${CommonUnittestPrefix}-ensured3`, { accessLevel: "public" });
+      await expect(ensuredDs).to.eventually.be.rejectedWith(/already exists with access level/);
     });
   });
 
@@ -108,6 +113,7 @@ describe("Dataset", function () {
   describe("Manage prefixes", function () {
     let testDs: Dataset;
     before(async function () {
+      await resetUnittestAccount(user);
       testDs = await getNewTestDs(user, "private");
     });
 
@@ -116,21 +122,29 @@ describe("Dataset", function () {
       expect(size(prefixes)).to.be.gt(0);
     });
     it("Remove unknown prefixes", async function () {
-      await testDs.removeDatasetPrefixes(["sdg"]); //should not throw
+      await testDs.removePrefixes(["sdg"]); //should not throw
     });
     it("Add / remove prefixes", async function () {
+      /**
+       * Add 1 upon dataset creation
+       */
+      const newDs = await user.addDataset(`${CommonUnittestPrefix}-dataset-prefix-test`, {
+        prefixes: { abc: "https://test1" },
+      });
+      const prefixes = await newDs.getPrefixes();
+      expect(prefixes["abc"]).to.equal("https://test1");
       /**
        * Add 2
        */
       const listBefore = await testDs.getPrefixes();
-      await testDs.addDatasetPrefixes({ test1: "https://test1", test2: "https://test2" });
+      await testDs.addPrefixes({ test1: "https://test1", test2: "https://test2" });
       const listAfterAdding = await testDs.getPrefixes();
       expect(size(listAfterAdding) - size(listBefore)).to.equal(2);
       expect(listAfterAdding["test1"]).to.equal("https://test1");
       /**
        * Delete 1
        */
-      await testDs.removeDatasetPrefixes(["test1"]);
+      await testDs.removePrefixes(["test1"]);
       const listAfterRemoving = await testDs.getPrefixes();
       expect(size(listAfterRemoving) - size(listBefore)).to.equal(1);
       expect(listAfterRemoving["test1"]).to.be.undefined;
@@ -150,12 +164,12 @@ describe("Dataset", function () {
         buildPathToSrcPath(__dirname, "__data__", "test102.nt"),
         buildPathToSrcPath(__dirname, "__data__", "test103.nq")
       );
-      const info = testDs["lastJob"]?.info();
+      const info = testDs["_lastJob"]?.info();
       expect(info?.files).to.have.lengthOf(2);
     });
     it("Run job", async function () {
       this.timeout(15000);
-      expect(testDs["lastJob"]?.info()?.status).to.equal("finished");
+      expect(testDs["_lastJob"]?.info()?.status).to.equal("finished");
     });
   });
   describe("Import from files with overwrite", function () {
@@ -171,19 +185,19 @@ describe("Dataset", function () {
         buildPathToSrcPath(__dirname, "__data__", "test102.nt"),
         buildPathToSrcPath(__dirname, "__data__", "test103.nq")
       );
-      let info = testDs["lastJob"]?.info();
+      let info = testDs["_lastJob"]?.info();
       expect(info?.files).to.have.lengthOf(2);
       this.timeout(15000);
-      expect(testDs["lastJob"]?.info()?.status).to.equal("finished");
+      expect(testDs["_lastJob"]?.info()?.status).to.equal("finished");
       await testDs.importFromFiles(
         { overwriteAll: true },
         buildPathToSrcPath(__dirname, "__data__", "test102.nt"),
         buildPathToSrcPath(__dirname, "__data__", "test103.nq")
       );
-      info = testDs["lastJob"]?.info();
+      info = testDs["_lastJob"]?.info();
       expect(info?.files).to.have.lengthOf(2);
       expect(await testDs.getGraphs().toArray()).to.have.lengthOf(2);
-      const ds2 = user.getDataset((await testDs.getInfo()).name);
+      const ds2 = await user.getDataset((await testDs.getInfo()).name);
 
       expect(await ds2.getGraphs().toArray()).to.have.lengthOf(2);
       expect((await ds2.getInfo()).graphCount).to.equal(2);
@@ -440,7 +454,7 @@ describe("Dataset", function () {
           buildPathToSrcPath(__dirname, "__data__", "test103.nq")
         );
         // Sanity check
-        expect(testDs["lastJob"]?.info()?.status).to.equal("finished");
+        expect(testDs["_lastJob"]?.info()?.status).to.equal("finished");
       });
 
       it("import empty graphs", async function () {
@@ -521,7 +535,7 @@ describe("Dataset", function () {
          */
         const dsToImportFrom = await getNewTestDs(user, "private");
         await dsToImportFrom.importFromFiles(buildPathToSrcPath(__dirname, "__data__", "test103.nq"));
-        await dsToImportFrom["lastJob"]?.exec();
+        await dsToImportFrom["_lastJob"]?.exec();
         let testDsGraphs: Graph[] = [];
         for await (let graph of testDs.getGraphs()) graph && testDsGraphs.push(graph);
         await testDs.importFromDataset({
