@@ -10,6 +10,9 @@ import * as n3 from "n3";
 import sparqljs from "sparqljs";
 import { stringify as stringifyQueryObj } from "query-string";
 import AsyncIteratorHelperWithToFile from "./utils/AsyncIteratorHelperWithToFile";
+
+export type Binding = { [key: string]: string };
+
 export default class Query {
   private _app: App;
   private _info: Models.Query;
@@ -148,7 +151,6 @@ export default class Query {
         if (queryType !== "SELECT") {
           throw getErr("Bindings are only supported for SELECT queries.");
         }
-        type Binding = { [key: string]: string };
         return new AsyncIteratorHelper<Binding, Binding>({
           ...iteratorOptions,
           mapResult: async (result) => result,
