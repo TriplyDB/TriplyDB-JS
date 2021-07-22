@@ -143,7 +143,7 @@ describe("Dataset", function () {
       testDs = await getNewTestDs(user, "private");
     });
 
-    it("Upload", async function () {
+    it.only("Upload", async function () {
       this.timeout(15000);
 
       await testDs.importFromFiles(

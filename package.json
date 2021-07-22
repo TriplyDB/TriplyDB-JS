@@ -66,7 +66,8 @@
     "query-string": "^7.0.1",
     "semver": "^7.3.4",
     "sparqljs": "^3.4.2",
-    "ts-essentials": "^7.0.0"
+    "ts-essentials": "^7.0.0",
+    "tus-js-client": "1.8.0"
   },
   "devDependencies": {
     "@types/chai": "^4.2.15",

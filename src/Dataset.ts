@@ -5,7 +5,8 @@ import { wait } from "./utils";
 import debug from "debug";
 import Service from "./Service";
 const log = debug("triply:triplydb-js:upload");
-const tus = require("@triply/tus-js-client");
+// const tus = require("@triply/tus-js-client");
+import tus from 'tus-js-client'
 import md5 from "md5";
 import { tmpdir } from "os";
 import * as stream from "stream";
@@ -664,7 +665,7 @@ export class JobUpload {
     return new Promise<void>((resolve, reject) => {
       const upload = new tus.Upload(rs, {
         endpoint: this.jobUrl + "/add",
-        resume: true,
+        resume: false,
         metadata: {
           filename: fileName,
         },
@@ -672,7 +673,15 @@ export class JobUpload {
           Authorization: "Bearer " + this._config.app["_config"].token,
         },
         chunkSize: 5 * 1024 * 1024,
-        uploadSize: fileSize,
+
+        /**
+         * This results in a timeout
+         */
+        uploadLengthDeferred: true,
+        /**
+         * When specifying the upload size, everything works as expected
+         */
+        // uploadSize: fileSize,
         retryDelays: [2000, 5000, 10000, 40000, 50000],
         onError: function (error: any) {
           reject(error);
