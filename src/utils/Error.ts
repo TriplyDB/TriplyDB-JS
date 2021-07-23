@@ -1,3 +1,5 @@
+import { CachedResult } from "./cache";
+import { Response } from "cross-fetch";
 type Context = { [key: string]: any };
 export class IncompatibleError extends Error {}
 export class TriplyDbJsError extends Error {
@@ -17,11 +19,15 @@ export class TriplyDbJsError extends Error {
     return this;
   }
 
-  public setCause(error: Error | Response, jsonResult?: any) {
+  public setCause(error: Error | Response | CachedResult, jsonResult?: any) {
     if (error instanceof Error) {
       this.message = `${this.message} (${error.message})`;
-    } else {
+    } else if (error instanceof Response) {
       this.message = `${this.message} (${error.status}: ${
+        jsonResult && jsonResult.message ? jsonResult.message : error.statusText
+      })`;
+    } else {
+      this.message = `${this.message} (${error.statusCode}: ${
         jsonResult && jsonResult.message ? jsonResult.message : error.statusText
       })`;
     }

@@ -1,14 +1,11 @@
 import * as fs from "fs-extra";
-import AsyncIteratorHelper, { AsyncConfig } from "./AsyncIteratorHelper";
+import AsyncIteratorHelper from "./AsyncIteratorHelper";
 import zlib from "zlib";
 
 export default class AsyncIteratorHelperWithToFile<ResultType, OutputClass> extends AsyncIteratorHelper<
   ResultType,
   OutputClass
 > {
-  constructor(config: AsyncConfig<ResultType, OutputClass>) {
-    super(config);
-  }
   private compress(data: string) {
     return new Promise<Buffer>((resolve, reject) => {
       zlib.gzip(data, (err, result) => {
@@ -20,7 +17,7 @@ export default class AsyncIteratorHelperWithToFile<ResultType, OutputClass> exte
   public async toFile(filePath: string, opts?: { compressed?: boolean }) {
     const f = await fs.open(filePath, "w");
     let results: ResultType[] | void;
-    while ((results = await this["_getNextPage"]())) {
+    while ((results = await this["_getPage"]())) {
       if (results && results.length && this["_page"]) {
         if (opts?.compressed) {
           await fs.write(f, await this.compress(this["_page"]));

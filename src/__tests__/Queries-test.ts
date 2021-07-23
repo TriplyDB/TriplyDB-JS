@@ -11,7 +11,10 @@ import User from "../User";
 import path from "path";
 import * as n3 from "n3";
 import Query from "../Query";
+import { fileCache } from "../utils/cache";
 import { TriplyDbJsError } from "../utils/Error";
+import { gzip, gunzip } from "zlib";
+
 process.on("unhandledRejection", function (reason: any, p: any) {
   console.warn("Possibly Unhandled Rejection at: Promise ", p, " reason: ", reason);
 });
@@ -118,7 +121,7 @@ WHERE { <http://blaaa> ?p ?o. }
 
       it("Should query a saved construct-query (to file)", async function () {
         this.timeout(30000);
-        const targetFile = path.resolve(tmpDir, "query-test-results.ttl");
+        const targetFile = path.resolve(tmpDir, "query-test-results.nt");
         await constructQuery.results().statements().toFile(targetFile);
         const fileContent = await fs.readFile(targetFile, "utf-8");
         const parser = new n3.Parser();
@@ -170,6 +173,55 @@ WHERE { <http://blaaa> ?p ?o. }
           .toArray()
           .then((a) => a.length);
         expect(count).to.equal(asArrayCount);
+      });
+      it("Should cache page when needed", async function () {
+        this.timeout(60000);
+
+        await fs.remove(tmpDir);
+        await fs.mkdir(tmpDir);
+
+        const expectedStatements = await selectQuery.getInfo().then((info) => info.dataset?.statements);
+        let count = 0;
+        expect((await fs.readdir(tmpDir)).length).to.equal(0);
+        const results = selectQuery.results({}, { cache: fileCache({ cacheDir: tmpDir, compression: "gz" }) });
+        for await (const _ of results.bindings()) {
+          count++;
+        }
+        expect((await fs.readdir(tmpDir)).length).to.not.equal(0);
+        expect(expectedStatements).to.equal(count);
+        const array = await selectQuery
+          .results({}, { cache: fileCache({ cacheDir: tmpDir, compression: "gz" }) })
+          .bindings()
+          .toArray();
+        expect(array).to.have.lengthOf(count);
+        // break the cache file to make sure that it is being used
+        for (let file of await fs.readdir(tmpDir)) {
+          file = path.resolve(tmpDir, file);
+          const data = await new Promise<any>(async (resolve, reject) =>
+            gunzip(await fs.readFile(file), (error, result) => {
+              if (error) return reject(error);
+              resolve(result.toJSON());
+            })
+          );
+          data.responseText = "[]";
+          await fs.writeFile(
+            file,
+            await new Promise<Buffer>((resolve, reject) =>
+              gzip(JSON.stringify(data), (error, result) => {
+                if (error) return reject(error);
+                resolve(result);
+              })
+            )
+          );
+        }
+
+        count = 0;
+        for await (const _ of selectQuery
+          .results({}, { cache: fileCache({ cacheDir: tmpDir, compression: "gz" }) })
+          .bindings()) {
+          count++;
+        }
+        expect(count).to.equal(0);
       });
 
       it("Should support query variables in select-queries", async function () {

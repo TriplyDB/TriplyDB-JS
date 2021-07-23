@@ -5,10 +5,14 @@ import { _get, _patch, _delete } from "./RequestHandler";
 import { Account } from "./Account";
 import { getErr } from "./utils/Error";
 import AsyncIteratorHelper from "./utils/AsyncIteratorHelper";
+import { Cache } from "./utils/cache";
 import * as n3 from "n3";
 import sparqljs from "sparqljs";
 import { stringify as stringifyQueryObj } from "query-string";
 import AsyncIteratorHelperWithToFile from "./utils/AsyncIteratorHelperWithToFile";
+
+export type Binding = { [key: string]: string };
+
 export default class Query {
   private _app: App;
   private _info: Models.Query;
@@ -110,19 +114,20 @@ export default class Query {
       })
     );
   }
-  public results(variableValues?: { [variable: string]: string }) {
+  public results(variables?: { [variable: string]: string }, opts?: { cache?: Cache }) {
     const queryType = this._getQueryType();
 
-    const queryString = stringifyQueryObj({
+    const variablesInUrlString = stringifyQueryObj({
       page: 1,
       pageSize: 5000,
-      ...(variableValues || {}),
+      ...(variables || {}),
     });
 
     const iteratorOptions = {
       error: getErr(`Failed to run query`),
       getErrorMessage: async () => `Failed to get results for query ${await this.getInfo().then((i) => i.name)}.`,
       app: this._app,
+      cache: opts?.cache,
     };
 
     return {
@@ -134,7 +139,7 @@ export default class Query {
         return new AsyncIteratorHelperWithToFile<n3.Quad, n3.Quad>({
           ...iteratorOptions,
           mapResult: async (result) => result,
-          getUrl: async () => this._app["_config"].url + ((await this._getPath()) + "/run.nt?" + queryString),
+          getUrl: async () => this._app["_config"].url + ((await this._getPath()) + "/run.nt?" + variablesInUrlString),
           parsePage: async (page: string) => {
             if (page === "OK") return []; // empty page (jena);
             // empty page (virtuoso) is a valid empty turtle doc, no check needed.
@@ -146,11 +151,10 @@ export default class Query {
         if (queryType !== "SELECT") {
           throw getErr("Bindings are only supported for SELECT queries.");
         }
-        type Binding = { [key: string]: string };
         return new AsyncIteratorHelper<Binding, Binding>({
           ...iteratorOptions,
           mapResult: async (result) => result,
-          getUrl: async () => this._app["_config"].url + ((await this._getPath()) + "/run?" + queryString),
+          getUrl: async () => this._app["_config"].url + ((await this._getPath()) + "/run?" + variablesInUrlString),
         });
       },
     };
