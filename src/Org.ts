@@ -18,7 +18,6 @@ import {
   getDataset,
   update,
   addStory,
-  getName,
   ensureDataset,
 } from "./commonAccountFunctions";
 import { getErr } from "./utils/Error";
@@ -48,8 +47,6 @@ export default class Org implements AccountBase {
   public addStory = addStory;
   public getPinnedItems = getPinnedItems;
   public pinItems = pinItems;
-  /** @deprecated Use (await getInfo()).accountName instead. */
-  public getName = getName;
   public ensureDataset = ensureDataset;
 
   public asUser(): User {
@@ -87,13 +84,12 @@ export default class Org implements AccountBase {
   public async addMember(user: User | string, role: Models.OrgRole = "member") {
     const orgName = (await this.getInfo()).accountName;
     const memberName = typeof user === "string" ? user : (await user.getInfo()).accountName;
-    await _post<Routes.accounts._account.members.Post>({
+    return await _post<Routes.accounts._account.members.Post>({
       errorWithCleanerStack: getErr(`Failed to add ${user} as member to organization ${this._name}.`),
       app: this._app,
       data: { accountName: memberName, role },
       path: `/accounts/${orgName}/members`,
     });
-    return this.getMembers();
   }
   public async removeMember(member: User | string) {
     const orgName = (await this.getInfo()).accountName;
@@ -104,7 +100,6 @@ export default class Org implements AccountBase {
       path: `/accounts/${orgName}/members/${memberName}`,
       expectedResponseBody: "empty",
     });
-    return this.getMembers();
   }
   public async changeRole(member: User, role: Models.OrgRole) {
     const orgName = (await this.getInfo()).accountName;

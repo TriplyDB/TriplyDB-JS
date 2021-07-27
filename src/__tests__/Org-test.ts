@@ -52,7 +52,8 @@ describe("Orgs", function () {
       /**
        * Adding a new member
        */
-      members = await org.addMember(otherUser);
+      await org.addMember(otherUser);
+      members = await org.getMembers();
       expect(members.length).to.equal(2);
       expect(members.filter((m) => m.role === "member").length).to.equal(1);
 

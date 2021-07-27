@@ -17,7 +17,6 @@ import {
   getDataset,
   addStory,
   update,
-  getName,
   ensureDataset,
 } from "./commonAccountFunctions";
 import { getErr } from "./utils/Error";
@@ -46,8 +45,6 @@ export default class User implements AccountBase {
   public addStory = addStory;
   public getPinnedItems = getPinnedItems;
   public pinItems = pinItems;
-  /** @deprecated Use (await getInfo()).accountName instead. */
-  public getName = getName;
   public ensureDataset = ensureDataset;
 
   private _setInfo(info: Models.User) {

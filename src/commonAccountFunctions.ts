@@ -17,15 +17,6 @@ As a workaround for this, we use as-casting to User within the functions.
 This should not influence the interfaces of the functions.
 */
 
-/** @deprecated Use (await getInfo()).accountName instead. */
-export async function getName<T extends Account>(this: T) {
-  const name = (this as User)["_name"];
-  if (name) return name;
-  const info = await this.getInfo();
-  if (!info.accountName) throw getErr("This account has no name");
-  return info.accountName;
-}
-
 export async function addQuery<T extends Account>(this: T, query: Models.QueryCreate) {
   const app = (this as User)["_app"];
   const accountName = (await this.getInfo()).accountName;

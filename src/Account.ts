@@ -9,7 +9,6 @@ import Query from "./Query";
 import Story from "./Story";
 import { getErr } from "./utils/Error";
 export interface AccountBase {
-  getName(): Promise<string>;
   getInfo(): Promise<Models.Account>;
   getDataset(name: string): Promise<Dataset>;
   getDatasets(): AsyncIteratorHelper<Models.Dataset, Dataset>;
