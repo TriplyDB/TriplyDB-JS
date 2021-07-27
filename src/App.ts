@@ -1,12 +1,11 @@
-import Dataset from "./Dataset";
-
 import { Models, Routes } from "@triply/utils";
-
 import User from "./User";
-import { getUserOrOrg } from "./Account";
+import { Account, getUserOrOrg } from "./Account";
+import Org from "./Org";
 import jwt_decode from "jwt-decode";
 import { _get } from "./RequestHandler";
 import { getErr } from "./utils/Error";
+import AsyncIteratorHelper from "./utils/AsyncIteratorHelper";
 import * as calver from "@triply/utils/lib/calver";
 import { bootstrap } from "global-agent";
 
@@ -69,7 +68,7 @@ export default class App {
     if (!this._config.url) throw getErr("No domain specified in TriplyDB-JS configuration");
   }
 
-  public async getApiInfo() {
+  public async getInfo() {
     if (this._info) return this._info;
     this._info = await _get<Routes.info.Get>({
       app: this,
@@ -87,6 +86,23 @@ export default class App {
     }
     return getUserOrOrg(accountName, this);
   }
+  public getAccounts() {
+    return new AsyncIteratorHelper<Models.Account, Account>({
+      error: getErr(`Failed to get accounts`),
+      getErrorMessage: async () => `Failed to get all accounts.`,
+      app: this,
+      getUrl: async () => this["_config"].url! + `/accounts`,
+      mapResult: async (account) => {
+        // We're explicitly not passing the account object to the _info parameter as it's not the verbose version.
+        // On the TDB API, /accounts currently only returns simple information.
+        if (account.type === "user") {
+          return new User(this, account.accountName);
+        } else {
+          return new Org(this, account.accountName);
+        }
+      },
+    });
+  }
   public async getUser(accountName?: string) {
     if (!accountName) {
       return new User(this);
@@ -94,14 +110,10 @@ export default class App {
     return (await getUserOrOrg(accountName, this)).asUser();
   }
   public async getOrganization(accountName: string) {
-    return (await getUserOrOrg(accountName, this)).asOrg();
-  }
-  public async getDataset(accountName: string, dsName: string): Promise<Dataset> {
-    const account = await this.getAccount(accountName);
-    return new Dataset(this, account, dsName);
+    return (await getUserOrOrg(accountName, this)).asOrganization();
   }
   public async isCompatible(minimumVersion: string) {
-    const apiInfo = await this.getApiInfo();
+    const apiInfo = await this.getInfo();
     if (!apiInfo.version) throw getErr(`The TriplyDB API ${apiInfo.apiUrl} does not report its version.`);
     if (apiInfo.version === "unset") return true;
     if (calver.isSemver(apiInfo.version) && calver.isSemver(minimumVersion)) {

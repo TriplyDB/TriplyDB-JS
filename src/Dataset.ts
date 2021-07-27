@@ -37,9 +37,10 @@ export default class Dataset {
   private _app: App;
   private _info?: Models.Dataset;
   private _owner: Account;
-  private lastJob?: JobUpload;
+  private _lastJob?: JobUpload;
   private _name: string;
-  private allPrefixes: { [prefixLabel: string]: string } | undefined;
+  private _allPrefixes: { [prefixLabel: string]: string } | undefined;
+  public readonly type = "Dataset";
   constructor(app: App, owner: Account, datasetName: string, datasetInfo?: Models.Dataset) {
     this._app = app;
     this._name = datasetName;
@@ -94,15 +95,6 @@ export default class Dataset {
     return this;
   }
 
-  public async exists(): Promise<boolean> {
-    try {
-      await this.getInfo();
-      return true;
-    } catch (e) {
-      if (e.statusCode === 404) return false;
-      throw e;
-    }
-  }
   public async getGraph(graphNameOrIri: string | NamedNode) {
     const graphName = typeof graphNameOrIri === "string" ? graphNameOrIri : graphNameOrIri.value;
     for await (let graph of this.getGraphs()) {
@@ -122,11 +114,11 @@ export default class Dataset {
     return this;
   }
   private async _getDatasetPath(additionalPath?: string) {
-    const ownerName = await this._owner.getName();
+    const ownerName = (await this._owner.getInfo()).accountName;
     return "/datasets/" + ownerName + "/" + this._name + (additionalPath || "");
   }
   private async _getDatasetNameWithOwner() {
-    const ownerName = await this._owner.getName();
+    const ownerName = (await this._owner.getInfo()).accountName;
     return `${ownerName}/${this._name}`;
   }
   public async getInfo(refresh = false): Promise<Models.Dataset> {
@@ -318,7 +310,7 @@ export default class Dataset {
       data: { toAccount: toAccountName, name: newDatasetName },
     });
     const toAccount = await this._app.getAccount(toAccountName);
-    return toAccount.getDataset(newDs.name)._setInfo(newDs);
+    return (await toAccount.getDataset(newDs.name))._setInfo(newDs);
   }
 
   public async renameGraph(from: string, to: string) {
@@ -335,7 +327,7 @@ export default class Dataset {
       expectedResponseBody: "empty",
     });
     this._info = undefined;
-    this.lastJob = undefined;
+    this._lastJob = undefined;
   }
   public async setAvatar(pathBufferOrFile: string | Buffer | File) {
     const info = await this.getInfo();
@@ -387,9 +379,9 @@ export default class Dataset {
         datasetPath: await this._getDatasetPath(),
         datasetNameWithOwner: await this._getDatasetNameWithOwner(),
       });
-      this.lastJob = await job.create();
-      await this.lastJob.uploadFiles(...(files as string[] | File[]));
-      await this.lastJob.exec();
+      this._lastJob = await job.create();
+      await this._lastJob.uploadFiles(...(files as string[] | File[]));
+      await this._lastJob.exec();
       await this.getInfo(true); // This way we update things like the ds statement count
       return this;
     } finally {
@@ -439,7 +431,7 @@ export default class Dataset {
       if (overwriteAll && !(await this._app.isCompatible("2.2.7"))) {
         throw new IncompatibleError("Overwriting graphs is only supported by TriplyDB API version 2.2.7 or greater");
       }
-      const ownerName = await this._owner.getName();
+      const ownerName = (await this._owner.getInfo()).accountName;
       let info = await _post<Routes.datasets._account._dataset.jobs.Post>({
         errorWithCleanerStack: getErr(
           `Failed to delete import from ${urls.length} URLs in dataset ${await this._getDatasetNameWithOwner()}.`
@@ -527,7 +519,7 @@ export default class Dataset {
     }).create();
   }
 
-  async addDatasetPrefixes(newPrefixes: { [key: string]: string }) {
+  async addPrefixes(newPrefixes: { [key: string]: string }) {
     const asPairs = toPairs(newPrefixes);
     await _patch<Routes.prefixes.Patch>({
       errorWithCleanerStack: getErr(
@@ -547,7 +539,7 @@ export default class Dataset {
   /**
    * Remove prefixes defined at the dataset level
    */
-  async removeDatasetPrefixes(prefixLabels: string[]) {
+  async removePrefixes(prefixLabels: string[]) {
     const dsPath = await this._getDatasetPath();
     await Promise.all(
       prefixLabels.map(async (p) =>
@@ -573,15 +565,15 @@ export default class Dataset {
    * Getting _all_ prefixes (not just the dataset-scoped ones)
    */
   async getPrefixes(refresh = false): Promise<{ [prefixLabel: string]: string }> {
-    if (refresh || !this.allPrefixes) {
+    if (refresh || !this._allPrefixes) {
       const prefixes = await _get<Routes.datasets._account._dataset.prefixes.Get>({
         errorWithCleanerStack: getErr(`Failed to get prefixes of dataset ${await this._getDatasetNameWithOwner()}.`),
         app: this._app,
         path: await this._getDatasetPath("/prefixes"),
       });
-      this.allPrefixes = fromPairs(prefixes.map((p) => [p.prefixLabel, p.iri]));
+      this._allPrefixes = fromPairs(prefixes.map((p) => [p.prefixLabel, p.iri]));
     }
-    return this.allPrefixes;
+    return this._allPrefixes;
   }
 }
 const datasetsWithOngoingJob: { [dsId: string]: true } = {};

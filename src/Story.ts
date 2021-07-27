@@ -1,6 +1,6 @@
 import { Models, Routes } from "@triply/utils";
 import App from "./App";
-import { _get } from "./RequestHandler";
+import { _get, _delete } from "./RequestHandler";
 import { Account } from "./Account";
 import { getErr } from "./utils/Error";
 
@@ -8,7 +8,7 @@ export default class Story {
   private _app: App;
   private _info: Models.Story;
   private _owner: Account;
-
+  public readonly type = "Story";
   constructor(app: App, info: Models.Story, owner: Account) {
     this._app = app;
     this._info = info;
@@ -16,11 +16,11 @@ export default class Story {
   }
 
   private async _getPath() {
-    const ownerName = await this._owner.getName();
+    const ownerName = (await this._owner.getInfo()).accountName;
     return "/stories/" + ownerName + "/" + this._info.name;
   }
   private async _getStoryNameWithOwner() {
-    const ownerName = await this._owner.getName();
+    const ownerName = (await this._owner.getInfo()).accountName;
     return `${ownerName}/${this._info.name}`;
   }
   public async getInfo(refresh = false): Promise<Models.Story> {
@@ -31,5 +31,13 @@ export default class Story {
       path: await this._getPath(),
     });
     return this._info;
+  }
+  public async delete() {
+    await _delete<Routes.stories._account._story.Delete>({
+      errorWithCleanerStack: getErr(`Failed to delete story ${this._info.name}.`),
+      app: this._app,
+      path: await this._getPath(),
+      expectedResponseBody: "empty",
+    });
   }
 }

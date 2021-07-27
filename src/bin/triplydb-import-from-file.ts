@@ -58,11 +58,10 @@ const command = program
     await account.getInfo();
     let dataset: Dataset;
     try {
-      dataset = account.getDataset(options.dataset);
-      await dataset.getInfo();
+      dataset = await account.getDataset(options.dataset);
     } catch (e) {
       console.info("Creating dataset");
-      dataset = await account.addDataset({ name: options.dataset, accessLevel: "public" });
+      dataset = await account.addDataset(options.dataset, { accessLevel: "public" });
     }
 
     //Clear all linked data in this dataset

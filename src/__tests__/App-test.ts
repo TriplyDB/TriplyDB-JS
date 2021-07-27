@@ -13,7 +13,7 @@ describe("App", function () {
       return expect(
         App.get({
           url: "https://google.com",
-        }).getApiInfo()
+        }).getInfo()
       ).to.eventually.rejectedWith(
         "Failed to fetch API information of https://google.com. (Expected a JSON response, but got text/html"
       );
@@ -22,7 +22,7 @@ describe("App", function () {
       return expect(
         App.get({
           url: "https://googlsdfsdfsdfe.com",
-        }).getApiInfo()
+        }).getInfo()
       ).to.eventually.rejectedWith(
         "Failed to fetch API information of https://googlsdfsdfsdfe.com. (request to https://googlsdfsdfsdfe.com/info failed"
       );

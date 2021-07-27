@@ -2,7 +2,6 @@ import { Models, Routes } from "@triply/utils";
 import App from "./App";
 import { AccountBase } from "./Account";
 import Org from "./Org";
-import { MarkRequired } from "ts-essentials";
 import { _patch, _get, _post } from "./RequestHandler";
 import {
   addQuery,
@@ -16,10 +15,9 @@ import {
   getPinnedItems,
   setAvatar,
   getDataset,
-  exists,
+  addStory,
   update,
-  getName,
-  ensureDs,
+  ensureDataset,
 } from "./commonAccountFunctions";
 import { getErr } from "./utils/Error";
 
@@ -27,6 +25,7 @@ export default class User implements AccountBase {
   private _app: App;
   private _info?: Models.User;
   private _name?: string;
+  public readonly type = "User";
   //leave accountname empty to get account belonging to token
   public constructor(app: App, accountName?: string, info?: Models.User) {
     this._app = app;
@@ -34,20 +33,19 @@ export default class User implements AccountBase {
     this._info = info;
   }
   public getDataset = getDataset;
-  public exists = exists;
+  public getDatasets = getDatasets;
+  public addDataset = addDataset;
   public update = update;
   public setAvatar = setAvatar;
   public getQuery = getQuery;
   public getQueries = getQueries;
+  public addQuery = addQuery;
   public getStory = getStory;
   public getStories = getStories;
-  public addQuery = addQuery;
-  public getDatasets = getDatasets;
-  public addDataset = addDataset;
+  public addStory = addStory;
   public getPinnedItems = getPinnedItems;
   public pinItems = pinItems;
-  public getName = getName;
-  public ensureDs = ensureDs;
+  public ensureDataset = ensureDataset;
 
   private _setInfo(info: Models.User) {
     this._info = info;
@@ -57,7 +55,7 @@ export default class User implements AccountBase {
   public asUser(): User {
     return this;
   }
-  public asOrg(): Org {
+  public asOrganization(): Org {
     throw getErr(`${this._info?.accountName || "This"} is a user. Cannot fetch this as an organization.`);
   }
   public async getInfo(refresh = false) {
@@ -80,17 +78,18 @@ export default class User implements AccountBase {
   }
 
   public async createOrganization(
-    info: Omit<MarkRequired<Models.AccountUpdate, "accountName">, "pinnedDatasets">
+    accountName: string,
+    info?: Omit<Models.AccountUpdate, "pinnedDatasets" | "accountName">
   ): Promise<Org> {
     const newOrgJson = await _post<Routes.accounts._account.orgs.Post>({
       errorWithCleanerStack: getErr(
-        `Failed to create organization ${info.accountName} and set ${this._name} as it's owner.`
+        `Failed to create organization ${accountName} and set ${this._name} as it's owner.`
       ),
       app: this._app,
       path: "/accounts/" + this._name + "/orgs",
-      data: info,
+      data: { accountName, ...info },
     });
-    return new Org(this._app, newOrgJson.accountName as string, newOrgJson);
+    return new Org(this._app, newOrgJson.accountName, newOrgJson);
   }
 
   public async getOrganizations() {
@@ -99,9 +98,10 @@ export default class User implements AccountBase {
       app: this._app,
       path: "/accounts/" + this._name + "/orgs",
     });
-    return orgs.map((o) => {
-      if (!o.accountName) throw getErr("Expected accountname to exist for org");
-      return new Org(this._app, o.accountName, o);
+    return orgs.map((org) => {
+      // We're explicitly not passing the org object to the _info parameter as it's not the verbose version.
+      // On the TDB API, /accounts/_account/orgs currently only returns simple information.
+      return new Org(this._app, org.accountName);
     });
   }
 }

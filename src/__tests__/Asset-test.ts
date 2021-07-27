@@ -15,11 +15,11 @@ process.on("unhandledRejection", function (reason: any, p: any) {
 const datasetsToClean: Dataset[] = [];
 let testDsIndex = 0;
 const getNewTestDs = async (account: Account, accessLevel: "public" | "private") => {
-  const ds = await account.addDataset({
+  const ds = await account.addDataset(
     // keep the name short to avoid hitting the 40-character limit
-    name: `${CommonUnittestPrefix}-${testDsIndex++}`,
-    accessLevel: accessLevel,
-  });
+    `${CommonUnittestPrefix}-${testDsIndex++}`,
+    { accessLevel: accessLevel }
+  );
   datasetsToClean.push(ds);
   return ds;
 };

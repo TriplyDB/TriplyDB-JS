@@ -52,11 +52,10 @@ const command = program
 
     let dataset: Dataset;
     try {
-      dataset = account.getDataset(options.dataset);
-      await dataset.getInfo();
+      dataset = await account.getDataset(options.dataset);
     } catch {
-      console.info(`> Creating dataset ${options.dataset} in account ${await account.getName()}`);
-      dataset = await account.addDataset({ name: options.dataset, accessLevel: "public" });
+      console.info(`> Creating dataset ${options.dataset} in account ${(await account.getInfo()).accountName}`);
+      dataset = await account.addDataset(options.dataset, { accessLevel: "public" });
     }
 
     console.info(`> Uploading ${files.length} files`);
@@ -78,7 +77,7 @@ const command = program
     console.info(
       `> Finished uploading ${files.length} ${files.length > 2 ? "files" : "file"} to dataset ${
         options.dataset
-      } in account ${await account.getName()}`
+      } in account ${(await account.getInfo()).accountName}`
     );
   });
 

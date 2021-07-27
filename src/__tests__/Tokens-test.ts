@@ -24,7 +24,7 @@ describe("Tokens", function () {
     readAccount = await App.get({ url: url, token: readToken }).getUser();
     writeAccount = await App.get({ url: url, token: writeToken }).getUser();
     accountAccount = await App.get({ url: url, token: accountToken }).getUser();
-    accountName = (await readAccount.getInfo()).accountName as string;
+    accountName = (await readAccount.getInfo()).accountName;
     await resetUnittestAccount(accountAccount);
   });
 
@@ -46,7 +46,7 @@ describe("Tokens", function () {
   describe("Create and delete dataset", function () {
     const createDeleteDsFunction = (account: Account) =>
       account
-        .addDataset({ name: `${CommonUnittestPrefix}-test-ds`, accessLevel: "private" })
+        .addDataset(`${CommonUnittestPrefix}-test-ds`, { accessLevel: "private" })
         .then((ds) => ds.update({ name: "its-a-ds" }))
         .then((ds) => ds.delete());
     it("read-token", async function () {
@@ -63,7 +63,7 @@ describe("Tokens", function () {
   });
 
   it("Read own private dataset with read-only token", async function () {
-    const newDs = await writeAccount.addDataset({ name: `${CommonUnittestPrefix}-test-ds`, accessLevel: "private" });
+    const newDs = await writeAccount.addDataset(`${CommonUnittestPrefix}-test-ds`, { accessLevel: "private" });
     let datasets: Dataset[] = [];
     for await (let ds of readAccount.getDatasets()) ds && datasets.push(ds);
     const newDsId = (await newDs.getInfo()).id;

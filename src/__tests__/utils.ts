@@ -26,7 +26,7 @@ export async function resetUnittestAccount(user: User) {
   await removeDatasetsOfAccount(user);
   const orgs = await user.getOrganizations();
   for (const org of orgs) {
-    throwErrorWhenNameNotPrefixed(await org.getName());
+    throwErrorWhenNameNotPrefixed((await org.getInfo()).accountName);
     await org.delete();
   }
 
