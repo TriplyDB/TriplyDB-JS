@@ -185,7 +185,14 @@ export default class Asset {
         onProgress: (_bytesUploaded: number, _bytesTotal: number) => {},
         onSuccess: (stringifiedJson: string) => {
           if (stringifiedJson === "") return reject(getErr("No response or upload already finished"));
-          resolve(JSON.parse(stringifiedJson));
+          try {
+            resolve(JSON.parse(stringifiedJson));
+          } catch (e) {
+            if (e instanceof SyntaxError) {
+              return reject(getErr(`Unexpected response: ${stringifiedJson}`).setCause(e));
+            }
+            return reject(e);
+          }
         },
       });
       upload.start();
