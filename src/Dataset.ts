@@ -6,7 +6,7 @@ import debug from "debug";
 import Service from "./Service";
 const log = debug("triply:triplydb-js:upload");
 // const tus = require("@triply/tus-js-client");
-import tus from 'tus-js-client'
+import tus from "tus-js-client";
 import md5 from "md5";
 import { tmpdir } from "os";
 import * as stream from "stream";
@@ -646,7 +646,7 @@ export class JobUpload {
   }
 
   private async uploadFile(fileOrPath: string | File) {
-    let rs: ReadStream | File;
+    let rs: stream.PassThrough | File;
     let fileSize: number;
     let fileName: string;
     if (typeof fileOrPath === "string") {
@@ -654,7 +654,9 @@ export class JobUpload {
       if (fs.createReadStream === undefined) {
         throw getErr('"fs" is not loaded in this environment, use a "File" instead');
       }
-      rs = fs.createReadStream(fileOrPath);
+      const rsa = fs.createReadStream(fileOrPath);
+      rs = new stream.PassThrough();
+      rsa.pipe(rs);
       fileSize = (await fs.stat(fileOrPath)).size;
       fileName = fileOrPath;
     } else {
