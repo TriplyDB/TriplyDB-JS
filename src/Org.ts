@@ -75,7 +75,7 @@ export default class Org implements AccountBase {
 
   public async getMembers() {
     const orgName = (await this.getInfo()).accountName;
-    return await _get<Routes.accounts._account.members.Get>({
+    return _get<Routes.accounts._account.members.Get>({
       errorWithCleanerStack: getErr(`Failed to get members of organization ${orgName}.`),
       app: this._app,
       path: `/accounts/${orgName}/members`,
@@ -84,7 +84,7 @@ export default class Org implements AccountBase {
   public async addMember(user: User | string, role: Models.OrgRole = "member") {
     const orgName = (await this.getInfo()).accountName;
     const memberName = typeof user === "string" ? user : (await user.getInfo()).accountName;
-    return await _post<Routes.accounts._account.members.Post>({
+    return _post<Routes.accounts._account.members.Post>({
       errorWithCleanerStack: getErr(`Failed to add ${user} as member to organization ${this._name}.`),
       app: this._app,
       data: { accountName: memberName, role },

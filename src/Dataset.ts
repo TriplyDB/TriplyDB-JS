@@ -509,7 +509,7 @@ export default class Dataset {
   }
 
   async addService(type: Models.ServiceTypeV1, name: string, reasoner?: Models.JenaReasoners) {
-    return await new Service({
+    return new Service({
       app: this._app,
       datasetPath: await this._getDatasetPath(),
       datasetNameWithOwner: await this._getDatasetNameWithOwner(),
@@ -592,7 +592,7 @@ async function waitForJobToFinish(app: App, jobUrl: string, dsId: string) {
     return check();
   };
   try {
-    return check();
+    return await check();
   } finally {
     delete datasetsWithOngoingJob[dsId];
   }
