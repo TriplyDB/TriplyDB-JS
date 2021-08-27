@@ -32,10 +32,10 @@ describe("Tokens", function () {
     const renameFunction = (account: User, originalAccountname: string) =>
       account.update({ accountName: "joe" }).then(() => account.update({ accountName: originalAccountname }));
     it("read-token", async function () {
-      expect(async () => renameFunction(readAccount, accountName)).to.throw;
+      await expect(async () => renameFunction(readAccount, accountName)).should.be.rejected;
     });
     it("write-token", async function () {
-      expect(async () => renameFunction(writeAccount, accountName)).to.throw;
+      await expect(async () => renameFunction(writeAccount, accountName)).should.be.rejected;
     });
     //Skipped. This is a test that is difficult to isolate and run on production
     it.skip("account-token", async function () {
