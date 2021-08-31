@@ -24,12 +24,22 @@ import Graph, { SUPPORTED_EXTENSIONS } from "./Graph";
 import { stringify as stringifyQueryObj } from "query-string";
 import statuses from "http-status-codes";
 import fetch from "cross-fetch";
-import { NamedNode } from "rdf-js";
+import { NamedNode, Quad_Object } from "rdf-js";
+import { stringify as stringifyQueryObj } from "query-string";
+
 interface JobDefaultsConfig {
   defaultGraphName?: string;
   baseIRI?: string;
   overwriteAll?: boolean;
 }
+
+export interface Pattern {
+  subject?: PatternTerm;
+  predicate?: PatternTerm;
+  object?: PatternTerm;
+  graph?: PatternTerm;
+}
+export type PatternTerm = Quad_Object | undefined;
 
 type DsResourceType = "assets" | "graphs" | "services";
 type ImportOpts = { fromDataset: Dataset; graphs?: { [from: string]: string }; overwrite?: boolean };
@@ -286,6 +296,21 @@ export default class Dataset {
     });
   }
 
+  protected async statements(pattern: Pattern) {
+    const parser = new n3.Parser();
+    stringifyQueryObj;
+    return new AsyncIteratorHelper<n3.Quad, n3.Quad>({
+      ...iteratorOptions,
+      mapResult: async (result) => result,
+      getUrl: async () =>
+        this._app["_config"].url + ((await this._getDatasetPath("/statements.nt?")) + variablesInUrlString),
+      parsePage: async (page: string) => {
+        if (page === "OK") return []; // empty page (jena);
+        // empty page (virtuoso) is a valid empty turtle doc, no check needed.
+        return parser.parse(page);
+      },
+    });
+  }
   public async update(config: Models.UpdateDataset) {
     this._setInfo(
       await _patch<Routes.datasets._account._dataset.Patch>({
