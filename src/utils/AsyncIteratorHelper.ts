@@ -118,7 +118,7 @@ export default class AsyncIteratorHelper<ResultType, OutputClass> implements Asy
     }
     return results;
   }
-  public [Symbol.asyncIterator]() {
+  public [Symbol.asyncIterator](): AsyncIterator<OutputClass> {
     return {
       next: async () => {
         const info = await this._get();

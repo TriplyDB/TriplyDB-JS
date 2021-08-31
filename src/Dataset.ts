@@ -24,7 +24,7 @@ import Graph, { SUPPORTED_EXTENSIONS } from "./Graph";
 import { stringify as stringifyUrlParams } from "query-string";
 import statuses from "http-status-codes";
 import fetch from "cross-fetch";
-import { NamedNode, Quad_Object } from "rdf-js";
+import { NamedNode, Term } from "rdf-js";
 import { termToString } from "rdf-string";
 
 interface JobDefaultsConfig {
@@ -39,7 +39,7 @@ export interface Pattern {
   object?: PatternTerm;
   graph?: PatternTerm;
 }
-export type PatternTerm = Quad_Object | undefined;
+export type PatternTerm = Term | undefined;
 
 type DsResourceType = "assets" | "graphs" | "services";
 type ImportOpts = { fromDataset: Dataset; graphs?: { [from: string]: string }; overwrite?: boolean };
