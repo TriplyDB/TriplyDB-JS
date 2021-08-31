@@ -110,6 +110,34 @@ describe("Dataset", function () {
       expect(dsInfo.avatarUrl).to.contain("imgs/avatars/d/");
     });
   });
+  describe("Getting statements", function () {
+    this.timeout(15000);
+    let testDs: Dataset;
+    before(async function () {
+      await resetUnittestAccount(user);
+      testDs = await getNewTestDs(user, "private");
+      await testDs.importFromFiles(
+        buildPathToSrcPath(__dirname, "__data__", "test102.nt"),
+        buildPathToSrcPath(__dirname, "__data__", "test103.nq")
+      );
+    });
+    it("without constraints", async function () {
+      let i = 0;
+      for await (const _statement of testDs.statements({})) {
+        i++;
+      }
+      expect(i).to.equal(104);
+    });
+    it("with a certain subject", async function () {
+      let i = 0;
+      for await (const _statement of testDs.statements({
+        subject: DataFactory.namedNode("http://data.socialhistory.org/vocab/hisco/entry/"),
+      })) {
+        i++;
+      }
+      expect(i).to.equal(8);
+    });
+  });
   describe("Manage prefixes", function () {
     let testDs: Dataset;
     before(async function () {

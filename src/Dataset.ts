@@ -14,18 +14,18 @@ import * as zlib from "zlib";
 import * as n3 from "n3";
 import pumpify from "pumpify";
 import { Account } from "./Account";
-import { fromPairs, toPairs, pick, size, uniq, zipObject } from "lodash";
+import { fromPairs, toPairs, pick, size, uniq, zipObject, mapValues } from "lodash";
 import { TriplyDbJsError, getErr, IncompatibleError } from "./utils/Error";
 import { _get, _delete, _patch, _post, handleFetchAsStream, getUrl, getFetchOpts } from "./RequestHandler";
 import { ReadStream } from "fs-extra";
 import AsyncIteratorHelper from "./utils/AsyncIteratorHelper";
 import Asset from "./Asset";
 import Graph, { SUPPORTED_EXTENSIONS } from "./Graph";
-import { stringify as stringifyQueryObj } from "query-string";
+import { stringify as stringifyUrlParams } from "query-string";
 import statuses from "http-status-codes";
 import fetch from "cross-fetch";
 import { NamedNode, Quad_Object } from "rdf-js";
-import { stringify as stringifyQueryObj } from "query-string";
+import { termToString } from "rdf-string";
 
 interface JobDefaultsConfig {
   defaultGraphName?: string;
@@ -296,14 +296,20 @@ export default class Dataset {
     });
   }
 
-  protected async statements(pattern: Pattern) {
+  public statements(pattern: Pattern) {
     const parser = new n3.Parser();
-    stringifyQueryObj;
+    const urlParams = stringifyUrlParams(mapValues(pattern, (pattern) => termToString(pattern)));
+
+    const iteratorOptions = {
+      error: getErr(`Failed to run statements query`),
+      getErrorMessage: async () => `Failed to get results for statements of ${this}`,
+      app: this._app,
+    };
+
     return new AsyncIteratorHelper<n3.Quad, n3.Quad>({
       ...iteratorOptions,
       mapResult: async (result) => result,
-      getUrl: async () =>
-        this._app["_config"].url + ((await this._getDatasetPath("/statements.nt?")) + variablesInUrlString),
+      getUrl: async () => this._app["_config"].url + ((await this._getDatasetPath("/statements.nt?")) + urlParams),
       parsePage: async (page: string) => {
         if (page === "OK") return []; // empty page (jena);
         // empty page (virtuoso) is a valid empty turtle doc, no check needed.
@@ -311,6 +317,7 @@ export default class Dataset {
       },
     });
   }
+
   public async update(config: Models.UpdateDataset) {
     this._setInfo(
       await _patch<Routes.datasets._account._dataset.Patch>({
@@ -503,7 +510,7 @@ export default class Dataset {
         this._app["_config"].url +
         (await this._getDatasetPath("/statements")) +
         "?" +
-        stringifyQueryObj({ limit: 50, ...pick(payload, "subject", "predicate", "object", "graph") }),
+        stringifyUrlParams({ limit: 50, ...pick(payload, "subject", "predicate", "object", "graph") }),
     });
   }
   public async uploadAsset(fileOrPath: string | File, assetName?: string): Promise<Asset> {

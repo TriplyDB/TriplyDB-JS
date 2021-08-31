@@ -65,6 +65,7 @@
     "parse-link-header": "^1.0.1",
     "pumpify": "^2.0.1",
     "query-string": "^7.0.1",
+    "rdf-string": "^1.6.0",
     "semver": "^7.3.4",
     "sparqljs": "^3.4.2",
     "ts-essentials": "^7.0.0"
