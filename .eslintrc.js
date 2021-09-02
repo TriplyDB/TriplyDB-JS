@@ -13,7 +13,10 @@ module.exports = {
   },
   plugins: ["@typescript-eslint", "jest", "lodash"],
   rules: {
-    ...(expensive ? { "@typescript-eslint/no-floating-promises": errLevel } : {}),
+    "no-return-await": "off", // Disable this rule so that "@typescript-eslint/return-await" works correctly.
+    ...(expensive
+      ? { "@typescript-eslint/no-floating-promises": errLevel, "@typescript-eslint/return-await": errLevel }
+      : {}),
     "no-console": [
       errLevel,
       { allow: ["time", "timeEnd", "trace", "warn", "error", "info", "groupEnd", "group", "groupCollapsed"] },
