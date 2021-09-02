@@ -1,10 +1,6 @@
 # This ignore file uses a whitelist, to avoid publishing private information by accident
 # So, start by ignoring everything (the wildcard)
 *
-
-
-!/src/**
 !/lib/**
 !/package.json
-!/bin/**
 !/README.md
