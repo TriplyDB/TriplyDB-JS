@@ -220,7 +220,7 @@ export async function ensureDataset<T extends Account>(this: T, name: string, ne
       );
     }
     return ds;
-  } catch (e) {
+  } catch (e: any) {
     if (e.statusCode !== 404) throw e;
   }
   return this.addDataset(name, newDs);

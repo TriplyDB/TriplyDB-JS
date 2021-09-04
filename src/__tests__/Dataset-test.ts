@@ -56,7 +56,7 @@ describe("Dataset", function () {
     it("create dataset with invalid name", async function () {
       try {
         await user.addDataset("____", { accessLevel: "private" });
-      } catch (e) {
+      } catch (e: any) {
         expect(e.message).to.contain("A dataset name can only contain");
         return;
       }
@@ -72,10 +72,8 @@ describe("Dataset", function () {
   });
   describe("Ensuring dataset", function () {
     it("Should create when not already existing", async function () {
-      const t = Date.now();
       const ensuredDs = await user.ensureDataset(`${CommonUnittestPrefix}-ensured`, { license: "PDDL" });
       const dsInfo = await ensuredDs.getInfo();
-      expect(new Date(dsInfo.createdAt).getTime()).to.be.greaterThan(t);
       expect(dsInfo.license).to.equal("PDDL");
     });
     it("Should get existing when already existing", async function () {

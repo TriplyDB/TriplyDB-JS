@@ -102,7 +102,7 @@ async function handleFetchAsPromise<T extends HttpMethodTemplate>(
   let response: Response;
   try {
     response = await fetch(url, reqOpts);
-  } catch (e) {
+  } catch (e: any) {
     // This error only occurs when there are network errors and such
     throw opts.errorWithCleanerStack.addContext(context).setCause(e);
   }
@@ -131,7 +131,7 @@ async function handleFetchAsPromise<T extends HttpMethodTemplate>(
   if (hasJsonResponse) {
     try {
       result = await response.json();
-    } catch (e) {
+    } catch (e: any) {
       // We failed to parse the response as json.
       // This should never happen. If it does, there's probably a bug in our API
       throw opts.errorWithCleanerStack.addContext(context).setCause(e);
@@ -157,7 +157,7 @@ export async function handleFetchAsStream<T extends HttpMethodTemplate>(
   let response: Response;
   try {
     response = await fetch(url, reqOpts);
-  } catch (e) {
+  } catch (e: any) {
     // This error only occurs when there are network errors and such
     throw opts.errorWithCleanerStack.addContext(errorContext).setCause(e);
   }
@@ -180,7 +180,7 @@ export async function handleFetchAsStream<T extends HttpMethodTemplate>(
     //We're not expecing json here, so this is probably an error response (with json in it)
     try {
       jsonResult = await response.json();
-    } catch (e) {
+    } catch (e: any) {
       throw opts.errorWithCleanerStack.addContext(errorContext).setCause(e);
     }
   }

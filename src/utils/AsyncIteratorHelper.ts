@@ -39,7 +39,7 @@ export default class AsyncIteratorHelper<ResultType, OutputClass> implements Asy
         if (cached) {
           return cached;
         }
-      } catch (e) {
+      } catch (e: any) {
         if ("message" in e) {
           e.message = "Error while reading from the cache: " + e.message;
         }
@@ -99,7 +99,7 @@ export default class AsyncIteratorHelper<ResultType, OutputClass> implements Asy
         throw this._config.error;
       }
       return results;
-    } catch (e) {
+    } catch (e: any) {
       if (e instanceof TriplyDbJsError) throw e;
       this._config.error.message = await this._config.getErrorMessage();
       throw this._config.error.addContext({ method: "GET", url }).setCause(e);
