@@ -5,7 +5,7 @@ import { wait } from "./utils";
 import debug from "debug";
 import Service from "./Service";
 const log = debug("triply:triplydb-js:upload");
-const tus = require("@triply/tus-js-client");
+import * as tus from "@triply/tus-js-client";
 import md5 from "md5";
 import { tmpdir } from "os";
 import * as stream from "stream";
@@ -656,7 +656,6 @@ export class JobUpload {
     return new Promise<void>((resolve, reject) => {
       const upload = new tus.Upload(rs, {
         endpoint: this.jobUrl + "/add",
-        resume: true,
         metadata: {
           filename: fileName,
         },
@@ -666,9 +665,7 @@ export class JobUpload {
         chunkSize: 5 * 1024 * 1024,
         uploadSize: fileSize,
         retryDelays: [2000, 5000, 10000, 40000, 50000],
-        onError: function (error: any) {
-          reject(error);
-        },
+        onError: reject,
         onProgress: function (_bytesUploaded: number, _bytesTotal: number) {},
         onSuccess: function () {
           log("finished file " + fileOrPath);

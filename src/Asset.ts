@@ -1,4 +1,5 @@
 import { Models, Routes } from "@triply/utils";
+import * as tus from "@triply/tus-js-client";
 import Dataset from "./Dataset";
 import App from "./App";
 import * as fs from "fs-extra";
@@ -10,7 +11,6 @@ import { getErr } from "./utils/Error";
 import { ReadStream } from "fs-extra";
 import { omit, last } from "lodash";
 
-const tus = require("@triply/tus-js-client");
 export default class Asset {
   private _info: Models.Asset;
   private _app: App;
@@ -171,17 +171,22 @@ export default class Asset {
       fileSize = opts.fileOrPath.size;
     }
 
+    const metadata: {
+      filename?: string;
+      versionOf?: string;
+    } = {};
+    if (opts.assetName) metadata.filename = opts.assetName;
+    if (opts.versionOf) metadata.versionOf = opts.versionOf;
     const info = await opts.dataset.getInfo();
     return new Promise<Models.Asset>((resolve, reject) => {
       const upload = new tus.Upload(rs, {
         endpoint: `${opts.dataset["_app"]["_config"].url}/datasets/${info.owner.accountName}/${info.name}/assets/add`,
-        resume: true,
-        metadata: { filename: opts.assetName, versionOf: opts.versionOf },
+        metadata,
         headers: { Authorization: "Bearer " + opts.dataset["_app"]["_config"].token },
         chunkSize: 5 * 1024 * 1024,
         retryDelays: [2000, 3000, 5000, 10000, 20000],
         uploadSize: fileSize,
-        onError: (error: any) => reject(error),
+        onError: reject,
         onProgress: (_bytesUploaded: number, _bytesTotal: number) => {},
         onSuccess: (stringifiedJson: string) => {
           if (stringifiedJson === "") return reject(getErr("No response or upload already finished"));
