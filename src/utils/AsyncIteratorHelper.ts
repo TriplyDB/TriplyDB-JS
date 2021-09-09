@@ -12,7 +12,7 @@ export interface AsyncConfig<ResultType, OutputType> {
   getUrl: () => Promise<string>;
   mapResult: (resource: ResultType) => Promise<OutputType>;
   app: App;
-  error: TriplyDbJsError;
+  potentialFutureError: TriplyDbJsError;
   getErrorMessage: () => Promise<string>;
   parsePage?: (page: string) => Promise<ResultType[]>;
   cache?: Cache;
@@ -60,16 +60,16 @@ export default class AsyncIteratorHelper<ResultType, OutputClass> implements Asy
       statusText: res.statusText,
     };
 
-    this._config.error.statusCode = result.statusCode;
+    this._config.potentialFutureError.statusCode = result.statusCode;
     if (result.statusCode >= 400) {
       let response: {} | undefined;
       if (result.contentType && result.contentType.indexOf("application/json") === 0) {
         response = JSON.parse(result.responseText);
       }
-      this._config.error.message = await this._config.getErrorMessage();
+      this._config.potentialFutureError.message = await this._config.getErrorMessage();
       let context: any = { method: "GET", url };
       if (response) context.response = response;
-      throw this._config.error.addContext(context).setCause(result, response);
+      throw this._config.potentialFutureError.addContext(context).setCause(result, response);
     }
 
     if (this._config.cache) {
@@ -94,15 +94,16 @@ export default class AsyncIteratorHelper<ResultType, OutputClass> implements Asy
       try {
         results = await parsePage(pageResponseInfo.responseText);
       } catch (e) {
-        this._config.error.message = (await this._config.getErrorMessage()) + ": Failed to parse response.";
-        this._config.error.addContext({ method: "GET", url }).setCause(pageResponseInfo, results);
-        throw this._config.error;
+        this._config.potentialFutureError.message =
+          (await this._config.getErrorMessage()) + ": Failed to parse response.";
+        this._config.potentialFutureError.addContext({ method: "GET", url }).setCause(pageResponseInfo, results);
+        throw this._config.potentialFutureError;
       }
       return results;
     } catch (e: any) {
       if (e instanceof TriplyDbJsError) throw e;
-      this._config.error.message = await this._config.getErrorMessage();
-      throw this._config.error.addContext({ method: "GET", url }).setCause(e);
+      this._config.potentialFutureError.message = await this._config.getErrorMessage();
+      throw this._config.potentialFutureError.addContext({ method: "GET", url }).setCause(e);
     }
   }
 

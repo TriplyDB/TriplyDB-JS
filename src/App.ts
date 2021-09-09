@@ -88,7 +88,7 @@ export default class App {
   }
   public getAccounts() {
     return new AsyncIteratorHelper<Models.Account, Account>({
-      error: getErr(`Failed to get accounts`),
+      potentialFutureError: getErr(`Failed to get accounts`),
       getErrorMessage: async () => `Failed to get all accounts.`,
       app: this,
       getUrl: async () => this["_config"].url! + `/accounts`,

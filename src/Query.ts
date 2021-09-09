@@ -126,7 +126,7 @@ export default class Query {
     });
 
     const iteratorOptions = {
-      error: getErr(`Failed to run query`),
+      potentialFutureError: getErr(`Failed to run query`),
       getErrorMessage: async () => `Failed to get results for query ${await this.getInfo().then((i) => i.name)}.`,
       app: this._app,
       cache: opts?.cache,

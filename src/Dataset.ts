@@ -50,7 +50,7 @@ export default class Dataset {
 
   public getServices() {
     return new AsyncIteratorHelper<Models.ServiceMetadataV1, Service>({
-      error: getErr(`Failed to get services`),
+      potentialFutureError: getErr(`Failed to get services`),
       getErrorMessage: async () => `Failed to get services for dataset ${await this._getDatasetNameWithOwner()}.`,
       app: this._app,
       getUrl: async () => this._app["_config"].url + (await this._getDatasetPath("/services")),
@@ -147,7 +147,7 @@ export default class Dataset {
   }
   public getAssets() {
     return new AsyncIteratorHelper<Models.Asset, Asset>({
-      error: getErr(`Failed to get assets`),
+      potentialFutureError: getErr(`Failed to get assets`),
       getErrorMessage: async () => `Failed to get assets of dataset ${await this._getDatasetNameWithOwner()}.`,
       app: this._app,
       getUrl: async () => this._app["_config"].url + (await this._getDatasetPath("/assets")),
@@ -156,7 +156,7 @@ export default class Dataset {
   }
   public getGraphs() {
     return new AsyncIteratorHelper<Models.Graph, Graph>({
-      error: getErr(`Failed to get graphs`),
+      potentialFutureError: getErr(`Failed to get graphs`),
       getErrorMessage: async () => `Failed to get graphs of dataset ${await this._getDatasetNameWithOwner()}.`,
       app: this._app,
       getUrl: async () => this._app["_config"].url + (await this._getDatasetPath("/graphs")),
@@ -470,7 +470,7 @@ export default class Dataset {
   }
   public getStatements(payload: { subject?: string; predicate?: string; object?: string; graph?: string }) {
     return new AsyncIteratorHelper<Models.Statement, Models.Statement>({
-      error: getErr(`Failed to get statements`),
+      potentialFutureError: getErr(`Failed to get statements`),
       getErrorMessage: async () => `Failed to get statements of dataset ${await this._getDatasetNameWithOwner()}.`,
       app: this._app,
       mapResult: async (info) => info,

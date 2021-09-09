@@ -62,7 +62,7 @@ export function getQueries<T extends Account>(this: T): AsyncIteratorHelper<Mode
   const app = (this as User)["_app"];
 
   return new AsyncIteratorHelper<Models.Query, Query>({
-    error: getErr(`Failed to get queries`),
+    potentialFutureError: getErr(`Failed to get queries`),
     getErrorMessage: async () => `Failed to get queries of ${(await this.getInfo()).accountName}`,
     app: app,
     getUrl: async () => app["_config"].url! + `/queries/${(await this.getInfo()).accountName}`,
@@ -84,7 +84,7 @@ export async function getStory<T extends Account>(this: T, name: string) {
 export function getStories<T extends Account>(this: T): AsyncIteratorHelper<Models.Story, Story> {
   const app = (this as User)["_app"];
   return new AsyncIteratorHelper<Models.Story, Story>({
-    error: getErr(`Failed to get stories`),
+    potentialFutureError: getErr(`Failed to get stories`),
     getErrorMessage: async () => `Failed to get stories of ${(await this.getInfo()).accountName}`,
     app: app,
     getUrl: async () => app["_config"].url! + `/stories/${(await this.getInfo()).accountName}`,
@@ -106,7 +106,7 @@ export async function getDataset<T extends Account>(this: T, ds: string) {
 export function getDatasets<T extends Account>(this: T) {
   const app = (this as User)["_app"];
   return new AsyncIteratorHelper<Models.Dataset, Dataset>({
-    error: getErr(`Failed to get datasets`),
+    potentialFutureError: getErr(`Failed to get datasets`),
     getErrorMessage: async () => `Failed to get datasets of ${(await this.getInfo()).accountName}`,
     app: app,
     getUrl: async () => app["_config"].url! + `/datasets/${(await this.getInfo()).accountName}`,
