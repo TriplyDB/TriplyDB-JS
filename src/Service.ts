@@ -6,7 +6,7 @@ import { getErr } from "./utils/Error";
 
 export default class Service {
   private _app: App;
-  private _info?: Models.Service;
+  private _info?: Models.ServiceV1;
   private _datasetPath: string;
   private _datasetNameWithOwner: string;
   private _name: string;
@@ -29,9 +29,9 @@ export default class Service {
     this._reasoner = conf.reasoner;
   }
 
-  public async getInfo(refresh = false): Promise<Models.Service> {
+  public async getInfo(refresh = false): Promise<Models.ServiceV1> {
     if (!refresh && this._info) return this._info;
-    this._info = await _get<Routes.datasets._account._dataset.services._serviceName.Get>({
+    this._info = await _get<Routes.datasets._account._dataset.servicesV1._serviceName.Get>({
       errorWithCleanerStack: getErr(
         `Failed to get information of service ${this._name} in dataset ${this._datasetNameWithOwner}.`
       ),
@@ -47,7 +47,7 @@ export default class Service {
   }
 
   public async delete() {
-    this._info = await _delete<Routes.datasets._account._dataset.services._serviceName.Get>({
+    this._info = await _delete<Routes.datasets._account._dataset.servicesV1._serviceName.Get>({
       errorWithCleanerStack: getErr(`Failed to delete service ${this._name} of dataset ${this._datasetNameWithOwner}.`),
       app: this._app,
       path: await this._getServicePath(),

@@ -54,7 +54,7 @@ export default class Dataset {
       getErrorMessage: async () => `Failed to get services for dataset ${await this._getDatasetNameWithOwner()}.`,
       app: this._app,
       getUrl: async () => this._app["_config"].url + (await this._getDatasetPath("/services")),
-      mapResult: async (info: Models.Service) => {
+      mapResult: async (info: Models.ServiceV1) => {
         return new Service({
           app: this._app,
           datasetPath: await this._getDatasetPath(),
