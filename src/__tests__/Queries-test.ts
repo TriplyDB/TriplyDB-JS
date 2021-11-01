@@ -129,7 +129,7 @@ WHERE { <http://blaaa> ?p ?o. }
         expect(quads.length).to.equal(await constructQuery.getInfo().then((info) => info.dataset?.statements));
       });
 
-      it.skip("Should support query variables in construct-queries", async function () {
+      it("Should support query variables in construct-queries", async function () {
         expect((await constructQuery.results({ s: "s:s1" }).statements().toArray()).length).to.equal(1);
       });
 
@@ -224,7 +224,7 @@ WHERE { <http://blaaa> ?p ?o. }
         expect(count).to.equal(0);
       });
 
-      it.skip("Should support query variables in select-queries", async function () {
+      it("Should support query variables in select-queries", async function () {
         const results = await selectQuery.results({ s: "s:s1" }).bindings().toArray();
         expect(results.length).to.equal(1);
         expect(results[0]["p"]).to.not.be.undefined;
