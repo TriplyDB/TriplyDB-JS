@@ -56,7 +56,7 @@ describe("Queries", function () {
   });
 
   // these tests are slow (~2 min combined)
-  describe.skip("Query results", function () {
+  describe("Query results", function () {
     const DATA_SIZE = 10100; // enough for >1 page
     let dataset: Dataset;
     before(async function () {
@@ -103,7 +103,7 @@ WHERE { <http://blaaa> ?p ?o. }
           );
         });
       });
-      it.skip("Should query a saved construct-query (quad iterator)", async function () {
+      it("Should query a saved construct-query (quad iterator)", async function () {
         this.timeout(60000);
         const expectedStatements = await constructQuery.getInfo().then((info) => info.dataset?.statements);
         let count = 0;
@@ -119,7 +119,7 @@ WHERE { <http://blaaa> ?p ?o. }
         expect(count).to.equal(asArrayCount);
       });
 
-      it.skip("Should query a saved construct-query (to file)", async function () {
+      it("Should query a saved construct-query (to file)", async function () {
         this.timeout(30000);
         const targetFile = path.resolve(tmpDir, "query-test-results.nt");
         await constructQuery.results().statements().toFile(targetFile);
@@ -159,7 +159,7 @@ WHERE { <http://blaaa> ?p ?o. }
         });
       });
 
-      it.skip("Should query a saved select-query (statements iterator)", async function () {
+      it("Should query a saved select-query (statements iterator)", async function () {
         this.timeout(60000);
         const expectedStatements = await selectQuery.getInfo().then((info) => info.dataset?.statements);
         let count = 0;
@@ -174,7 +174,7 @@ WHERE { <http://blaaa> ?p ?o. }
           .then((a) => a.length);
         expect(count).to.equal(asArrayCount);
       });
-      it.skip("Should cache page when needed", async function () {
+      it("Should cache page when needed", async function () {
         this.timeout(60000);
 
         await fs.remove(tmpDir);
