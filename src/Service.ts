@@ -1,12 +1,14 @@
 import { Models, Routes } from "@triply/utils";
 import App from "./App";
 import { wait } from "./utils";
-import { _get, _post, _delete } from "./RequestHandler";
+import { _get, _post, _delete, _patch } from "./RequestHandler";
 import { getErr, TriplyDbJsError } from "./utils/Error";
+import { ServiceMetadataV1 } from "@triply/utils/lib/Models";
 
 export default class Service {
   private _app: App;
   private _info?: Models.ServiceV1 | Models.ServiceMetadataV2;
+  private _graphs?: Models.ServiceGraphInfoV2[];
   private _datasetPath: string;
   private _datasetNameWithOwner: string;
   private _name: string;
@@ -49,6 +51,42 @@ export default class Service {
     return !info.outOfSync;
   }
 
+  isV1Service() {
+    return this._type === "sparql-jena" || this._type === "sparql" || this._type === "elasticsearch";
+  }
+
+  public async rename(newName: string): Promise<Service> {
+    if (this.isV1Service()) {
+      throw getErr(`This TriplyDB API does not support renaming a service.`);
+    }
+    await _patch<Routes.datasets._account._dataset.services._serviceName.Patch>({
+      errorWithCleanerStack: getErr(`Failed to rename service ${this._name} of dataset ${this._datasetNameWithOwner}.`),
+      app: this._app,
+      path: await this._getServicePath(),
+      data: {
+        name: newName,
+      },
+    });
+    this._name = newName;
+    return this;
+  }
+
+  public async getGraphs(refresh = false): Promise<Models.ServiceGraphInfoV2[] | Models.ServiceGraphsInfoV1> {
+    if (this.isV1Service()) {
+      return ((await this.getInfo(refresh)) as ServiceMetadataV1).graphs;
+    }
+    if (!this._graphs || refresh) {
+      this._graphs = await _get<Routes.datasets._account._dataset.services._serviceName.graphs.Get>({
+        errorWithCleanerStack: getErr(
+          `Failed to get graphs of service ${this._name} of dataset ${this._datasetNameWithOwner}.`
+        ),
+        app: this._app,
+        path: `${await this._getServicePath()}/graphs`,
+      });
+    }
+    return this._graphs;
+  }
+
   public async delete() {
     this._info = await _delete<
       | Routes.datasets._account._dataset.servicesV1._serviceName.Delete
@@ -81,7 +119,11 @@ export default class Service {
         },
       });
     } catch (e) {
-      if (e instanceof TriplyDbJsError && e.statusCode === 400 && e.message.indexOf("Invalid service type") >= 0) {
+      if (
+        e instanceof TriplyDbJsError &&
+        e.statusCode === 400 &&
+        (e.message.indexOf("Service of type") >= 0 || e.message.indexOf("Invalid service type") >= 0)
+      ) {
         this._type = this._convertServiceVersionTypes(this._type);
         return this.create();
       } else {
