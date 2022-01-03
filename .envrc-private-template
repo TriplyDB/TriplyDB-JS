@@ -1,5 +1,6 @@
 #!/bin/bash
-export UNITTEST_NAMESPACE= #prefix for resources created by unit tests, to avoid conflicting resource names. e.g. your name. 
+
+export UNITTEST_NAMESPACE= #[Optional] prefix for resources created by unit tests, to avoid conflicting resource names. e.g. your name. 
 export UNITTEST_TOKEN_READ= #<read-token of your account>
 export UNITTEST_TOKEN_WRITE= #<write-token of your account>
 export UNITTEST_TOKEN_ACCOUNT= #<token with all privileges of your account>

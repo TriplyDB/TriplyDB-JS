@@ -1,6 +1,6 @@
 import { Account } from "../Account";
 import * as path from "path";
-export const CommonUnittestPrefix = process.env["UNITTEST_NAMESPACE"] + "-triplydb-js";
+export const CommonUnittestPrefix = process.env["UNITTEST_NAMESPACE"] || "triplydb-js-";
 import App from "../App";
 import { TriplyDbJsError, getErr } from "../utils/Error";
 import User from "../User";
