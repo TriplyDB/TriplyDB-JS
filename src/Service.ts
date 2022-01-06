@@ -13,7 +13,7 @@ export default class Service {
   private _datasetNameWithOwner: string;
   private _name: string;
   private _type: Models.ServiceTypeV1 | Models.ServiceTypeV2;
-  private _reasoner?: Models.JenaReasoners;
+  private _reasoner?: Models.JenaReasoner;
   public readonly type = "Service";
   constructor(conf: {
     app: App;
@@ -21,7 +21,7 @@ export default class Service {
     datasetPath: string;
     datasetNameWithOwner: string;
     type: Models.ServiceTypeV1 | Models.ServiceTypeV2;
-    reasoner?: Models.JenaReasoners;
+    reasoner?: Models.JenaReasoner;
   }) {
     this._app = conf.app;
     this._name = conf.name;

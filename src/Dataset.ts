@@ -508,7 +508,7 @@ export default class Dataset {
     return new Asset(this, await Asset["uploadAsset"]({ fileOrPath, assetName, dataset: this }));
   }
 
-  async addService(type: Models.ServiceTypeV1 | Models.ServiceTypeV2, name: string, reasoner?: Models.JenaReasoners) {
+  async addService(type: Models.ServiceTypeV1 | Models.ServiceTypeV2, name: string, reasoner?: Models.JenaReasoner) {
     return new Service({
       app: this._app,
       datasetPath: await this._getDatasetPath(),

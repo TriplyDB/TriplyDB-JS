@@ -1,5 +1,5 @@
 import { Models, Routes } from "@triply/utils";
-import { parse, inject, stringify, validate } from "@triply/utils/lib/sparqlVarUtils";
+import { parse, parseAndInjectVariablesIntoQuery, stringify, validate } from "@triply/utils/lib/sparqlVarUtils";
 import App from "./App";
 import { _get, _patch, _delete } from "./RequestHandler";
 import { Account } from "./Account";
@@ -109,12 +109,10 @@ export default class Query {
     }
     if (!info.variables) return info.requestConfig.payload.query;
     validate({ variableDefinitions: info.variables, variableValues: variableValues || {} });
-    return stringify(
-      inject(parse(info.requestConfig.payload.query), {
-        variableDefinitions: info.variables,
-        variableValues: variableValues || {},
-      })
-    );
+    return parseAndInjectVariablesIntoQuery(info.requestConfig.payload.query, {
+      variableDefinitions: info.variables,
+      variableValues: variableValues || {},
+    });
   }
   public results(variables?: { [variable: string]: string }, opts?: { cache?: Cache }) {
     const queryType = this._getQueryType();
