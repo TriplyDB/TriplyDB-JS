@@ -157,7 +157,7 @@ export default class Service {
       errorWithCleanerStack: getErr(`Failed to update service ${this._name} of dataset ${this._datasetNameWithOwner}.`),
       app: this._app,
       path: await this._getServicePath(),
-      data: { recreate: true },
+      data: { sync: true },
     });
     await this.waitUntilRunning();
   }

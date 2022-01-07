@@ -100,7 +100,7 @@ describe("Dataset", function () {
     });
 
     it("Set avatar", async function () {
-      this.timeout(5000);
+      this.timeout(15000);
       let dsInfo = await testDs.getInfo();
       expect(dsInfo.avatarUrl).to.be.undefined;
       await testDs.setAvatar(buildPathToSrcPath(__dirname, "__data__", "logo.png"));
@@ -311,7 +311,7 @@ describe("Dataset", function () {
     });
 
     it("add an asset", async function () {
-      this.timeout(5000);
+      this.timeout(15000);
       expect(
         (await testDs.uploadAsset(buildPathToSrcPath(__dirname, "__data__", "test102.nt"), "test102.nt")).getInfo()
           .versions.length
