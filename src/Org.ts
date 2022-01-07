@@ -19,6 +19,7 @@ import {
   update,
   addStory,
   ensureDataset,
+  ensureQuery,
 } from "./commonAccountFunctions";
 import { getErr } from "./utils/Error";
 
@@ -48,6 +49,7 @@ export default class Org implements AccountBase {
   public getPinnedItems = getPinnedItems;
   public pinItems = pinItems;
   public ensureDataset = ensureDataset;
+  public ensureQuery = ensureQuery;
 
   public asUser(): User {
     throw getErr(`${this._info?.accountName || "This"} is an organization. Cannot fetch this as a user.`);
@@ -81,19 +83,19 @@ export default class Org implements AccountBase {
       path: `/accounts/${orgName}/members`,
     });
   }
-  public async addMember(user: User | string, role: Models.OrgRole = "member") {
+  public async addMember(user: User, role: Models.OrgRole = "member") {
     const orgName = (await this.getInfo()).accountName;
-    const memberName = typeof user === "string" ? user : (await user.getInfo()).accountName;
+    const memberName = (await user.getInfo()).accountName;
     return _post<Routes.accounts._account.members.Post>({
-      errorWithCleanerStack: getErr(`Failed to add ${user} as member to organization ${this._name}.`),
+      errorWithCleanerStack: getErr(`Failed to add ${memberName} as member to organization ${orgName}.`),
       app: this._app,
       data: { accountName: memberName, role },
       path: `/accounts/${orgName}/members`,
     });
   }
-  public async removeMember(member: User | string) {
+  public async removeMember(member: User) {
     const orgName = (await this.getInfo()).accountName;
-    const memberName = typeof member === "string" ? member : (await member.getInfo()).accountName;
+    const memberName = (await member.getInfo()).accountName;
     await _delete<Routes.accounts._account.members._member.Delete>({
       errorWithCleanerStack: getErr(`Failed to remove ${memberName} as member of organization ${this._name}.`),
       app: this._app,

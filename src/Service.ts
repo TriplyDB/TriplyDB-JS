@@ -4,13 +4,13 @@ import { wait } from "./utils";
 import { _get, _post, _delete, _patch } from "./RequestHandler";
 import { getErr, TriplyDbJsError } from "./utils/Error";
 import { ServiceMetadataV1 } from "@triply/utils/lib/Models";
+import Dataset from "./Dataset";
 
 export default class Service {
   private _app: App;
   private _info?: Models.ServiceV1 | Models.ServiceMetadataV2;
   private _graphs?: Models.ServiceGraphInfoV2[];
-  private _datasetPath: string;
-  private _datasetNameWithOwner: string;
+  private _dataset: Dataset;
   private _name: string;
   private _type: Models.ServiceTypeV1 | Models.ServiceTypeV2;
   private _reasoner?: Models.JenaReasoner;
@@ -18,15 +18,13 @@ export default class Service {
   constructor(conf: {
     app: App;
     name: string;
-    datasetPath: string;
-    datasetNameWithOwner: string;
+    dataset: Dataset;
     type: Models.ServiceTypeV1 | Models.ServiceTypeV2;
     reasoner?: Models.JenaReasoner;
   }) {
     this._app = conf.app;
     this._name = conf.name;
-    this._datasetPath = conf.datasetPath;
-    this._datasetNameWithOwner = conf.datasetNameWithOwner;
+    this._dataset = conf.dataset;
     this._type = conf.type;
     this._reasoner = conf.reasoner;
   }
@@ -38,7 +36,7 @@ export default class Service {
       | Routes.datasets._account._dataset.services._serviceName.Get
     >({
       errorWithCleanerStack: getErr(
-        `Failed to get information of service ${this._name} in dataset ${this._datasetNameWithOwner}.`
+        `Failed to get information of service '${this._name}' in dataset '${(await this._dataset.getInfo()).name}'.`
       ),
       app: this._app,
       path: await this._getServicePath(),
@@ -60,7 +58,9 @@ export default class Service {
       throw getErr(`This TriplyDB API does not support renaming a service.`);
     }
     await _patch<Routes.datasets._account._dataset.services._serviceName.Patch>({
-      errorWithCleanerStack: getErr(`Failed to rename service ${this._name} of dataset ${this._datasetNameWithOwner}.`),
+      errorWithCleanerStack: getErr(
+        `Failed to rename service ${this._name} of dataset ${(await this._dataset.getInfo()).name}.`
+      ),
       app: this._app,
       path: await this._getServicePath(),
       data: {
@@ -78,7 +78,7 @@ export default class Service {
     if (!this._graphs || refresh) {
       this._graphs = await _get<Routes.datasets._account._dataset.services._serviceName.graphs.Get>({
         errorWithCleanerStack: getErr(
-          `Failed to get graphs of service ${this._name} of dataset ${this._datasetNameWithOwner}.`
+          `Failed to get graphs of service ${this._name} of dataset ${(await this._dataset.getInfo()).name}.`
         ),
         app: this._app,
         path: `${await this._getServicePath()}/graphs`,
@@ -92,7 +92,9 @@ export default class Service {
       | Routes.datasets._account._dataset.servicesV1._serviceName.Delete
       | Routes.datasets._account._dataset.services._serviceName.Delete
     >({
-      errorWithCleanerStack: getErr(`Failed to delete service ${this._name} of dataset ${this._datasetNameWithOwner}.`),
+      errorWithCleanerStack: getErr(
+        `Failed to delete service ${this._name} of dataset ${(await this._dataset.getInfo()).name}.`
+      ),
       app: this._app,
       path: await this._getServicePath(),
       expectedResponseBody: "empty",
@@ -103,10 +105,10 @@ export default class Service {
     try {
       await _post({
         errorWithCleanerStack: getErr(
-          `Failed to create service ${this._name} in dataset ${this._datasetNameWithOwner}.`
+          `Failed to create service '${this._name}' in dataset '${(await this._dataset.getInfo()).name}'.`
         ),
         app: this._app,
-        path: `${this._datasetPath}/services`,
+        path: `${await this._dataset["_getDatasetPath"]()}/services`,
         data: {
           name: this._name,
           type: this._type,
@@ -134,6 +136,30 @@ export default class Service {
     return this;
   }
 
+  public async stop(): Promise<Service> {
+    await _post({
+      app: this._app,
+      errorWithCleanerStack: getErr(
+        `Failed to stop service ${this._name} in dataset ${(await this._dataset.getInfo()).name}.`
+      ),
+      data: { stop: true },
+      path: await this._getServicePath(),
+    });
+    await this.waitUntilStopped();
+    return this;
+  }
+  public async start(): Promise<Service> {
+    await _post({
+      app: this._app,
+      errorWithCleanerStack: getErr(
+        `Failed to resume the stopped service ${this._name} in dataset ${(await this._dataset.getInfo()).name}.`
+      ),
+      data: { start: true },
+      path: await this._getServicePath(),
+    });
+    return this;
+  }
+
   public async waitUntilRunning() {
     while (true) {
       const info = await this.getInfo(true);
@@ -141,29 +167,54 @@ export default class Service {
         break;
       } else if (info.error) {
         throw getErr(
-          `Failed to start service ${this._name} of dataset ${this._datasetNameWithOwner}: ${info.error.message}`
+          `Failed to start service ${this._name} of dataset ${(await this._dataset.getInfo()).name}: ${
+            info.error.message
+          }`
         );
       } else if (!["starting", "updating"].includes(info.status)) {
         throw getErr(
-          `Failed to start service ${this._name} of dataset ${this._datasetNameWithOwner} as it is being stopped or removed.`
+          `Failed to start service ${this._name} of dataset ${
+            (await this._dataset.getInfo(true)).name
+          } as it is being stopped or removed.`
         );
       }
       await wait(5000);
     }
   }
 
+  private async waitUntilStopped() {
+    let running = true;
+    while (running) {
+      const info = await this.getInfo(true);
+      if (info.status === "stopped") {
+        running = false;
+        continue;
+      } else if (info.error) {
+        throw getErr(
+          `Failed to stop service ${this._name} of dataset ${(await this._dataset.getInfo()).name}: ${
+            info.error.message
+          }`
+        );
+      }
+      await wait(1000);
+    }
+    return;
+  }
+
   public async update() {
     await _post({
-      errorWithCleanerStack: getErr(`Failed to update service ${this._name} of dataset ${this._datasetNameWithOwner}.`),
+      errorWithCleanerStack: getErr(
+        `Failed to update service ${this._name} of dataset ${(await this._dataset.getInfo()).name}.`
+      ),
       app: this._app,
       path: await this._getServicePath(),
-      data: { recreate: true },
+      data: this.isV1Service() ? { recreate: true } : { sync: true },
     });
     await this.waitUntilRunning();
   }
 
   private async _getServicePath() {
-    return `${this._datasetPath}/services/${this._name}`;
+    return `${await this._dataset["_getDatasetPath"]()}/services/${this._name}`;
   }
   /**
    * Converts service version types from v1 to v2 and from v2 to v1

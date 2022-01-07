@@ -32,7 +32,7 @@ describe("Graphs", function () {
     user = await app.getUser();
     await resetUnittestAccount(user);
     testDs = await getNewTestDs(user, "private");
-    await testDs.importFromFiles({ defaultGraphName: "https://somegraph.com" }, path.resolve(dataDir, "test102.nt"));
+    await testDs.importFromFiles([path.resolve(dataDir, "test102.nt")], { defaultGraphName: "https://somegraph.com" });
   });
   it("Should be able to fetch graph metadata", async function () {
     const graphs = await testDs.getGraphs().toArray();

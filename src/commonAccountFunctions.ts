@@ -9,6 +9,7 @@ import Dataset from "./Dataset";
 import { getErr } from "./utils/Error";
 import { PinnedItemUpdate } from "@triply/utils/lib/Models";
 import { omit } from "lodash";
+import Service from "./Service";
 
 /* This file contains functions that are shared by the Org and User classes.
 Since the classes are implementing an interface rather than extending a class,
@@ -17,9 +18,34 @@ As a workaround for this, we use as-casting to User within the functions.
 This should not influence the interfaces of the functions.
 */
 
-export async function addQuery<T extends Account>(this: T, query: Models.QueryCreate) {
+type NewQueryBase = Omit<Models.QueryCreate, "name" | "dataset" | "preferredService">;
+type NewQueryWithDataset = NewQueryBase & { dataset: Dataset };
+type NewQueryWithService = NewQueryBase & { service: Service };
+export async function addQuery<T extends Account>(this: T, name: string, newQuery: NewQueryWithDataset): Promise<Query>;
+export async function addQuery<T extends Account>(this: T, name: string, newQuery: NewQueryWithService): Promise<Query>;
+export async function addQuery<T extends Account>(
+  this: T,
+  name: string,
+  newQuery: NewQueryWithService | NewQueryWithDataset
+) {
   const app = (this as User)["_app"];
   const accountName = (await this.getInfo()).accountName;
+  let query: Models.QueryCreate = { name, accessLevel: newQuery.accessLevel };
+  if ("dataset" in newQuery && "service" in newQuery) {
+    throw getErr("Can't use dataset and service options at the same time in the newQuery");
+  } else if ("dataset" in newQuery) {
+    const { dataset, ...newQueryOpts } = newQuery;
+    query = { name, ...newQueryOpts, dataset: dataset["_info"]?.id };
+  } else if ("service" in newQuery) {
+    const { service, ...newQueryOpts } = newQuery;
+    const dataset = service["_dataset"];
+    query = {
+      name,
+      ...newQueryOpts,
+      dataset: dataset["_info"]?.id,
+      preferredService: (await service.getInfo()).endpoint,
+    };
+  }
   return new Query(
     app,
     await _post<Routes.queries._account.Post>({
@@ -31,10 +57,12 @@ export async function addQuery<T extends Account>(this: T, query: Models.QueryCr
     this
   );
 }
-
-export async function addStory<T extends Account>(this: T, story: Models.StoryCreate) {
+type NewStory = Omit<Models.StoryCreate, "name">;
+export async function addStory<T extends Account>(this: T, name: string, args?: NewStory) {
   const app = (this as User)["_app"];
   const accountName = (await this.getInfo()).accountName;
+  const story: Models.StoryCreate = { ...args, name };
+  if (!story.accessLevel) story.accessLevel = "private";
   return new Story(
     app,
     await _post<Routes.stories._account.Post>({
@@ -222,6 +250,43 @@ export async function ensureDataset<T extends Account>(this: T, name: string, ne
     return ds;
   } catch (e: any) {
     if (e.statusCode !== 404) throw e;
+    return this.addDataset(name, newDs);
   }
-  return this.addDataset(name, newDs);
+}
+
+export async function ensureQuery<T extends Account>(
+  this: T,
+  name: string,
+  newQuery: NewQueryWithService | NewQueryWithDataset
+) {
+  try {
+    const query = await this.getQuery(name);
+    const info = await query.getInfo();
+    if (newQuery?.accessLevel && newQuery?.accessLevel !== info.accessLevel) {
+      throw getErr(
+        `Query ${name} already exists with access level ${info.accessLevel}. Cannot ensure it with access level ${newQuery?.accessLevel}. Please change the access level to match the Query, or remove it entirely as a parameter.`
+      );
+    }
+    return query;
+  } catch (e: any) {
+    if (e.statusCode !== 404) throw e;
+    // Cast here to keep typescript happy
+    return this.addQuery(name, newQuery as NewQueryWithDataset);
+  }
+}
+
+export async function ensureStory<T extends Account>(this: T, name: string, newStory?: NewStory) {
+  try {
+    const story = await this.getStory(name);
+    const info = await story.getInfo();
+    if (newStory?.accessLevel && info.accessLevel !== newStory?.accessLevel) {
+      throw getErr(
+        `Story ${name} already exists with access level ${info.accessLevel}. Cannot ensure it with access level ${newStory?.accessLevel}. Please change the access level to match the story, or remove it entirely as a parameter.`
+      );
+    }
+    return story;
+  } catch (e: any) {
+    if (e.statusCode !== 404) throw e;
+    return this.addStory(name, newStory);
+  }
 }

@@ -118,7 +118,7 @@ export default class Graph {
     const info = await this.getInfo();
     await _delete<Routes.datasets._account._dataset.graphs._graphId.Delete>({
       errorWithCleanerStack: getErr(
-        `Failed to graph ${info.graphName} from ${await this._dataset["_getDatasetNameWithOwner"]()}.`
+        `Failed to delete graph '${info.graphName}' from ${await this._dataset["_getDatasetNameWithOwner"]()}.`
       ),
       app: this._app,
       path: await this._getPath(),

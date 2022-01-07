@@ -19,10 +19,10 @@ export interface AccountBase {
   setAvatar(pathOrBuffer: string | Buffer): Promise<void>;
   getQuery(name: string): Promise<Query>;
   getQueries(): AsyncIteratorHelper<Models.Query, Query>;
-  addQuery(query: Models.QueryCreate): Promise<Query>;
+  addQuery(name: string, newQuery: Omit<Models.QueryCreate, "name">): Promise<Query>;
   getStory(name: string): Promise<Story>;
   getStories(): AsyncIteratorHelper<Models.Story, Story>;
-  addStory(story: Models.StoryCreate): Promise<Story>;
+  addStory(name: string, args?: Omit<Models.StoryCreate, "name">): Promise<Story>;
   getPinnedItems(): Promise<Array<Dataset | Story | Query>>;
   pinItems(items: Array<Dataset | Story | Query>): Promise<User | Org>;
 }

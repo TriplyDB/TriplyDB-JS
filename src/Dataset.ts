@@ -30,9 +30,48 @@ interface JobDefaultsConfig {
   baseIRI?: string;
   overwriteAll?: boolean;
 }
+interface ImportFromDatasetArgs {
+  graphMap?: { [from: string]: string | Graph | NamedNode };
+  graphNames?: Array<string | Graph | NamedNode>;
+  overwrite?: boolean;
+}
 
 type DsResourceType = "assets" | "graphs" | "services";
-type ImportOpts = { fromDataset: Dataset; graphs?: { [from: string]: string }; overwrite?: boolean };
+export type NewService =
+  | NewServiceVirtuosoV2
+  | NewServiceElasticSearchV2
+  | NewServiceJenaV2
+  | NewServiceVirtuosoV1
+  | NewServiceElasticSearchV1
+  | NewServiceJenaV1;
+type NewServiceVirtuosoV2 = {
+  type: "virtuoso";
+  config?: never;
+};
+type NewServiceElasticSearchV2 = {
+  type: "elasticSearch";
+  config?: never;
+};
+type NewServiceJenaV2 = {
+  type: "jena";
+  config?: {
+    reasoner?: Models.JenaReasoner;
+  };
+};
+type NewServiceVirtuosoV1 = {
+  type: "sparql";
+  config?: never;
+};
+type NewServiceElasticSearchV1 = {
+  type: "elasticsearch";
+  config?: never;
+};
+type NewServiceJenaV1 = {
+  type: "sparql-jena";
+  config?: {
+    reasoner?: Models.JenaReasoner;
+  };
+};
 export default class Dataset {
   private _app: App;
   private _info?: Models.Dataset;
@@ -57,8 +96,7 @@ export default class Dataset {
       mapResult: async (info: Models.ServiceV1 | Models.ServiceMetadataV2) => {
         return new Service({
           app: this._app,
-          datasetPath: await this._getDatasetPath(),
-          datasetNameWithOwner: await this._getDatasetNameWithOwner(),
+          dataset: this,
           name: info.name,
           type: info.type,
           reasoner: info.config?.reasonerType,
@@ -67,9 +105,19 @@ export default class Dataset {
     });
   }
 
-  /** @deprecated Use ds.clear('graphs') instead. */
-  public removeAllGraphs() {
-    return this.clear("graphs");
+  public async getService<T extends Dataset>(this: T, serviceName: string): Promise<Service> {
+    const sv2Metadata = await _get<Routes.datasets._account._dataset.services._serviceName.Get>({
+      errorWithCleanerStack: getErr(`Failed to get service '${serviceName}' from dataset ${this["_name"]}.`),
+      app: this._app,
+      path: `${await this._getDatasetPath("/services/")}${serviceName}`,
+    });
+    return new Service({
+      app: this._app,
+      dataset: this,
+      name: sv2Metadata.name,
+      type: sv2Metadata.type,
+      reasoner: sv2Metadata.config?.reasonerType,
+    });
   }
 
   public async clear(resourceType: DsResourceType, ...rest: DsResourceType[]) {
@@ -226,31 +274,39 @@ export default class Dataset {
     return store;
   }
 
-  // NB: deprecation flag over the top-most header will apply to all the headers.
-  // So keep any deprecated functions as not the top-most one.
-  public async importFromDataset(opts: ImportOpts): Promise<Models.Imports>;
-  /**
-   * @deprecated This method interface will be removed in a future version. Use importFromDataset({...opts}) instead.
-   */
-  public async importFromDataset(
-    opts: Dataset,
-    graphs: { [from: string]: string },
-    overwrite?: boolean
-  ): Promise<Models.Imports>;
-  public async importFromDataset(
-    arg1: ImportOpts | Dataset,
-    graphs_deprecated?: { [from: string]: string },
-    overwrite_deprecated?: boolean
-  ): Promise<Models.Imports> {
-    let { fromDataset, graphs, overwrite } =
-      "fromDataset" in arg1
-        ? arg1
-        : {
-            fromDataset: arg1,
-            graphs: graphs_deprecated,
-            overwrite: !!overwrite_deprecated,
-          };
+  public async importFromDataset(fromDataset: Dataset, args?: ImportFromDatasetArgs): Promise<Models.Imports> {
+    let graphs;
+    if (args && args.graphMap && args.graphNames) {
+      throw getErr("please use either the property 'graphMap' or 'graphNames', but not both together");
+    } else if (args && args.graphMap) {
+      graphs = {} as { [from: string]: string };
+      for (let graph in args.graphMap) {
+        const key = graph;
+        const value = args.graphMap[graph];
+        if (value instanceof Graph) {
+          graphs[key] = await value.getInfo().then((g) => g.graphName);
+        } else if (typeof value === "string") {
+          graphs[key] = value;
+        } else {
+          graphs[key] = value.value;
+        }
+      }
+    } else if (args && args.graphNames) {
+      const graphNames = await Promise.all(
+        args.graphNames.map((graph) => {
+          if (graph instanceof Graph) {
+            return graph.getInfo().then((g) => g.graphName);
+          } else if (typeof graph === "string") {
+            return graph;
+          } else {
+            return graph.value;
+          }
+        })
+      );
+      graphs = zipObject(graphNames, graphNames);
+    }
 
+    const overwrite = !!args?.overwrite;
     if (overwrite && !(await this._app.isCompatible("2.2.7"))) {
       throw new IncompatibleError("Overwriting graphs is only supported by TriplyDB API version 2.2.7 or greater");
     }
@@ -265,9 +321,12 @@ export default class Dataset {
     const fromDsInfo = await fromDataset.getInfo();
     const graphsToImport: Models.UpdateImport["graphs"] = [];
     for (const fromGraph in graphs) {
-      graphsToImport.push({ from: fromGraph, to: graphs[fromGraph], overwrite: !!overwrite });
+      graphsToImport.push({
+        from: fromGraph,
+        to: graphs[fromGraph],
+        overwrite: !!overwrite,
+      });
     }
-
     return _patch<Routes.datasets._account._dataset.imports.Patch>({
       errorWithCleanerStack: getErr(
         `Tried importing from dataset ${await fromDataset._getDatasetNameWithOwner()}. Failed to write the changes to ${await this._getDatasetNameWithOwner()}.`
@@ -299,7 +358,6 @@ export default class Dataset {
     );
     return this;
   }
-
   public async copy(toAccountName: string, newDatasetName?: string) {
     const newDs = await _post<Routes.datasets._account._dataset.copy.Post>({
       errorWithCleanerStack: getErr(
@@ -345,42 +403,24 @@ export default class Dataset {
       throw getErr("There is already an ongoing job for this dataset. Await that one first.");
     }
   }
-  public async importFromFiles(...files: File[]): Promise<Dataset>;
-  public async importFromFiles(...files: string[]): Promise<Dataset>;
-  public async importFromFiles(defaultsConfig: JobDefaultsConfig, ...files: string[] | File[]): Promise<Dataset>;
-  public async importFromFiles(arg1: unknown, ...files: unknown[]): Promise<Dataset> {
+  public async importFromFiles(files: File[] | string[], defaultsConfig?: JobDefaultsConfig): Promise<Dataset> {
     const dsId = await this.getInfo().then((info) => info.id);
     this._throwIfJobRunning(dsId);
     try {
       datasetsWithOngoingJob[dsId] = true;
-      let baseIRI: string | undefined;
-      let defaultGraphName: string | undefined;
-      let overwriteAll: boolean | undefined;
-      if (typeof arg1 === "string") {
-        // we have just a list of filenames, no defaults config.
-        files = [arg1].concat(files as string[]);
-      } else if ("name" in (arg1 as File)) {
-        // we have just a list of Files, no defaults config.
-        files = [arg1].concat(files);
-      } else {
-        // the first arg is a defaults config.
-        baseIRI = (arg1 as JobDefaultsConfig).baseIRI;
-        defaultGraphName = (arg1 as JobDefaultsConfig).defaultGraphName;
-        overwriteAll = (arg1 as JobDefaultsConfig).overwriteAll;
-      }
-      if (overwriteAll && !(await this._app.isCompatible("2.2.7"))) {
+      if (defaultsConfig?.overwriteAll && !(await this._app.isCompatible("2.2.7"))) {
         throw new IncompatibleError("Overwriting graphs is only supported by TriplyDB API version 2.2.7 or greater");
       }
       const job = new JobUpload({
         app: this._app,
-        baseIRI: baseIRI,
-        defaultGraphName: defaultGraphName,
-        overwriteAll: !!overwriteAll,
+        baseIRI: defaultsConfig?.baseIRI,
+        defaultGraphName: defaultsConfig?.defaultGraphName,
+        overwriteAll: !!defaultsConfig?.overwriteAll,
         datasetPath: await this._getDatasetPath(),
         datasetNameWithOwner: await this._getDatasetNameWithOwner(),
       });
       this._lastJob = await job.create();
-      await this._lastJob.uploadFiles(...(files as string[] | File[]));
+      await this._lastJob.uploadFiles(files);
       await this._lastJob.exec();
       await this.getInfo(true); // This way we update things like the ds statement count
       return this;
@@ -388,17 +428,7 @@ export default class Dataset {
       delete datasetsWithOngoingJob[dsId];
     }
   }
-  public async importFromStore(store: n3.Store): Promise<Dataset>;
-  public async importFromStore(opts: JobDefaultsConfig, store: n3.Store): Promise<Dataset>;
-  public async importFromStore(optsOrStore: unknown, _store?: unknown): Promise<Dataset> {
-    let store: n3.Store;
-    let opts: JobDefaultsConfig = {};
-    if (_store instanceof n3.Store) {
-      store = _store;
-      opts = optsOrStore as any;
-    } else {
-      store = optsOrStore as any;
-    }
+  public async importFromStore(store: n3.Store, opts?: JobDefaultsConfig): Promise<Dataset> {
     /**
      * We're writing the store to disk and then uploading
      * This can be improved at a later moment in time by uploading from memory using Buffer
@@ -407,28 +437,14 @@ export default class Dataset {
     const quadsString = new n3.Writer().quadsToString(quads); // This always returns nquads or ntriples. See https://github.com/rdfjs/N3.js/issues/253
     const tmpFile = path.resolve(tmpdir(), `triplydb-${md5(quadsString)}.nq`);
     await fs.writeFile(tmpFile, quadsString, "utf-8");
-    return this.importFromFiles(opts || {}, tmpFile);
+    return this.importFromFiles([tmpFile], opts || {});
   }
-  public async importFromUrls(...urls: string[]): Promise<Dataset>;
-  public async importFromUrls(opts: JobDefaultsConfig, ...urls: string[]): Promise<Dataset>;
-  public async importFromUrls(arg1: string | JobDefaultsConfig, ...urls: string[]): Promise<Dataset> {
+  public async importFromUrls(urls: string[], defaultConfig?: JobDefaultsConfig): Promise<Dataset> {
     const dsId = await this.getInfo().then((info) => info.id);
     try {
       this._throwIfJobRunning(dsId);
       datasetsWithOngoingJob[dsId] = true;
-      let baseIRI: string | undefined;
-      let defaultGraphName: string | undefined;
-      let overwriteAll: boolean | undefined;
-      if (typeof arg1 === "string") {
-        // we have just a list of filenames, no defaults config.
-        urls = [arg1].concat(urls);
-      } else {
-        // the first arg is a defaults config.
-        baseIRI = arg1.baseIRI;
-        defaultGraphName = arg1.defaultGraphName;
-        overwriteAll = arg1.overwriteAll;
-      }
-      if (overwriteAll && !(await this._app.isCompatible("2.2.7"))) {
+      if (defaultConfig?.overwriteAll && !(await this._app.isCompatible("2.2.7"))) {
         throw new IncompatibleError("Overwriting graphs is only supported by TriplyDB API version 2.2.7 or greater");
       }
       const ownerName = (await this._owner.getInfo()).accountName;
@@ -441,9 +457,9 @@ export default class Dataset {
         data: {
           type: "download",
           downloadUrls: urls,
-          defaultGraphName: defaultGraphName,
-          overwriteAll: !!overwriteAll,
-          baseIRI: baseIRI,
+          defaultGraphName: defaultConfig?.defaultGraphName,
+          overwriteAll: !!defaultConfig?.overwriteAll,
+          baseIRI: defaultConfig?.baseIRI,
         },
       });
 
@@ -508,18 +524,27 @@ export default class Dataset {
     return new Asset(this, await Asset["uploadAsset"]({ fileOrPath, assetName, dataset: this }));
   }
 
-  async addService(type: Models.ServiceTypeV1 | Models.ServiceTypeV2, name: string, reasoner?: Models.JenaReasoner) {
+  public async addService(name: string, opts?: NewService) {
     return new Service({
       app: this._app,
-      datasetPath: await this._getDatasetPath(),
-      datasetNameWithOwner: await this._getDatasetNameWithOwner(),
+      dataset: this,
       name,
-      type,
-      reasoner,
+      type: opts ? opts.type : "virtuoso",
+      reasoner: opts?.config?.reasoner ? opts?.config?.reasoner : undefined,
     }).create();
   }
 
-  async addPrefixes(newPrefixes: { [key: string]: string }) {
+  public async ensureService<T extends Dataset>(this: T, name: string, args?: NewService) {
+    try {
+      const foundService = await this.getService(name);
+      return foundService;
+    } catch (e: any) {
+      if (e.statusCode !== 404) throw e;
+      return this.addService(name, args);
+    }
+  }
+
+  public async addPrefixes(newPrefixes: { [key: string]: string }) {
     const asPairs = toPairs(newPrefixes);
     await _patch<Routes.prefixes.Patch>({
       errorWithCleanerStack: getErr(
@@ -539,7 +564,7 @@ export default class Dataset {
   /**
    * Remove prefixes defined at the dataset level
    */
-  async removePrefixes(prefixLabels: string[]) {
+  public async removePrefixes(prefixLabels: string[]) {
     const dsPath = await this._getDatasetPath();
     await Promise.all(
       prefixLabels.map(async (p) =>
@@ -676,7 +701,7 @@ export class JobUpload {
     });
   }
 
-  public async uploadFiles(...files: string[] | File[]) {
+  public async uploadFiles(files: string[] | File[]) {
     const promises: Promise<void>[] = [];
     const getFromStack = async (): Promise<any> => {
       const file = files.pop();
