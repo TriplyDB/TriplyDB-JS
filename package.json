@@ -1,6 +1,6 @@
 {
   "name": "@triply/triplydb",
-  "version": "3.0.2",
+  "version": "4.0.0",
   "main": "lib/App.js",
   "author": "Triply <info@triply.cc>",
   "license": "MIT",
