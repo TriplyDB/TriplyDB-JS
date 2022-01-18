@@ -68,7 +68,7 @@ const command = program
     if (!options.append) await dataset.clear("graphs");
 
     console.info(`Uploading ${files.length} files`);
-    await dataset.importFromFiles(...files);
+    await dataset.importFromFiles(files);
 
     console.info("Done");
   });

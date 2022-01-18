@@ -1,5 +1,5 @@
 import { Models, Routes } from "@triply/utils";
-import { parse, parseAndInjectVariablesIntoQuery, stringify, validate } from "@triply/utils/lib/sparqlVarUtils";
+import { parseAndInjectVariablesIntoQuery, validate } from "@triply/utils/lib/sparqlVarUtils";
 import App from "./App";
 import { _get, _patch, _delete } from "./RequestHandler";
 import { Account } from "./Account";

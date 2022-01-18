@@ -47,6 +47,7 @@ describe("Dataset", function () {
   describe("Adding datasets", function () {
     let testDs: Dataset;
     before(async function () {
+      this.timeout(15000);
       await resetUnittestAccount(user);
       testDs = await getNewTestDs(user, "private");
     });
@@ -158,10 +159,10 @@ describe("Dataset", function () {
     it("Upload", async function () {
       this.timeout(15000);
 
-      await testDs.importFromFiles(
+      await testDs.importFromFiles([
         buildPathToSrcPath(__dirname, "__data__", "test102.nt"),
-        buildPathToSrcPath(__dirname, "__data__", "test103.nq")
-      );
+        buildPathToSrcPath(__dirname, "__data__", "test103.nq"),
+      ]);
       const info = testDs["_lastJob"]?.info();
       expect(info?.files).to.have.lengthOf(2);
     });
@@ -179,18 +180,20 @@ describe("Dataset", function () {
 
     it.skip("Upload", async function () {
       this.timeout(15000);
-      await testDs.importFromFiles(
+      await testDs.importFromFiles([
         buildPathToSrcPath(__dirname, "__data__", "test102.nt"),
-        buildPathToSrcPath(__dirname, "__data__", "test103.nq")
-      );
+        buildPathToSrcPath(__dirname, "__data__", "test103.nq"),
+      ]);
       let info = testDs["_lastJob"]?.info();
       expect(info?.files).to.have.lengthOf(2);
       this.timeout(15000);
       expect(testDs["_lastJob"]?.info()?.status).to.equal("finished");
       await testDs.importFromFiles(
-        { overwriteAll: true },
-        buildPathToSrcPath(__dirname, "__data__", "test102.nt"),
-        buildPathToSrcPath(__dirname, "__data__", "test103.nq")
+        [
+          buildPathToSrcPath(__dirname, "__data__", "test102.nt"),
+          buildPathToSrcPath(__dirname, "__data__", "test103.nq"),
+        ],
+        { overwriteAll: true }
       );
       info = testDs["_lastJob"]?.info();
       expect(info?.files).to.have.lengthOf(2);
@@ -223,7 +226,7 @@ describe("Dataset", function () {
     before(async function () {
       this.timeout(5000);
       testDs = await getNewTestDs(user, "private");
-      await testDs.importFromFiles(buildPathToSrcPath(__dirname, "__data__", "test102.nt"));
+      await testDs.importFromFiles([buildPathToSrcPath(__dirname, "__data__", "test102.nt")]);
     });
     it("With empty iri", async function () {
       await expect(testDs.describe("")).eventually.rejectedWith(/Failed to describe '' of/);
@@ -243,16 +246,16 @@ describe("Dataset", function () {
       const ds = await getNewTestDs(user, "private");
       return expect(
         Promise.all([
-          ds.importFromUrls("https://api.triplydb.com/datasets/vocabulary/music-keys/download"),
-          ds.importFromFiles(buildPathToSrcPath(__dirname, "__data__", "test103.nq")),
+          ds.importFromUrls(["https://api.triplydb.com/datasets/vocabulary/music-keys/download"]),
+          ds.importFromFiles([buildPathToSrcPath(__dirname, "__data__", "test103.nq")]),
         ])
       ).to.eventually.rejectedWith("There is already an ongoing job for this dataset. Await that one first.");
     });
     it("Should not block two consequtive jobs for the same dataset", async function () {
       this.timeout(15000);
       const ds = await getNewTestDs(user, "private");
-      await ds.importFromUrls("https://api.triplydb.com/datasets/vocabulary/music-keys/download");
-      await ds.importFromFiles(buildPathToSrcPath(__dirname, "__data__", "test103.nq"));
+      await ds.importFromUrls(["https://api.triplydb.com/datasets/vocabulary/music-keys/download"]);
+      await ds.importFromFiles([buildPathToSrcPath(__dirname, "__data__", "test103.nq")]);
     });
   });
   describe("Clear resources", function () {
@@ -262,7 +265,7 @@ describe("Dataset", function () {
     });
     it("Clear graphs", async function () {
       this.timeout(10000);
-      await testDs.importFromFiles(buildPathToSrcPath(__dirname, "__data__", "small.nq"));
+      await testDs.importFromFiles([buildPathToSrcPath(__dirname, "__data__", "small.nq")]);
       expect((await testDs.getInfo(true)).graphCount).to.equal(2);
       await testDs.clear("graphs");
       expect((await testDs.getInfo(true)).graphCount).to.equal(0);
@@ -275,8 +278,8 @@ describe("Dataset", function () {
     });
     it.skip("Clear services", async function () {
       this.timeout(30000);
-      await testDs.importFromFiles(buildPathToSrcPath(__dirname, "__data__", "small.nq"));
-      await testDs.addService("sparql", "sparql");
+      await testDs.importFromFiles([buildPathToSrcPath(__dirname, "__data__", "small.nq")]);
+      await testDs.addService("sparql");
       expect((await testDs.getInfo(true)).serviceCount).to.equal(1);
       await testDs.clear("services");
       expect((await testDs.getInfo(true)).serviceCount).to.equal(0);
@@ -286,8 +289,8 @@ describe("Dataset", function () {
       this.timeout(35000);
       await Promise.all([
         testDs
-          .importFromFiles(buildPathToSrcPath(__dirname, "__data__", "small.nq"))
-          .then(() => testDs.addService("sparql", "sparql")),
+          .importFromFiles([buildPathToSrcPath(__dirname, "__data__", "small.nq")])
+          .then(() => testDs.addService("sparql")),
         testDs.uploadAsset(buildPathToSrcPath(__dirname, "__data__", "small.nq"), "small.nq"),
       ]).then(() => testDs.getInfo(true));
       const preClear = await testDs.getInfo();
@@ -384,10 +387,10 @@ describe("Dataset", function () {
     before(async function () {
       this.timeout(10000);
       testDs = await getNewTestDs(user, "private");
-      await testDs.importFromFiles(
+      await testDs.importFromFiles([
         buildPathToSrcPath(__dirname, "__data__", "test102.nt"),
-        buildPathToSrcPath(__dirname, "__data__", "test103.nq")
-      );
+        buildPathToSrcPath(__dirname, "__data__", "test103.nq"),
+      ]);
     });
     describe("Download graphs", function () {
       it("and decompress", async function () {
@@ -447,24 +450,21 @@ describe("Dataset", function () {
       before(async function () {
         this.timeout(10000);
         dsToImportFrom = await getNewTestDs(user, "private");
-        await dsToImportFrom.importFromFiles(
+        await dsToImportFrom.importFromFiles([
           buildPathToSrcPath(__dirname, "__data__", "test102.nt"),
-          buildPathToSrcPath(__dirname, "__data__", "test103.nq")
-        );
+          buildPathToSrcPath(__dirname, "__data__", "test103.nq"),
+        ]);
         // Sanity check
         expect(testDs["_lastJob"]?.info()?.status).to.equal("finished");
       });
 
       it("import empty graphs", async function () {
-        const importedGraphs = await testDs.importFromDataset({ fromDataset: dsToImportFrom, graphs: {} });
+        const importedGraphs = await testDs.importFromDataset(dsToImportFrom, { graphMap: {} });
         expect(importedGraphs).to.have.lengthOf(0);
       });
       it("import graph that doesnt exist", async function () {
         try {
-          await testDs.importFromDataset({
-            fromDataset: dsToImportFrom,
-            graphs: { blaaaaaaa: "http://tosomethingelse" },
-          });
+          await testDs.importFromDataset(dsToImportFrom, { graphMap: { blaaaaaaa: "http://tosomethingelse" } });
         } catch {
           //expected this
           return;
@@ -474,9 +474,8 @@ describe("Dataset", function () {
       it("import single graph", async function () {
         let testDsGraphs: Graph[] = [];
         for await (let graph of testDs.getGraphs()) graph && testDsGraphs.push(graph);
-        const importedGraphs = await testDs.importFromDataset({
-          fromDataset: dsToImportFrom,
-          graphs: {
+        const importedGraphs = await testDs.importFromDataset(dsToImportFrom, {
+          graphMap: {
             [testDsGraphs[0]["_info"].graphName]: "http://tosomethingelse",
           },
         });
@@ -486,17 +485,15 @@ describe("Dataset", function () {
         let testDsGraphs: Graph[] = [];
         for await (let graph of dsToImportFrom.getGraphs()) graph && testDsGraphs.push(graph);
         const numPreGraphs = (await testDs.getGraphs().toArray()).length;
-        await testDs.importFromDataset({
-          fromDataset: dsToImportFrom,
-          graphs: {
+        await testDs.importFromDataset(dsToImportFrom, {
+          graphMap: {
             [testDsGraphs[0]["_info"].graphName]: "http://new-name",
             [testDsGraphs[1]["_info"].graphName]: "http://new-name-2",
           },
           overwrite: false,
         });
-        const importedGraphs = await testDs.importFromDataset({
-          fromDataset: dsToImportFrom,
-          graphs: {
+        const importedGraphs = await testDs.importFromDataset(dsToImportFrom, {
+          graphMap: {
             [testDsGraphs[0]["_info"].graphName]: "http://new-name",
             [testDsGraphs[1]["_info"].graphName]: "http://new-name-3",
           },
@@ -514,12 +511,12 @@ describe("Dataset", function () {
         const targetDsGraphCount = (await targetDs.getGraphs().toArray()).length;
 
         // without overwrite
-        let importedGraphs = await targetDs.importFromDataset({ fromDataset: sourceDs });
+        let importedGraphs = await targetDs.importFromDataset(sourceDs);
         expect(importedGraphs[0].graphs).to.have.lengthOf(sourceDsGraphCount);
         expect(await targetDs.getGraphs().toArray()).to.have.length(sourceDsGraphCount + targetDsGraphCount);
 
         // with overwrite
-        importedGraphs = await targetDs.importFromDataset({ fromDataset: sourceDs, overwrite: true });
+        importedGraphs = await targetDs.importFromDataset(sourceDs, { overwrite: true });
         expect(importedGraphs[0].graphs).to.have.lengthOf(sourceDsGraphCount);
         expect(await targetDs.getGraphs().toArray()).to.have.length(sourceDsGraphCount + targetDsGraphCount);
       });
@@ -532,13 +529,12 @@ describe("Dataset", function () {
          * Create dataset
          */
         const dsToImportFrom = await getNewTestDs(user, "private");
-        await dsToImportFrom.importFromFiles(buildPathToSrcPath(__dirname, "__data__", "test103.nq"));
+        await dsToImportFrom.importFromFiles([buildPathToSrcPath(__dirname, "__data__", "test103.nq")]);
         await dsToImportFrom["_lastJob"]?.exec();
         let testDsGraphs: Graph[] = [];
         for await (let graph of testDs.getGraphs()) graph && testDsGraphs.push(graph);
-        await testDs.importFromDataset({
-          fromDataset: dsToImportFrom,
-          graphs: {
+        await testDs.importFromDataset(dsToImportFrom, {
+          graphMap: {
             [testDsGraphs[0]["_info"].graphName]: "http://tosomethingelse",
           },
         });
@@ -546,7 +542,7 @@ describe("Dataset", function () {
         /**
          * Add service
          */
-        const service = await testDs.addService("sparql", "testService");
+        const service = await testDs.addService("testService");
         let serviceList: Service[] = [];
         for await (let s of testDs.getServices()) s && serviceList.push(s);
         expect((await service.getInfo()).id).to.equal((await serviceList[0].getInfo()).id);
@@ -555,9 +551,8 @@ describe("Dataset", function () {
         /**
          * Change dataset
          */
-        await testDs.importFromDataset({
-          fromDataset: dsToImportFrom,
-          graphs: {
+        await testDs.importFromDataset(dsToImportFrom, {
+          graphMap: {
             [testDsGraphs[1]["_info"].graphName]: "http://tosomethingelse2",
           },
         });
@@ -579,6 +574,22 @@ describe("Dataset", function () {
         serviceList = [];
         for await (let s of testDs.getServices()) s && serviceList.push(s);
         expect(serviceList).to.have.length(0);
+      });
+    });
+    describe("Services in Dataset", () => {
+      it("Should get a service by name", async function () {
+        this.timeout(30000);
+        const serviceName1 = `${CommonUnittestPrefix}-addService-1`;
+        const serviceName2 = `${CommonUnittestPrefix}-addService-2`;
+        await testDs.ensureService(serviceName1, { type: "virtuoso" });
+        await testDs.ensureService(serviceName2, { type: "jena" });
+        const gottenService1 = await testDs.getService(serviceName1);
+        expect((await gottenService1.getInfo()).name).to.equal(serviceName1);
+        const gottenService2 = await testDs.getService(serviceName2);
+        const gottenService2Info = await gottenService2.getInfo();
+        expect(gottenService2Info.name).to.equal(serviceName2);
+        if (gottenService2.isV1Service()) expect(gottenService2Info.type).to.equal("sparql-jena");
+        else expect(gottenService2Info.type).to.equal("jena");
       });
     });
   });

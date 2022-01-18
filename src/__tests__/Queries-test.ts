@@ -14,6 +14,7 @@ import Query from "../Query";
 import { fileCache } from "../utils/cache";
 import { TriplyDbJsError } from "../utils/Error";
 import { gzip, gunzip } from "zlib";
+import Service from "../Service";
 
 process.on("unhandledRejection", function (reason: any, p: any) {
   console.warn("Possibly Unhandled Rejection at: Promise ", p, " reason: ", reason);
@@ -35,24 +36,104 @@ describe("Queries", function () {
   let app: App;
   let user: User;
   let testDs: Dataset;
+  let testService: Service;
   before(async function () {
-    this.timeout(10000);
+    this.timeout(30000);
     app = App.get({ token: process.env.UNITTEST_TOKEN_ACCOUNT });
     user = await app.getUser();
     await resetUnittestAccount(user);
     testDs = await getNewTestDs(user, "private");
     await fs.mkdirp(tmpDir);
+    await testDs.importFromFiles([buildPathToSrcPath(__dirname, "__data__", "small.nq")]);
+    testService = await testDs.addService("testService", { type: "virtuoso" });
+  });
+  after(async function () {
+    await resetUnittestAccount(user);
   });
   it("Should create, update, and delete query", async function () {
-    const query = await user.addQuery({
-      name: "test-query",
+    const query = await user.addQuery(`${CommonUnittestPrefix}-test-query`, {
       accessLevel: "private",
-      dataset: await testDs.getInfo().then((i) => i.id),
+      dataset: testDs,
     });
     expect(await query.getInfo().then((q) => q.accessLevel)).to.equal("private");
     await query.update({ accessLevel: "internal" });
     expect(await query.getInfo().then((q) => q.accessLevel)).to.equal("internal");
-    await query.delete();
+  });
+  it("Should create a query through a service", async function () {
+    this.timeout(30000);
+    expect((await testService.getInfo()).status).to.equal("running");
+    const query = await user.addQuery(`${CommonUnittestPrefix}-test-query-service`, {
+      accessLevel: "private",
+      service: testService,
+    });
+    const queryServiceEndpoint = (await query.getInfo()).service;
+    const testServiceEndpoint = (await testService.getInfo()).endpoint;
+    expect(queryServiceEndpoint).to.equal(testServiceEndpoint);
+    expect(await query.getInfo().then((q) => q.accessLevel)).to.equal("private");
+    await query.update({ accessLevel: "internal" });
+    expect(await query.getInfo().then((q) => q.accessLevel)).to.equal("internal");
+  });
+  it("Should throw an error if autoselect and service are used at the same time", async function () {
+    this.timeout(30000);
+    const ensuredQuery = user.ensureQuery(`${CommonUnittestPrefix}-ensured`, {
+      autoselectService: true,
+      accessLevel: "private",
+      service: testService,
+    });
+    await expect(ensuredQuery).to.eventually.rejectedWith(/service and autoselect at the same time/);
+  });
+  it("Should throw an error if dataset and service are used at the same time", async function () {
+    this.timeout(30000);
+    const ensuredQuery = user.ensureQuery(`${CommonUnittestPrefix}-ensured`, {
+      accessLevel: "private",
+      service: testService,
+      dataset: testDs,
+    });
+    await expect(ensuredQuery).to.eventually.rejectedWith(/dataset and service options at the same time/);
+  });
+
+  describe("Ensuring query", function () {
+    it("Should create when not already existing", async function () {
+      const ensuredQuery = await user.ensureQuery(`${CommonUnittestPrefix}-ensured`, {
+        autoselectService: true,
+        accessLevel: "private",
+        dataset: testDs,
+      });
+      const queryInfo = await ensuredQuery.getInfo();
+      expect(queryInfo.autoselectService).to.equal(true);
+      expect(queryInfo.accessLevel).to.equal("private");
+    });
+    it("Should get existing when already existing", async function () {
+      const firstQuery = await user.addQuery(`${CommonUnittestPrefix}-ensured2`, {
+        autoselectService: true,
+        accessLevel: "private",
+        dataset: testDs,
+      });
+      const firstQueryInfo = await firstQuery.getInfo();
+      const ensuredQuery = await user.ensureQuery(`${CommonUnittestPrefix}-ensured2`, {
+        accessLevel: "private",
+        dataset: testDs,
+        description: "This value should not be updated",
+      });
+      const ensuredQueryInfo = await ensuredQuery.getInfo();
+      expect(firstQueryInfo.id).to.equal(ensuredQueryInfo.id);
+      // since the ensuredQuery was not new, the newQueryInfo should not have been applied
+      expect(ensuredQueryInfo.autoselectService).to.equal(true);
+      expect(ensuredQueryInfo.description).to.be.empty;
+    });
+    it("Should throw when access level doesn't match", async function () {
+      await user.addQuery(`${CommonUnittestPrefix}-ensured3`, {
+        accessLevel: "private",
+        dataset: testDs,
+      });
+
+      await expect(
+        user.ensureQuery(`${CommonUnittestPrefix}-ensured3`, {
+          accessLevel: "public",
+          dataset: testDs,
+        })
+      ).to.eventually.be.rejectedWith(/already exists with access level/);
+    });
   });
 
   // these tests are slow (~2 min combined)
@@ -67,8 +148,8 @@ describe("Queries", function () {
         dataFile,
         [...Array(DATA_SIZE).keys()].map((i) => `<s:s${i}> <p:p${i}> <o:o${i}>.`).join("\n")
       );
-      await dataset.importFromFiles(dataFile);
-      await dataset.addService("sparql", "sparql");
+      await dataset.importFromFiles([dataFile]);
+      await dataset.addService("sparql");
     });
 
     describe("Construct-queries", async function () {
@@ -83,14 +164,13 @@ describe("Queries", function () {
             if (e instanceof TriplyDbJsError && e.statusCode === 404) return;
             throw e;
           });
-        constructQuery = await user.addQuery({
-          name: constructQueryName,
+        constructQuery = await user.addQuery(constructQueryName, {
           accessLevel: "private",
           // a construct query that gives same number of statements as there are in the dataset
           requestConfig: { payload: { query: "construct {?s?p?o} where {?s?p?o}" } },
           renderConfig: { output: "?" },
           variables: [{ name: "s", termType: "NamedNode" }],
-          dataset: await dataset.getInfo().then((d) => d.id),
+          dataset,
         });
       });
       describe("Fetching query string", function () {
@@ -148,14 +228,13 @@ WHERE { <http://blaaa> ?p ?o. }
             if (e instanceof TriplyDbJsError && e.statusCode === 404) return;
             throw e;
           });
-        selectQuery = await user.addQuery({
-          name: selectQueryName,
+        selectQuery = await user.addQuery(selectQueryName, {
           accessLevel: "private",
           // a select query that gives same number of statements as there are in the dataset
           requestConfig: { payload: { query: "select ?s?p?o where {?s?p?o}" } },
           renderConfig: { output: "?" },
           variables: [{ name: "s", termType: "NamedNode" }],
-          dataset: await dataset.getInfo().then((d) => d.id),
+          dataset,
         });
       });
 
@@ -245,13 +324,12 @@ WHERE { <http://blaaa> ?p ?o. }
             if (e instanceof TriplyDbJsError && e.statusCode === 404) return;
             throw e;
           });
-        tooLargeQuery = await user.addQuery({
-          name: tooLargeQueryName,
+        tooLargeQuery = await user.addQuery(tooLargeQueryName, {
           accessLevel: "private",
           requestConfig: { payload: { query: "CONSTRUCT WHERE {?s?p?o} ORDER BY ?s LIMIT 10000 OFFSET 12000" } },
           renderConfig: { output: "?" },
           variables: [{ name: "s", termType: "NamedNode" }],
-          dataset: await dataset.getInfo().then((d) => d.id),
+          dataset,
         });
       });
 

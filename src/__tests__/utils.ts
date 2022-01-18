@@ -22,8 +22,27 @@ async function removeDatasetsOfAccount(account: Account) {
     await dataset.delete();
   }
 }
+async function removeQueriesOfAccount(account: Account) {
+  for await (const query of account.getQueries()) {
+    if (!query) break;
+    const info = await query.getInfo();
+    throwErrorWhenNameNotPrefixed(info.name);
+    await query.delete();
+  }
+}
+async function removeStoriesOfAccount(account: Account) {
+  for await (const story of account.getStories()) {
+    if (!story) break;
+    const info = await story.getInfo();
+    throwErrorWhenNameNotPrefixed(info.name);
+    await story.delete();
+  }
+}
 export async function resetUnittestAccount(user: User) {
   await removeDatasetsOfAccount(user);
+  await removeQueriesOfAccount(user);
+  await removeStoriesOfAccount(user);
+
   const orgs = await user.getOrganizations();
   for (const org of orgs) {
     throwErrorWhenNameNotPrefixed((await org.getInfo()).accountName);
