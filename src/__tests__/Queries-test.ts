@@ -166,8 +166,10 @@ describe("Queries", function () {
           });
         constructQuery = await user.addQuery(constructQueryName, {
           accessLevel: "private",
-          // a construct query that gives same number of statements as there are in the dataset
-          requestConfig: { payload: { query: "construct {?s?p?o} where {?s?p?o}" } },
+          // a construct query that gives twice the number of statements as there are in the dataset
+          requestConfig: {
+            payload: { query: "construct {?s?p?o. ?s ?p ?newo} where {?s?p?o. bind(concat(str(?o)) as ?newo)}" },
+          },
           renderConfig: { output: "?" },
           variables: [{ name: "s", termType: "NamedNode" }],
           dataset,
@@ -176,27 +178,31 @@ describe("Queries", function () {
       describe("Fetching query string", function () {
         it("Should return stringified query", async function () {
           const populatedString = await constructQuery.getString({ s: "http://blaaa" });
-          expect(populatedString.trim()).to.equal(
-            `CONSTRUCT { <http://blaaa> ?p ?o. }
-WHERE { <http://blaaa> ?p ?o. }
-`.trim()
-          );
+          expect(populatedString.trim()).to.equal(`CONSTRUCT {
+  <http://blaaa> ?p ?o.
+  <http://blaaa> ?p ?newo.
+}
+WHERE {
+  <http://blaaa> ?p ?o.
+  BIND(CONCAT(STR(?o)) AS ?newo)
+}`);
         });
       });
       it("Should query a saved construct-query (quad iterator)", async function () {
         this.timeout(60000);
-        const expectedStatements = await constructQuery.getInfo().then((info) => info.dataset?.statements);
+        const expectedStatements = await constructQuery.getInfo().then((info) => info.dataset!.statements * 2);
+        expect(expectedStatements).to.equal(DATA_SIZE * 2);
         let count = 0;
         for await (const _ of constructQuery.results().statements()) {
           count++;
         }
-        expect(expectedStatements).to.equal(count);
+        expect(count).to.equal(expectedStatements);
         const asArrayCount = await constructQuery
           .results()
           .statements()
           .toArray()
           .then((a) => a.length);
-        expect(count).to.equal(asArrayCount);
+        expect(asArrayCount).to.equal(expectedStatements);
       });
 
       it("Should query a saved construct-query (to file)", async function () {
@@ -206,11 +212,11 @@ WHERE { <http://blaaa> ?p ?o. }
         const fileContent = await fs.readFile(targetFile, "utf-8");
         const parser = new n3.Parser();
         const quads = parser.parse(fileContent);
-        expect(quads.length).to.equal(await constructQuery.getInfo().then((info) => info.dataset?.statements));
+        expect(quads.length).to.equal(DATA_SIZE * 2);
       });
 
       it("Should support query variables in construct-queries", async function () {
-        expect((await constructQuery.results({ s: "s:s1" }).statements().toArray()).length).to.equal(1);
+        expect((await constructQuery.results({ s: "s:s1" }).statements().toArray()).length).to.equal(2);
       });
 
       it("Should not support bindings", async function () {
