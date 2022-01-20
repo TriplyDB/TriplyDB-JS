@@ -319,7 +319,7 @@ WHERE {
         expect(() => selectQuery.results().statements()).to.throw();
       });
     });
-    describe.skip("Queries with an error", async function () {
+    describe("Queries with an error", async function () {
       let tooLargeQuery: Query;
       before(async function () {
         const tooLargeQueryName = `${CommonUnittestPrefix}-too-large`;
