@@ -8,6 +8,8 @@ import AsyncIteratorHelper from "./utils/AsyncIteratorHelper";
 import Query from "./Query";
 import Story from "./Story";
 import { getErr } from "./utils/Error";
+import { NewDataset } from "@triply/utils/lib/Models";
+import { NewQueryWithDataset, NewQueryWithService, NewStory } from "./commonAccountFunctions";
 export interface AccountBase {
   getInfo(): Promise<Models.Account>;
   getDataset(name: string): Promise<Dataset>;
@@ -25,6 +27,9 @@ export interface AccountBase {
   addStory(name: string, args?: Omit<Models.StoryCreate, "name">): Promise<Story>;
   getPinnedItems(): Promise<Array<Dataset | Story | Query>>;
   pinItems(items: Array<Dataset | Story | Query>): Promise<User | Org>;
+  ensureDataset(name: string, newDs?: NewDataset): Promise<Dataset>;
+  ensureQuery(name: string, newQuery: NewQueryWithService | NewQueryWithDataset): Promise<Query>;
+  ensureStory(name: string, newStory?: NewStory): Promise<Story>;
 }
 export type Account = User | Org;
 export async function getUserOrOrg(accountName: string, app: App): Promise<User | Org> {

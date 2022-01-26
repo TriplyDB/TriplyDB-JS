@@ -20,6 +20,7 @@ import {
   addStory,
   ensureDataset,
   ensureQuery,
+  ensureStory,
 } from "./commonAccountFunctions";
 import { getErr } from "./utils/Error";
 
@@ -50,6 +51,7 @@ export default class Org implements AccountBase {
   public pinItems = pinItems;
   public ensureDataset = ensureDataset;
   public ensureQuery = ensureQuery;
+  public ensureStory = ensureStory;
 
   public asUser(): User {
     throw getErr(`${this._info?.accountName || "This"} is an organization. Cannot fetch this as a user.`);

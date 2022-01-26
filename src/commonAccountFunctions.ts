@@ -19,8 +19,8 @@ This should not influence the interfaces of the functions.
 */
 
 type NewQueryBase = Omit<Models.QueryCreate, "name" | "dataset" | "preferredService">;
-type NewQueryWithDataset = NewQueryBase & { dataset: Dataset };
-type NewQueryWithService = NewQueryBase & { service: Service };
+export type NewQueryWithDataset = NewQueryBase & { dataset: Dataset };
+export type NewQueryWithService = NewQueryBase & { service: Service };
 export async function addQuery<T extends Account>(this: T, name: string, newQuery: NewQueryWithDataset): Promise<Query>;
 export async function addQuery<T extends Account>(this: T, name: string, newQuery: NewQueryWithService): Promise<Query>;
 export async function addQuery<T extends Account>(
@@ -57,7 +57,7 @@ export async function addQuery<T extends Account>(
     this
   );
 }
-type NewStory = Omit<Models.StoryCreate, "name">;
+export type NewStory = Omit<Models.StoryCreate, "name">;
 export async function addStory<T extends Account>(this: T, name: string, args?: NewStory) {
   const app = (this as User)["_app"];
   const accountName = (await this.getInfo()).accountName;
