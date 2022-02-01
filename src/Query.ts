@@ -122,7 +122,9 @@ export default class Query {
       pageSize: 5000,
       ...(variables || {}),
     });
-
+    if (opts?.cache) {
+      opts.cache.cacheId = this._info.id;
+    }
     const iteratorOptions = {
       potentialFutureError: getErr(`Failed to run query`),
       getErrorMessage: async () => `Failed to get results for query ${await this.getInfo().then((i) => i.name)}.`,

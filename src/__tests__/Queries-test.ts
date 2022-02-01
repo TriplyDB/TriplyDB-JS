@@ -368,5 +368,35 @@ WHERE {
         throw new Error("Expected an error to be thrown");
       });
     });
+    it("Should use a cache fingerprint that's robust against renaming/replacing queries", async function () {
+      await fs.emptyDir(tmpDir); //make sure we use a clean cache
+      const queryName = `${CommonUnittestPrefix}-cache-test`;
+      const query1 = await user.addQuery(queryName, {
+        requestConfig: { payload: { query: `select ("1" as ?a) where {}` } },
+        accessLevel: "private",
+        renderConfig: { output: "?" },
+        dataset,
+      });
+
+      const firstResults = await query1
+        .results({}, { cache: fileCache({ cacheDir: tmpDir, compression: "gz" }) })
+        .bindings()
+        .toArray();
+      expect(firstResults).to.deep.equal([{ a: "1" }]);
+      await query1.delete();
+      const query2 = await user.addQuery(queryName, {
+        requestConfig: { payload: { query: `select ("2" as ?a) where {}` } },
+        accessLevel: "private",
+        renderConfig: { output: "?" },
+        dataset,
+      });
+      const secondResults = await query2
+        .results({}, { cache: fileCache({ cacheDir: tmpDir, compression: "gz" }) })
+        .bindings()
+        .toArray();
+      // Sure, the query has the same name, but it's a different query (and query string)
+      // I.e., the we should not re-use the cache of query1
+      expect(secondResults).to.deep.equal([{ a: "2" }]);
+    });
   });
 });

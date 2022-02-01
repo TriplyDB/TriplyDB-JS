@@ -27,16 +27,9 @@ export type FromCacheFn = (key: CacheKey) => Promise<CachedResult | undefined>;
 export type Cache = {
   write: ToCacheFn;
   read: FromCacheFn;
+  cacheId: string | undefined;
 };
-export function fileCache({
-  cacheDir,
-  cacheId,
-  compression,
-}: {
-  cacheDir: string;
-  cacheId?: string;
-  compression: "gz" | undefined;
-}): Cache {
+export function fileCache({ cacheDir, compression }: { cacheDir: string; compression: "gz" | undefined }): Cache {
   const compress =
     compression === "gz"
       ? async (data: string) =>
@@ -60,9 +53,11 @@ export function fileCache({
       : (data: Buffer) => data.toString("utf-8");
 
   function getCacheFile(key: CacheKey) {
-    return path.resolve(cacheDir, md5(JSON.stringify(key) + cacheId));
+    return path.resolve(cacheDir, md5(JSON.stringify(key) + cache.cacheId));
   }
-  return {
+  const cache: Cache = {
+    // We don't know the cache ID yet, but it may be set/changed by whetever we use this function, e.g. in the Query class
+    cacheId: undefined,
     read: async (key) => {
       const cacheFile = getCacheFile(key);
       if (await fs.pathExists(cacheFile)) {
@@ -73,4 +68,5 @@ export function fileCache({
       await fs.writeFile(getCacheFile(key), await compress(JSON.stringify(result)));
     },
   };
+  return cache;
 }
