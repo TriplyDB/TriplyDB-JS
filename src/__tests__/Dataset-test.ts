@@ -578,7 +578,7 @@ describe("Dataset", function () {
     });
     describe("Services in Dataset", () => {
       it("Should get a service by name", async function () {
-        this.timeout(30000);
+        this.timeout(50000);
         const serviceName1 = `${CommonUnittestPrefix}-addService-1`;
         const serviceName2 = `${CommonUnittestPrefix}-addService-2`;
         await testDs.ensureService(serviceName1, { type: "virtuoso" });
