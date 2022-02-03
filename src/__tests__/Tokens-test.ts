@@ -21,6 +21,7 @@ describe("Tokens", function () {
   let accountName: string;
 
   before(async function () {
+    this.timeout(5000); // Expect this to be shorter, however resetting the account might take longer
     readAccount = await App.get({ url: url, token: readToken }).getUser();
     writeAccount = await App.get({ url: url, token: writeToken }).getUser();
     accountAccount = await App.get({ url: url, token: accountToken }).getUser();

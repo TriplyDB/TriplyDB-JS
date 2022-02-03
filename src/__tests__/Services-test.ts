@@ -31,7 +31,6 @@ describe("Services", function () {
   let user: User;
   let testDs: Dataset;
   let service: Service;
-  let service2: Service;
   this.timeout(50000);
   before(async function () {
     app = App.get({ token: process.env.UNITTEST_TOKEN_ACCOUNT });
@@ -40,7 +39,6 @@ describe("Services", function () {
     testDs = await getNewTestDs(user, "private");
     await testDs.importFromFiles([buildPathToSrcPath(__dirname, "__data__", "small.nq")]);
     service = await testDs.addService("default", { type: "virtuoso" });
-    service2 = await testDs.addService("serviceV1");
   });
   after(async function () {
     await Promise.all(datasetsToClean.map((ds) => ds.delete()));
@@ -89,15 +87,24 @@ describe("Services", function () {
       expect(graphs.length).to.equal((await testDs.getInfo(true)).graphCount);
     }
   });
-  it("Creating a service of type V1 returns a service of type V2", async function () {
-    const serviceInfo = await service2.getInfo(true);
-    if (service2.isV1Service()) {
-      expect(serviceInfo.status).to.equal("running");
-      expect(serviceInfo.type).to.equal("sparql");
-    } else {
-      expect(serviceInfo.status).to.equal("running");
-      expect(serviceInfo.type).to.equal("virtuoso");
-    }
+  describe("V1/V2 interoperability", () => {
+    let tempService: Service;
+    before(async () => {
+      tempService = await testDs.addService("otherService", { type: service.isV1Service() ? "virtuoso" : "sparql" });
+    });
+    after(async () => {
+      await tempService.delete();
+    });
+    it("Creating a service of type V1 returns a service of type V2", async function () {
+      const serviceInfo = await tempService.getInfo(true);
+      if (tempService.isV1Service()) {
+        expect(serviceInfo.status).to.equal("running");
+        expect(serviceInfo.type).to.equal("sparql");
+      } else {
+        expect(serviceInfo.status).to.equal("running");
+        expect(serviceInfo.type).to.equal("virtuoso");
+      }
+    });
   });
   describe("Ensuring a service", function () {
     it("Should create when not already existing", async function () {
@@ -105,6 +112,7 @@ describe("Services", function () {
       expect((await ensuredService?.getInfo()).name).to.equal(`${CommonUnittestPrefix}-ensured`);
       if (ensuredService.isV1Service()) expect((await ensuredService?.getInfo()).type).to.equal("sparql-jena");
       else expect((await ensuredService?.getInfo()).type).to.equal("jena");
+      await ensuredService?.delete();
     });
     it("Should get existing when already existing", async function () {
       const ensuredService = await testDs.ensureService("default");
