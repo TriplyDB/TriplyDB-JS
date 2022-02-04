@@ -11,6 +11,7 @@ import { bootstrap } from "global-agent";
 
 bootstrap();
 import semver from "semver";
+import { MarkRequired } from "ts-essentials";
 
 export interface AppConfig {
   /**
@@ -34,12 +35,15 @@ const APP_CONFIG_DEFAULTS = {
   url: "https://api.triplydb.com",
 };
 export default class App {
-  private _config: AppConfig;
+  private _config: MarkRequired<AppConfig, "url">;
   private _info?: Models.ClientConfig;
-  private constructor(conf: AppConfig = {}) {
-    this._config = { ...conf };
+  private constructor(conf: Readonly<AppConfig> = {}) {
+    this._config = {
+      ...APP_CONFIG_DEFAULTS,
+      ...conf,
+    };
     // Extract url form token
-    if (!this._config.url && this._config.token) {
+    if (this._config.url === APP_CONFIG_DEFAULTS.url && this._config.token) {
       try {
         const decodedToken: Models.JwtPayload = jwt_decode(this._config.token);
         // Skip old hardcoded issuer
@@ -48,24 +52,18 @@ export default class App {
         throw getErr("Invalid token").addContext({ token: this._config.token });
       }
     }
-    this._config = {
-      ...APP_CONFIG_DEFAULTS,
-      ...this._config,
-    };
-    this.validateConf();
-    if (conf.httpProxy || conf.httpsProxy) {
+    if (this._config.httpProxy || this._config.httpsProxy) {
       /**
        * We cannot set the proxy per request, as we're not using fetch alone, but e.g. tus uses the http/https module directly.
        */
       bootstrap();
-      (global as any).GLOBAL_AGENT.HTTP_PROXY = conf.httpsProxy || conf.httpProxy;
-      (global as any).GLOBAL_AGENT.HTTPS_PROXY = conf.httpsProxy;
+      (global as any).GLOBAL_AGENT.HTTP_PROXY = this._config.httpsProxy || this._config.httpProxy;
+      (global as any).GLOBAL_AGENT.HTTPS_PROXY = this._config.httpsProxy;
     }
   }
 
-  private validateConf(): void {
-    if (!this._config) throw getErr("No TriplyDB-JS configuration object set");
-    if (!this._config.url) throw getErr("No domain specified in TriplyDB-JS configuration");
+  public getConfig() {
+    return this._config;
   }
 
   public async getInfo() {
