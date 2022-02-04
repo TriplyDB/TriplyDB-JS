@@ -24,19 +24,15 @@ describe("User", function () {
     expect(accounts).to.have.length.greaterThan(0);
     expect(accounts.map((x) => (x as User)["_name"])).to.contain((await user.getInfo()).accountName);
   });
-
-  // Skipped as these tests are difficult to isolate and run on production
-  it.skip("unused", async function () {
-    it("rename account", async function () {
-      const originalName = (await user.getInfo()).accountName;
-      const newName = CommonUnittestPrefix + times(20, () => random(35).toString(36)).join("");
-      await user.update({ accountName: newName });
-      expect((await user.getInfo()).accountName).to.equal(newName);
-      await user.update({ accountName: originalName });
-      expect((await user.getInfo()).accountName).to.equal(originalName);
-    });
-    it("ensure that we get an error when the user doesn't exist", async function () {
-      await expect(app.getAccount("maocpwnuzrls")).to.eventually.be.rejectedWith(/404: Account/);
-    });
+  it("rename account", async function () {
+    const originalName = (await user.getInfo()).accountName;
+    const newName = CommonUnittestPrefix + times(20, () => random(35).toString(36)).join("");
+    await user.update({ accountName: newName });
+    expect((await user.getInfo()).accountName).to.equal(newName);
+    await user.update({ accountName: originalName });
+    expect((await user.getInfo()).accountName).to.equal(originalName);
+  });
+  it("ensure that we get an error when the user doesn't exist", async function () {
+    await expect(app.getAccount("maocpwnuzrls")).to.eventually.be.rejectedWith(/404: Account/);
   });
 });

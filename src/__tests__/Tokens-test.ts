@@ -7,6 +7,7 @@ const expect = chai.expect;
 import App from "../App";
 import User from "../User";
 import { resetUnittestAccount, CommonUnittestPrefix } from "./utils";
+import { TriplyDbJsError } from "../utils/Error";
 
 const readToken = process.env.UNITTEST_TOKEN_READ;
 const writeToken = process.env.UNITTEST_TOKEN_WRITE;
@@ -29,17 +30,22 @@ describe("Tokens", function () {
     await resetUnittestAccount(accountAccount);
   });
 
-  describe.skip("Rename account", function () {
+  describe("Rename account", function () {
     const renameFunction = (account: User, originalAccountname: string) =>
       account.update({ accountName: "joe" }).then(() => account.update({ accountName: originalAccountname }));
     it("read-token", async function () {
-      await expect(async () => renameFunction(readAccount, accountName)).to.be.rejected;
+      await expect(renameFunction(readAccount, accountName)).to.be.rejectedWith(
+        TriplyDbJsError,
+        /Failed to update account information of.*\(401: Unauthorized/
+      );
     });
     it("write-token", async function () {
-      await expect(async () => renameFunction(writeAccount, accountName)).to.be.rejected;
+      await expect(renameFunction(writeAccount, accountName)).to.be.rejectedWith(
+        TriplyDbJsError,
+        /Failed to update account information of.*\(401: Unauthorized/
+      );
     });
-    //Skipped. This is a test that is difficult to isolate and run on production
-    it.skip("account-token", async function () {
+    it("account-token", async function () {
       await renameFunction(accountAccount, accountName);
     });
   });

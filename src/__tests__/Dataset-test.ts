@@ -178,7 +178,7 @@ describe("Dataset", function () {
       testDs = await getNewTestDs(user, "private");
     });
 
-    it.skip("Upload", async function () {
+    it("Upload", async function () {
       this.timeout(15000);
       await testDs.importFromFiles([
         buildPathToSrcPath(__dirname, "__data__", "test102.nt"),
@@ -276,7 +276,7 @@ describe("Dataset", function () {
       await testDs.clear("assets");
       expect((await testDs.getInfo(true)).assetCount).to.equal(0);
     });
-    it.skip("Clear services", async function () {
+    it("Clear services", async function () {
       this.timeout(30000);
       await testDs.importFromFiles([buildPathToSrcPath(__dirname, "__data__", "small.nq")]);
       await testDs.addService("sparql");
@@ -285,7 +285,7 @@ describe("Dataset", function () {
       expect((await testDs.getInfo(true)).serviceCount).to.equal(0);
     });
 
-    it.skip("Clear all resources", async function () {
+    it("Clear all resources", async function () {
       this.timeout(35000);
       await Promise.all([
         testDs
@@ -521,7 +521,7 @@ describe("Dataset", function () {
         expect(await targetDs.getGraphs().toArray()).to.have.length(sourceDsGraphCount + targetDsGraphCount);
       });
     });
-    describe.skip("Service tests", function () {
+    describe("Service tests", function () {
       it("Should make, restart, and delete a service", async function () {
         this.timeout(60000); // needs to start and restart a service. takes some time
 
@@ -530,12 +530,11 @@ describe("Dataset", function () {
          */
         const dsToImportFrom = await getNewTestDs(user, "private");
         await dsToImportFrom.importFromFiles([buildPathToSrcPath(__dirname, "__data__", "test103.nq")]);
-        await dsToImportFrom["_lastJob"]?.exec();
-        let testDsGraphs: Graph[] = [];
-        for await (let graph of testDs.getGraphs()) graph && testDsGraphs.push(graph);
+        const dsToImportFromGraphs: Graph[] = [];
+        for await (const graph of dsToImportFrom.getGraphs()) dsToImportFromGraphs.push(graph);
         await testDs.importFromDataset(dsToImportFrom, {
           graphMap: {
-            [testDsGraphs[0]["_info"].graphName]: "http://tosomethingelse",
+            [dsToImportFromGraphs[0]["_info"].graphName]: "http://tosomethingelse",
           },
         });
 
@@ -544,7 +543,7 @@ describe("Dataset", function () {
          */
         const service = await testDs.addService("testService");
         let serviceList: Service[] = [];
-        for await (let s of testDs.getServices()) s && serviceList.push(s);
+        for await (const s of testDs.getServices()) serviceList.push(s);
         expect((await service.getInfo()).id).to.equal((await serviceList[0].getInfo()).id);
         expect(await service.isUpToDate()).to.be.true;
 
@@ -553,7 +552,7 @@ describe("Dataset", function () {
          */
         await testDs.importFromDataset(dsToImportFrom, {
           graphMap: {
-            [testDsGraphs[1]["_info"].graphName]: "http://tosomethingelse2",
+            [dsToImportFromGraphs[1]["_info"].graphName]: "http://tosomethingelse2",
           },
         });
 
@@ -564,7 +563,7 @@ describe("Dataset", function () {
         await service.update();
         expect(await service.isUpToDate()).to.be.true;
         serviceList = [];
-        for await (let s of testDs.getServices()) s && serviceList.push(s);
+        for await (const s of testDs.getServices()) serviceList.push(s);
         expect(serviceList).to.have.length(1);
 
         /**
@@ -572,7 +571,7 @@ describe("Dataset", function () {
          */
         await service.delete();
         serviceList = [];
-        for await (let s of testDs.getServices()) s && serviceList.push(s);
+        for await (const s of testDs.getServices()) serviceList.push(s);
         expect(serviceList).to.have.length(0);
       });
     });

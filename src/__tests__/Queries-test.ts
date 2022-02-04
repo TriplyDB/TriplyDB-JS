@@ -48,6 +48,7 @@ describe("Queries", function () {
     testService = await testDs.addService("testService", { type: "virtuoso" });
   });
   after(async function () {
+    this.timeout(10000); // Resetting could take a while
     await resetUnittestAccount(user);
   });
   it("Should create, update, and delete query", async function () {
