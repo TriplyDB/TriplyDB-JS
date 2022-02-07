@@ -7,7 +7,7 @@ import User from "./User";
 import { _get, _post, _patch } from "./RequestHandler";
 import Dataset, { Prefixes } from "./Dataset";
 import { getErr } from "./utils/Error";
-import { PinnedItemUpdate } from "@triply/utils/lib/Models";
+import { AccessLevel, PinnedItemUpdate, SparqlQuery, VariableConfig } from "@triply/utils/lib/Models";
 import { omit } from "lodash";
 import Service from "./Service";
 
@@ -17,35 +17,43 @@ Since the classes are implementing an interface rather than extending a class,
 As a workaround for this, we use as-casting to User within the functions.
 This should not influence the interfaces of the functions.
 */
+type AddQueryOptionsBase = {
+  queryString: SparqlQuery["query"];
+  /**   * By Default "table", other options may include: "response", "geo", "gallery", "markup", etc   */
+  output?: string;
+  accessLevel?: AccessLevel;
+  variables?: Array<VariableConfig>;
+  description?: string;
+  displayName?: string;
+};
 
-type NewQueryBase = Omit<Models.QueryCreate, "name" | "dataset" | "preferredService">;
-export type NewQueryWithDataset = NewQueryBase & { dataset: Dataset };
-export type NewQueryWithService = NewQueryBase & { service: Service };
-export async function addQuery<T extends Account>(this: T, name: string, newQuery: NewQueryWithDataset): Promise<Query>;
-export async function addQuery<T extends Account>(this: T, name: string, newQuery: NewQueryWithService): Promise<Query>;
-export async function addQuery<T extends Account>(
-  this: T,
-  name: string,
-  newQuery: NewQueryWithService | NewQueryWithDataset
-) {
+export type AddQueryDataset = AddQueryOptionsBase & { dataset: Dataset; service?: never };
+export type AddQueryService = AddQueryOptionsBase & { service: Service; dataset?: never };
+export async function addQuery<T extends Account>(this: T, name: string, opts: AddQueryDataset): Promise<Query>;
+export async function addQuery<T extends Account>(this: T, name: string, opts: AddQueryService): Promise<Query>;
+export async function addQuery<T extends Account>(this: T, name: string, opts: AddQueryDataset | AddQueryService) {
   const app = (this as User)["_app"];
   const accountName = (await this.getInfo()).accountName;
-  let query: Models.QueryCreate = { name, accessLevel: newQuery.accessLevel };
-  if ("dataset" in newQuery && "service" in newQuery) {
-    throw getErr("Can't use dataset and service options at the same time in the newQuery");
-  } else if ("dataset" in newQuery) {
-    const { dataset, ...newQueryOpts } = newQuery;
-    query = { name, ...newQueryOpts, dataset: dataset["_info"]?.id };
-  } else if ("service" in newQuery) {
-    const { service, ...newQueryOpts } = newQuery;
-    const dataset = service["_dataset"];
-    query = {
-      name,
-      ...newQueryOpts,
-      dataset: dataset["_info"]?.id,
-      preferredService: (await service.getInfo()).endpoint,
-    };
+  let dataset: string | undefined;
+  let service: string | undefined;
+  if (opts.dataset) {
+    dataset = opts.dataset["_info"]?.id;
   }
+  if (opts.service) {
+    dataset = opts.service["_dataset"]["_info"]?.id;
+    service = (await opts.service.getInfo()).endpoint;
+  }
+  let query: Models.QueryCreate = {
+    name,
+    dataset,
+    requestConfig: { payload: { query: opts.queryString } },
+    preferredService: service,
+    accessLevel: opts.accessLevel ? opts.accessLevel : "private",
+    renderConfig: {
+      output: opts.output ? opts.output : "table",
+    },
+    variables: opts.variables,
+  };
   return new Query(
     app,
     await _post<Routes.queries._account.Post>({
@@ -254,24 +262,28 @@ export async function ensureDataset<T extends Account>(this: T, name: string, ne
   }
 }
 
-export async function ensureQuery<T extends Account>(
-  this: T,
-  name: string,
-  newQuery: NewQueryWithService | NewQueryWithDataset
-) {
+export async function ensureQuery<T extends Account>(this: T, name: string, opts: AddQueryDataset): Promise<Query>;
+export async function ensureQuery<T extends Account>(this: T, name: string, opts: AddQueryService): Promise<Query>;
+export async function ensureQuery<T extends Account>(this: T, name: string, opts: AddQueryDataset | AddQueryService) {
   try {
     const query = await this.getQuery(name);
     const info = await query.getInfo();
-    if (newQuery?.accessLevel && newQuery?.accessLevel !== info.accessLevel) {
+    if (opts?.accessLevel && opts?.accessLevel !== info.accessLevel) {
       throw getErr(
-        `Query ${name} already exists with access level ${info.accessLevel}. Cannot ensure it with access level ${newQuery?.accessLevel}. Please change the access level to match the Query, or remove it entirely as a parameter.`
+        `Query '${name}' already exists with access level '${info.accessLevel}'. Cannot ensure it with access level '${opts?.accessLevel}'. Please change the access level to match the Query, or remove it entirely as a parameter.`
+      );
+    }
+    // ensureQuery functionality to be refined: https://issues.triply.cc/issues/6296
+    if (info.requestConfig?.payload.query !== opts.queryString) {
+      throw getErr(
+        `Query '${name}' already exists but with a different query string. \n Please use 'Query.addVersion(opts)' with the correct options to add a new version to query '${name}'. \n The query string that already exists is: ${info.requestConfig?.payload.query}. \n It does not match: ${opts.queryString}  `
       );
     }
     return query;
   } catch (e: any) {
     if (e.statusCode !== 404) throw e;
     // Cast here to keep typescript happy
-    return this.addQuery(name, newQuery as NewQueryWithDataset);
+    return this.addQuery(name, opts as AddQueryDataset);
   }
 }
 

@@ -9,7 +9,7 @@ import Query from "./Query";
 import Story from "./Story";
 import { getErr } from "./utils/Error";
 import { NewDataset } from "@triply/utils/lib/Models";
-import { NewQueryWithDataset, NewQueryWithService, NewStory } from "./commonAccountFunctions";
+import { AddQueryDataset, AddQueryService, NewStory } from "./commonAccountFunctions";
 export interface AccountBase {
   getInfo(): Promise<Models.Account>;
   getDataset(name: string): Promise<Dataset>;
@@ -21,14 +21,14 @@ export interface AccountBase {
   setAvatar(pathOrBuffer: string | Buffer): Promise<void>;
   getQuery(name: string): Promise<Query>;
   getQueries(): AsyncIteratorHelper<Models.Query, Query>;
-  addQuery(name: string, newQuery: Omit<Models.QueryCreate, "name">): Promise<Query>;
+  addQuery(name: string, opts: AddQueryDataset | AddQueryService): Promise<Query>;
   getStory(name: string): Promise<Story>;
   getStories(): AsyncIteratorHelper<Models.Story, Story>;
   addStory(name: string, args?: Omit<Models.StoryCreate, "name">): Promise<Story>;
   getPinnedItems(): Promise<Array<Dataset | Story | Query>>;
   pinItems(items: Array<Dataset | Story | Query>): Promise<User | Org>;
   ensureDataset(name: string, newDs?: NewDataset): Promise<Dataset>;
-  ensureQuery(name: string, newQuery: NewQueryWithService | NewQueryWithDataset): Promise<Query>;
+  ensureQuery(name: string, opts: AddQueryDataset | AddQueryService): Promise<Query>;
   ensureStory(name: string, newStory?: NewStory): Promise<Story>;
 }
 export type Account = User | Org;

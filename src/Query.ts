@@ -1,7 +1,7 @@
 import { Models, Routes } from "@triply/utils";
 import { parseAndInjectVariablesIntoQuery, validate } from "@triply/utils/lib/sparqlVarUtils";
 import App from "./App";
-import { _get, _patch, _delete } from "./RequestHandler";
+import { _get, _patch, _delete, _post } from "./RequestHandler";
 import { Account } from "./Account";
 import { getErr } from "./utils/Error";
 import AsyncIteratorHelper from "./utils/AsyncIteratorHelper";
@@ -10,9 +10,17 @@ import * as n3 from "n3";
 import sparqljs from "sparqljs";
 import { stringify as stringifyQueryObj } from "query-string";
 import AsyncIteratorHelperWithToFile from "./utils/AsyncIteratorHelperWithToFile";
+import { VariableConfig } from "@triply/utils/lib/Models";
 
 export type Binding = { [key: string]: string };
 export type VariableValues = { [variable: string]: string | undefined };
+
+type AddVersion = {
+  queryString?: string;
+  /**   * By Default "table", other options may include: "response", "geo", "gallery", "markup", etc   */
+  output?: string;
+  variables?: VariableConfig[];
+};
 export default class Query {
   private _app: App;
   private _info: Models.Query;
@@ -57,6 +65,47 @@ export default class Query {
     return this._info;
   }
 
+  public async addVersion(args: AddVersion) {
+    await this.useVersion("latest");
+    let { requestConfig, renderConfig, variables } = await this.getInfo();
+
+    // In theory, a saved query may not have a query string if that query is created via the UI
+    // We're catering for that by setting a default below
+    if (!requestConfig?.payload.query) {
+      requestConfig = {
+        payload: {
+          query: "select * where {?sub ?pred ?obj}",
+        },
+      };
+    }
+    if (args.output) {
+      renderConfig = { output: args.output };
+    }
+    if (args.queryString) {
+      requestConfig = {
+        payload: {
+          query: args.queryString,
+        },
+      };
+    }
+    if (args.variables) {
+      variables = args.variables;
+    }
+
+    const updateQueryInfo: Models.QueryVersionUpdate = {
+      requestConfig,
+      renderConfig,
+      variables,
+    };
+
+    await _post<Routes.queries._account._query.Post>({
+      app: this._app,
+      errorWithCleanerStack: getErr(`Failed to add a new version to query '${this["_info"].name}'`),
+      data: updateQueryInfo,
+      path: await this._getPath(),
+    });
+    return this;
+  }
   private _setInfo(info: Models.Query) {
     this._info = info;
     return this;
@@ -113,6 +162,9 @@ export default class Query {
       variableDefinitions: info.variables,
       variableValues: variableValues || {},
     });
+  }
+  public async getRunLink() {
+    return (await this.getInfo(true)).link + "/run";
   }
   public results(variables?: VariableValues, opts?: { cache?: Cache }) {
     const queryType = this._getQueryType();

@@ -37,6 +37,7 @@ describe("Queries", function () {
   let user: User;
   let testDs: Dataset;
   let testService: Service;
+  const defaultQueryString = "select ?s?p?o where {?s?p?o}";
   before(async function () {
     this.timeout(30000);
     app = App.get({ token: process.env.UNITTEST_TOKEN_ACCOUNT });
@@ -54,7 +55,9 @@ describe("Queries", function () {
   it("Should create, update, and delete query", async function () {
     const query = await user.addQuery(`${CommonUnittestPrefix}-test-query`, {
       accessLevel: "private",
-      dataset: testDs,
+      queryString: "select ?s?p?o where {?s?p?o}",
+      output: "geo",
+      service: testService,
     });
     expect(await query.getInfo().then((q) => q.accessLevel)).to.equal("private");
     await query.update({ accessLevel: "internal" });
@@ -66,6 +69,7 @@ describe("Queries", function () {
     const query = await user.addQuery(`${CommonUnittestPrefix}-test-query-service`, {
       accessLevel: "private",
       service: testService,
+      queryString: "select ?s?p?o where {?s?p?o}",
     });
     const queryServiceEndpoint = (await query.getInfo()).service;
     const testServiceEndpoint = (await testService.getInfo()).endpoint;
@@ -74,31 +78,58 @@ describe("Queries", function () {
     await query.update({ accessLevel: "internal" });
     expect(await query.getInfo().then((q) => q.accessLevel)).to.equal("internal");
   });
-  it("Should throw an error if autoselect and service are used at the same time", async function () {
-    this.timeout(30000);
-    const ensuredQuery = user.ensureQuery(`${CommonUnittestPrefix}-ensured`, {
-      autoselectService: true,
-      accessLevel: "private",
-      service: testService,
-    });
-    await expect(ensuredQuery).to.eventually.rejectedWith(/service and autoselect at the same time/);
-  });
-  it("Should throw an error if dataset and service are used at the same time", async function () {
+  it.skip("Should throw an error if dataset and service are used at the same time", async function () {
     this.timeout(30000);
     const ensuredQuery = user.ensureQuery(`${CommonUnittestPrefix}-ensured`, {
       accessLevel: "private",
-      service: testService,
+      queryString: defaultQueryString,
       dataset: testDs,
     });
     await expect(ensuredQuery).to.eventually.rejectedWith(/dataset and service options at the same time/);
+  });
+  it("Should add a new version to an existing query", async function () {
+    // Version 1
+    const query = await user.addQuery(`${CommonUnittestPrefix}-new-version`, {
+      accessLevel: "private",
+      dataset: testDs,
+      queryString: "select ?s?p?o where {?s?p?o}",
+    });
+    expect((await query.getInfo(true)).numberOfVersions).to.equal(1);
+    // Version 2
+    await query.addVersion({ output: "network", variables: [{ name: "version2", termType: "NamedNode" }] });
+    expect((await query.getInfo(true)).numberOfVersions).to.equal(2);
+    // Version 3
+    await query.addVersion({ queryString: "select ?a?b?c where {?a?b?c}" });
+    expect((await query.getInfo(true)).numberOfVersions).to.equal(3);
+    // Version 4
+    await query.addVersion({
+      output: "markup",
+      queryString: "select ?s?p?o where {?s?p?o}",
+      variables: [{ name: "version4", termType: "NamedNode" }],
+    });
+    expect((await query.getInfo(true)).numberOfVersions).to.equal(4);
+
+    // Check contents
+    // Version 2 will have V1 queryString
+    expect(await (await query.useVersion(2)).getString()).to.equal("SELECT ?s ?p ?o WHERE { ?s ?p ?o. }");
+    // Version 3 will have V2 output & variables
+    expect(await (await query.useVersion(3)).getString()).to.equal("SELECT ?a ?b ?c WHERE { ?a ?b ?c. }");
+    const version3Variable = (await (await query.useVersion(3)).getInfo()).variables;
+    expect(version3Variable?.map((v) => v.name))
+      .to.be.an("array")
+      .that.includes("version2");
+    expect((await (await query.useVersion(3)).getInfo()).renderConfig?.output).to.equal("network");
+    // Version 4 will be completely different
+    expect(await (await query.useVersion(4)).getString()).to.equal("SELECT ?s ?p ?o WHERE { ?s ?p ?o. }");
+    expect((await (await query.useVersion(4)).getInfo()).renderConfig?.output).to.equal("markup");
   });
 
   describe("Ensuring query", function () {
     it("Should create when not already existing", async function () {
       const ensuredQuery = await user.ensureQuery(`${CommonUnittestPrefix}-ensured`, {
-        autoselectService: true,
         accessLevel: "private",
         dataset: testDs,
+        queryString: defaultQueryString,
       });
       const queryInfo = await ensuredQuery.getInfo();
       expect(queryInfo.autoselectService).to.equal(true);
@@ -106,7 +137,7 @@ describe("Queries", function () {
     });
     it("Should get existing when already existing", async function () {
       const firstQuery = await user.addQuery(`${CommonUnittestPrefix}-ensured2`, {
-        autoselectService: true,
+        queryString: "select ?s?p?o where {?s?p?o}",
         accessLevel: "private",
         dataset: testDs,
       });
@@ -115,6 +146,7 @@ describe("Queries", function () {
         accessLevel: "private",
         dataset: testDs,
         description: "This value should not be updated",
+        queryString: defaultQueryString,
       });
       const ensuredQueryInfo = await ensuredQuery.getInfo();
       expect(firstQueryInfo.id).to.equal(ensuredQueryInfo.id);
@@ -124,6 +156,7 @@ describe("Queries", function () {
     });
     it("Should throw when access level doesn't match", async function () {
       await user.addQuery(`${CommonUnittestPrefix}-ensured3`, {
+        queryString: "select ?s?p?o where {?s?p?o}",
         accessLevel: "private",
         dataset: testDs,
       });
@@ -132,8 +165,21 @@ describe("Queries", function () {
         user.ensureQuery(`${CommonUnittestPrefix}-ensured3`, {
           accessLevel: "public",
           dataset: testDs,
+          queryString: defaultQueryString,
         })
       ).to.eventually.be.rejectedWith(/already exists with access level/);
+    });
+    it("Should throw when query string doesn't match", async function () {
+      await user.addQuery(`${CommonUnittestPrefix}-ensured4`, {
+        queryString: "select ?subject ?predicate ?object where {?s?p?o}",
+        dataset: testDs,
+      });
+      await expect(
+        user.ensureQuery(`${CommonUnittestPrefix}-ensured4`, {
+          service: testService,
+          queryString: defaultQueryString,
+        })
+      ).to.eventually.be.rejectedWith(/already exists but with a different query string/);
     });
   });
 
@@ -168,10 +214,8 @@ describe("Queries", function () {
         constructQuery = await user.addQuery(constructQueryName, {
           accessLevel: "private",
           // a construct query that gives twice the number of statements as there are in the dataset
-          requestConfig: {
-            payload: { query: "construct {?s?p?o. ?s ?p ?newo} where {?s?p?o. bind(concat(str(?o)) as ?newo)}" },
-          },
-          renderConfig: { output: "?" },
+          queryString: "construct {?s?p?o. ?s ?p ?newo} where {?s?p?o. bind(concat(str(?o)) as ?newo)}",
+          output: "table",
           variables: [{ name: "s", termType: "NamedNode" }],
           dataset,
         });
@@ -238,8 +282,8 @@ WHERE {
         selectQuery = await user.addQuery(selectQueryName, {
           accessLevel: "private",
           // a select query that gives same number of statements as there are in the dataset
-          requestConfig: { payload: { query: "select ?s?p?o where {?s?p?o}" } },
-          renderConfig: { output: "?" },
+          queryString: "select ?s?p?o where {?s?p?o}",
+          output: "table",
           variables: [{ name: "s", termType: "NamedNode" }],
           dataset,
         });
@@ -332,11 +376,11 @@ WHERE {
             throw e;
           });
         tooLargeQuery = await user.addQuery(tooLargeQueryName, {
+          queryString: "CONSTRUCT WHERE {?s?p?o} ORDER BY ?s LIMIT 10000 OFFSET 12000",
           accessLevel: "private",
-          requestConfig: { payload: { query: "CONSTRUCT WHERE {?s?p?o} ORDER BY ?s LIMIT 10000 OFFSET 12000" } },
-          renderConfig: { output: "?" },
-          variables: [{ name: "s", termType: "NamedNode" }],
+          output: "table",
           dataset,
+          variables: [{ name: "s", termType: "NamedNode" }],
         });
       });
 
@@ -373,9 +417,9 @@ WHERE {
       await fs.emptyDir(tmpDir); //make sure we use a clean cache
       const queryName = `${CommonUnittestPrefix}-cache-test`;
       const query1 = await user.addQuery(queryName, {
-        requestConfig: { payload: { query: `select ("1" as ?a) where {}` } },
+        queryString: `select ("1" as ?a) where {}`,
         accessLevel: "private",
-        renderConfig: { output: "?" },
+        output: "table",
         dataset,
       });
 
@@ -386,9 +430,9 @@ WHERE {
       expect(firstResults).to.deep.equal([{ a: "1" }]);
       await query1.delete();
       const query2 = await user.addQuery(queryName, {
-        requestConfig: { payload: { query: `select ("2" as ?a) where {}` } },
+        queryString: `select ("2" as ?a) where {}`,
         accessLevel: "private",
-        renderConfig: { output: "?" },
+        output: "table",
         dataset,
       });
       const secondResults = await query2
