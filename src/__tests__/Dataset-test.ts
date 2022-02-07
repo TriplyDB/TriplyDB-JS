@@ -224,7 +224,7 @@ describe("Dataset", function () {
   describe("Describing IRI", function () {
     let testDs: Dataset;
     before(async function () {
-      this.timeout(5000);
+      this.timeout(15000);
       testDs = await getNewTestDs(user, "private");
       await testDs.importFromFiles([buildPathToSrcPath(__dirname, "__data__", "test102.nt")]);
     });
