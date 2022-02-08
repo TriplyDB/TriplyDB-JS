@@ -43,7 +43,7 @@ export default class App {
       ...conf,
     };
     // Extract url form token
-    if (this._config.url === APP_CONFIG_DEFAULTS.url && this._config.token) {
+    if ((!this._config.url || this._config.url === APP_CONFIG_DEFAULTS.url) && this._config.token) {
       try {
         const decodedToken: Models.JwtPayload = jwt_decode(this._config.token);
         // Skip old hardcoded issuer

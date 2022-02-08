@@ -30,6 +30,12 @@ describe("App", function () {
     it("Should extract api location from token", async function () {
       const app = App.get(process.env.UNITTEST_TOKEN_ACCOUNT);
       expect(app["_config"].url).not.be.undefined;
+      expect(app["_config"].url).not.be.empty;
+    });
+    it("Should extract api location from token with empty string url", async function () {
+      const app = App.get({ url: "", token: process.env.UNITTEST_TOKEN_ACCOUNT });
+      expect(app["_config"].url).not.be.undefined;
+      expect(app["_config"].url).not.be.empty;
     });
     it("Should throw on malformed jwt token", async function () {
       expect(() => App.get("InvalidToken")).to.throw("Invalid token");
