@@ -114,10 +114,10 @@
     proper-lockfile "^2.0.1"
     url-parse "^1.4.3"
 
-"@triply/utils@^1.3.87":
-  version "1.3.87"
-  resolved "https://registry.yarnpkg.com/@triply/utils/-/utils-1.3.87.tgz#f441d2e34e5ea18ee0895c571aa8b9ecf3fd00bb"
-  integrity sha512-5n/aieOOzehoSI6l/8+9GVs6P/pj2F5j+9kspKWZKkwbylrYxSEZ9rZGF8MYgiphKl6xyFvoon3pWKxF20dAMw==
+"@triply/utils@^1.3.88":
+  version "1.3.88"
+  resolved "https://registry.yarnpkg.com/@triply/utils/-/utils-1.3.88.tgz#fea61e7750d51c73f8e54a5d00e23cd9aa7865b0"
+  integrity sha512-a4N/qrCiZqIfghRNeLUNRXeUKF9RbJdlYlvHdxP0pgHI3hA2aVv2CGYNiwlfnZjP92httMFARwIb5KB5H5g8Mg==
   dependencies:
     "@types/n3" "^1.4.4"
     "@types/sparqljs" "^3.1.3"
