@@ -12,7 +12,7 @@ import { stringify as stringifyQueryObj } from "query-string";
 import AsyncIteratorHelperWithToFile from "./utils/AsyncIteratorHelperWithToFile";
 
 export type Binding = { [key: string]: string };
-
+export type VariableValues = { [variable: string]: string | undefined };
 export default class Query {
   private _app: App;
   private _info: Models.Query;
@@ -102,7 +102,7 @@ export default class Query {
       expectedResponseBody: "empty",
     });
   }
-  public async getString(variableValues?: { [variable: string]: string }) {
+  public async getString(variableValues?: VariableValues) {
     const info = await this.getInfo();
     if (!info.requestConfig?.payload.query) {
       throw getErr(`Query ${this._info.name} has no versions.`);
@@ -114,7 +114,7 @@ export default class Query {
       variableValues: variableValues || {},
     });
   }
-  public results(variables?: { [variable: string]: string }, opts?: { cache?: Cache }) {
+  public results(variables?: VariableValues, opts?: { cache?: Cache }) {
     const queryType = this._getQueryType();
 
     const variablesInUrlString = stringifyQueryObj({
