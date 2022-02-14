@@ -5,7 +5,7 @@ import { size, times, random } from "lodash";
 import * as chai from "chai";
 import { promisify } from "util";
 import * as zlib from "zlib";
-import { Store, DataFactory } from "n3";
+import { Store, DataFactory, Util } from "n3";
 import { resetUnittestAccount, buildPathToSrcPath, CommonUnittestPrefix } from "./utils";
 import User from "../User";
 import Graph from "../Graph";
@@ -128,10 +128,16 @@ describe("Dataset", function () {
        * Add 1 upon dataset creation
        */
       const newDs = await user.addDataset(`${CommonUnittestPrefix}-dataset-prefix-test`, {
-        prefixes: { abc: "https://test1" },
+        prefixes: {
+          abc: "https://test1",
+          abd: DataFactory.namedNode("https://test2"),
+          abe: Util.prefix("https://test3"),
+        },
       });
       const prefixes = await newDs.getPrefixes();
       expect(prefixes["abc"]).to.equal("https://test1");
+      expect(prefixes["abd"]).to.equal("https://test2");
+      expect(prefixes["abe"]).to.equal("https://test3");
       /**
        * Add 2
        */

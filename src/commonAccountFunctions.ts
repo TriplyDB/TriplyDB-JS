@@ -5,7 +5,7 @@ import Story from "./Story";
 import { Account } from "./Account";
 import User from "./User";
 import { _get, _post, _patch } from "./RequestHandler";
-import Dataset from "./Dataset";
+import Dataset, { Prefixes } from "./Dataset";
 import { getErr } from "./utils/Error";
 import { PinnedItemUpdate } from "@triply/utils/lib/Models";
 import { omit } from "lodash";
@@ -142,7 +142,7 @@ export function getDatasets<T extends Account>(this: T) {
   });
 }
 
-type NewDataset = Omit<Models.NewDataset, "name"> & { prefixes?: { [key: string]: string } };
+type NewDataset = Omit<Models.NewDataset, "name"> & { prefixes?: Prefixes };
 export async function addDataset<T extends Account>(this: T, name: string, ds?: NewDataset) {
   const app = (this as User)["_app"];
   const accountName = (await this.getInfo()).accountName;

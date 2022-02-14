@@ -35,7 +35,7 @@ interface ImportFromDatasetArgs {
   graphNames?: Array<string | Graph | NamedNode>;
   overwrite?: boolean;
 }
-
+export type Prefixes = { [label: string]: n3.PrefixedToIri | string | NamedNode };
 type DsResourceType = "assets" | "graphs" | "services";
 export type NewService =
   | NewServiceVirtuosoV2
@@ -544,7 +544,7 @@ export default class Dataset {
     }
   }
 
-  public async addPrefixes(newPrefixes: { [key: string]: string }) {
+  public async addPrefixes(newPrefixes: Prefixes) {
     const asPairs = toPairs(newPrefixes);
     await _patch<Routes.prefixes.Patch>({
       errorWithCleanerStack: getErr(
@@ -552,11 +552,17 @@ export default class Dataset {
       ),
       app: this._app,
       path: await this._getDatasetPath("/prefixes"),
-      data: asPairs.map(([key, value]) => ({
-        prefixLabel: key,
-        iri: value,
-        scope: "local",
-      })),
+      data: asPairs.map(([key, value]) => {
+        let prefixIri;
+        if (typeof value === "string") {
+          prefixIri = value;
+        } else if (typeof value === "function") {
+          prefixIri = value("").value;
+        } else {
+          prefixIri = value.value;
+        }
+        return { prefixLabel: key, iri: prefixIri, scope: "local" };
+      }),
     });
     return this.getPrefixes(true);
   }
