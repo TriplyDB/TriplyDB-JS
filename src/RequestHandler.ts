@@ -55,7 +55,6 @@ export function _patch<T extends HttpMethodTemplate>(opts: ReqOptsObj<T["Req"]>)
 type SimpleRequestInit = Omit<RequestInit, "headers"> & {
   // For ease of use, always use objects
   headers?: { [key: string]: string };
-  compress?: boolean; // This is missing from the typescript def
 };
 export function getFetchOpts(requestInit: SimpleRequestInit, opts: { app: App }): SimpleRequestInit {
   const token = opts.app["_config"].token;

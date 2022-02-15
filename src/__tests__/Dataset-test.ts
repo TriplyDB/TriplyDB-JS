@@ -426,17 +426,43 @@ describe("Dataset", function () {
       this.timeout(10000);
       await fs.mkdirp(buildPathToSrcPath(__dirname, "tmp"));
       for await (let g of testDs.getGraphs()) {
-        if (g) {
-          const gzipped = buildPathToSrcPath(__dirname, "tmp", "testf.trig.gz");
-          const gunzipped = buildPathToSrcPath(__dirname, "tmp", "testf.trig");
+        const gzipped = buildPathToSrcPath(__dirname, "tmp", "testf.jsonld.gz");
+        const gunzipped = buildPathToSrcPath(__dirname, "tmp", "testf.jsonld");
 
-          await g.toFile(buildPathToSrcPath(__dirname, "tmp", "testf.trig.gz"));
-          await g.toFile(buildPathToSrcPath(__dirname, "tmp", "testf.trig"));
-          expect(await fs.pathExists(gzipped));
-          expect(await fs.pathExists(gunzipped));
-        }
-        break;
+        await fs.remove(gzipped);
+        await fs.remove(gunzipped);
+
+        await g.toFile(gzipped);
+        await g.toFile(gunzipped);
+
+        expect(await fs.pathExists(gzipped)).to.be.true;
+        expect(await fs.pathExists(gunzipped)).to.be.true;
+
+        await expect(
+          new Promise(async (resolve, reject) =>
+            zlib.gunzip(await fs.readFile(gzipped), (e, result) =>
+              e ? reject(e) : resolve(JSON.parse(result.toString("utf-8")))
+            )
+          )
+        ).to.eventually.deep.equal(JSON.parse(await fs.readFile(gunzipped, "utf-8")));
+
+        break; // only test one graph
       }
+    });
+    it("download the whole dataset", async function () {
+      this.timeout(10000);
+      await fs.mkdirp(buildPathToSrcPath(__dirname, "tmp"));
+      const gzipped = buildPathToSrcPath(__dirname, "tmp", "testf.nt.gz");
+      const gunzipped = buildPathToSrcPath(__dirname, "tmp", "testf.nq");
+
+      await fs.remove(gzipped);
+      await fs.remove(gunzipped);
+
+      await testDs.graphsToFile(gzipped);
+      await testDs.graphsToFile(gunzipped);
+
+      expect(await fs.pathExists(gzipped));
+      expect(await fs.pathExists(gunzipped));
     });
     it("stream through a graph", async function () {
       this.timeout(10000);

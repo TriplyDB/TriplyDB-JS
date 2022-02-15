@@ -261,7 +261,7 @@ WHERE {
           const data = await new Promise<any>(async (resolve, reject) =>
             gunzip(await fs.readFile(file), (error, result) => {
               if (error) return reject(error);
-              resolve(result.toJSON());
+              resolve(JSON.parse(result.toString("utf-8")));
             })
           );
           data.responseText = "[]";

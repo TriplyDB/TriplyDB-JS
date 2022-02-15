@@ -1,18 +1,11 @@
 import { Models, Routes } from "@triply/utils";
 import App from "./App";
-import { _delete, _patch, _get, handleFetchAsStream, getFetchOpts } from "./RequestHandler";
+import { _delete, _patch, _get } from "./RequestHandler";
 import Dataset from "./Dataset";
 import * as n3 from "n3";
-import fetch from "cross-fetch";
-import fs from "fs-extra";
 
-import * as zlib from "zlib";
-import pumpify from "pumpify";
-import * as path from "path";
 import stream from "stream";
 import { getErr } from "./utils/Error";
-
-export const SUPPORTED_EXTENSIONS = [".trig", ".nt", ".ttl", ".trig.gz", ".nt.gz", ".ttl.gz"] as const;
 
 export default class Graph {
   private _info: Models.Graph;
@@ -27,70 +20,13 @@ export default class Graph {
   }
 
   public async toFile(destinationPath: string, opts?: { compressed?: boolean }) {
-    const parsedPath = path.parse(destinationPath);
-    if (SUPPORTED_EXTENSIONS.findIndex((e) => parsedPath.base.endsWith(e)) === -1) {
-      throw getErr(
-        `Failed so save graph as \`${parsedPath.base}\`. Supported extensions: [ ${SUPPORTED_EXTENSIONS.join(", ")} ]`
-      );
-    }
-    if (!(await fs.pathExists(path.resolve(parsedPath.dir)))) {
-      throw getErr(`Directory doesn't exist: ${parsedPath.dir}`);
-    }
-    let extension = parsedPath.ext;
-    let storeCompressed: boolean;
-    if (typeof opts?.compressed === "boolean") {
-      storeCompressed = opts.compressed;
-    } else {
-      storeCompressed = extension === ".gz";
-    }
-
-    if (extension === ".gz") {
-      extension = `${path.extname(parsedPath.name)}${extension}`;
-    }
-
-    const url = await this._getDownloadUrl(extension);
-    const res = await fetch(
-      url,
-      getFetchOpts(
-        {
-          method: "get",
-          compress: false,
-        },
-        { app: this._app }
-      )
-    );
-    if (res.status >= 400) {
-      throw getErr(`Failed to download graph ${this._info.graphName}: [#${res.status}] ${res.statusText}`);
-    }
-    const stream = new pumpify(
-      res.body as any,
-      // we always download compressed version. Decompress unless the user saves as *.gz
-      ...(storeCompressed ? [] : [zlib.createGunzip()]),
-      fs.createWriteStream(destinationPath)
-    );
-    await new Promise((resolve, reject) => {
-      stream.on("error", reject);
-      stream.on("finish", resolve);
-    });
+    return this._dataset.graphsToFile(destinationPath, { ...opts, graph: this });
   }
   public async toStore(): Promise<n3.Store> {
-    const store = new n3.Store();
-    const stream = await this.toStream("rdf-js");
-    await new Promise((resolve, reject) => {
-      store.import(stream).on("finish", resolve).on("error", reject);
-    });
-    return store;
+    return this._dataset.graphsToStore(this);
   }
   public async toStream(type: "compressed" | "rdf-js"): Promise<stream.Readable> {
-    const stream = await handleFetchAsStream("GET", {
-      app: this._app,
-      url: await this._getDownloadUrl(".trig.gz"),
-      errorWithCleanerStack: getErr(`Failed to download graph ${this._info.graphName}`),
-    });
-    if (type === "compressed") {
-      return stream as any;
-    }
-    return new pumpify.obj(stream as any, zlib.createGunzip(), new n3.StreamParser());
+    return this._dataset.graphsToStream(type, { graph: this });
   }
 
   public async getInfo(refresh = false) {
@@ -103,11 +39,6 @@ export default class Graph {
         path: await this._getPath(),
       });
     return this._info;
-  }
-  //Extension comes from a path.parse method, so we can trust it to start with a `.`
-  private async _getDownloadUrl(extension?: string) {
-    const dsPath = `${this._app["_config"].url}${await this._dataset["_getDatasetPath"]()}`;
-    return `${dsPath}/download${extension || ""}?graph=${encodeURIComponent(this._info.graphName)}`;
   }
 
   private async _getPath() {

@@ -16,14 +16,13 @@ import pumpify from "pumpify";
 import { Account } from "./Account";
 import { fromPairs, toPairs, pick, size, uniq, zipObject } from "lodash";
 import { TriplyDbJsError, getErr, IncompatibleError } from "./utils/Error";
-import { _get, _delete, _patch, _post, handleFetchAsStream, getUrl, getFetchOpts } from "./RequestHandler";
+import { _get, _delete, _patch, _post, handleFetchAsStream } from "./RequestHandler";
 import { ReadStream } from "fs-extra";
 import AsyncIteratorHelper from "./utils/AsyncIteratorHelper";
 import Asset from "./Asset";
-import Graph, { SUPPORTED_EXTENSIONS } from "./Graph";
+import Graph from "./Graph";
 import { stringify as stringifyQueryObj } from "query-string";
 import statuses from "http-status-codes";
-import fetch from "cross-fetch";
 import { NamedNode } from "rdf-js";
 interface JobDefaultsConfig {
   defaultGraphName?: string;
@@ -212,18 +211,13 @@ export default class Dataset {
     });
   }
 
-  //Extension comes from a path.parse method, so we can trust it to start with a `.`
-  private async _getDownloadPath(extension?: string) {
+  // Extension comes from a path.parse method, so we can trust it to start with a `.`
+  private async _getDownloadPath(extension: string, graph?: Graph) {
     const dsPath = `${await this._getDatasetPath()}`;
-    return `${dsPath}/download${extension || ""}`;
+    return `${dsPath}/download${extension}` + (graph ? `?graph=${encodeURIComponent(graph["_info"].graphName)}` : "");
   }
-  public async graphsToFile(destinationPath: string, opts?: { compressed?: boolean }) {
+  public async graphsToFile(destinationPath: string, opts?: { compressed?: boolean; graph?: Graph }) {
     const parsedPath = path.parse(destinationPath);
-    if (SUPPORTED_EXTENSIONS.findIndex((e) => parsedPath.base.endsWith(e)) === -1) {
-      throw getErr(
-        `Failed so save graph as \`${parsedPath.base}\`. Supported extensions: [ ${SUPPORTED_EXTENSIONS.join(", ")} ]`
-      );
-    }
     if (!(await fs.pathExists(path.resolve(parsedPath.dir)))) {
       throw getErr(`Directory doesn't exist: ${parsedPath.dir}`);
     }
@@ -237,13 +231,9 @@ export default class Dataset {
     if (extension === ".gz") {
       extension = path.extname(parsedPath.name);
     }
-    const downloadUrlPath = await this._getDownloadPath(extension);
-    const res = await fetch(
-      getUrl({ app: this._app, path: downloadUrlPath }),
-      getFetchOpts({ method: "get", compress: false }, { app: this._app })
-    );
+
     const stream = new pumpify(
-      res.body as any,
+      await this.graphsToStream("compressed", { graph: opts?.graph, extension }),
       // we always download compressed version. Decompress unless the user saves as *.gz
       ...(storeCompressed ? [] : [zlib.createGunzip()]),
       fs.createWriteStream(destinationPath)
@@ -253,11 +243,18 @@ export default class Dataset {
       stream.on("finish", resolve);
     });
   }
-  public async graphsToStream(type: "compressed" | "rdf-js"): Promise<stream.Readable> {
+  public async graphsToStream(
+    type: "compressed" | "rdf-js",
+    opts?: { graph?: Graph; extension?: string }
+  ): Promise<stream.Readable> {
     const stream = await handleFetchAsStream("GET", {
       app: this._app,
-      path: await this._getDownloadPath(".trig.gz"),
-      errorWithCleanerStack: getErr(`Failed to download graphs of dataset ${await this._getDatasetNameWithOwner()}.`),
+      path: await this._getDownloadPath((opts?.extension ?? ".trig") + ".gz", opts?.graph),
+      errorWithCleanerStack: getErr(
+        opts?.graph
+          ? `Failed to download graph ${opts?.graph["_info"].graphName}`
+          : `Failed to download graphs of dataset ${await this._getDatasetNameWithOwner()}.`
+      ),
     });
     if (type === "compressed") {
       return stream as any;
@@ -265,9 +262,9 @@ export default class Dataset {
       return new pumpify.obj(stream as any, zlib.createGunzip(), new n3.StreamParser());
     }
   }
-  public async graphsToStore(): Promise<n3.Store> {
+  public async graphsToStore(graph?: Graph): Promise<n3.Store> {
     const store = new n3.Store();
-    const stream = await this.graphsToStream("rdf-js");
+    const stream = await this.graphsToStream("rdf-js", { graph });
     await new Promise((resolve, reject) => {
       store.import(stream).on("finish", resolve).on("error", reject);
     });
