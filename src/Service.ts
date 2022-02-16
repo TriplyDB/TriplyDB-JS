@@ -6,9 +6,25 @@ import { getErr, TriplyDbJsError } from "./utils/Error";
 import { ServiceMetadataV1 } from "@triply/utils/lib/Models";
 import Dataset from "./Dataset";
 
+type ServiceAdminInfo = {
+  autoResume?: boolean;
+  queriedAtUncached?: string;
+  queriedAt?: string;
+  autostopsAt?: string;
+  dataset?: Dataset;
+  adminInfo?: {
+    fromOrchestrator?: {};
+    fromService?: {};
+    canUpdate?: boolean;
+  };
+  foundInDocker?: boolean;
+  foundInMongo?: boolean;
+};
+type ServiceInfo = Models.ServiceV1 | Omit<Models.ServiceMetadataV2, keyof ServiceAdminInfo>;
+
 export default class Service {
   private _app: App;
-  private _info?: Models.ServiceV1 | Models.ServiceMetadataV2;
+  private _info?: ServiceInfo;
   private _graphs?: Models.ServiceGraphInfoV2[];
   private _dataset: Dataset;
   private _name: string;
@@ -29,7 +45,7 @@ export default class Service {
     this._reasoner = conf.reasoner;
   }
 
-  public async getInfo(refresh = false): Promise<Models.ServiceV1 | Models.ServiceMetadataV2> {
+  public async getInfo(refresh = false): Promise<ServiceInfo> {
     if (!refresh && this._info) return this._info;
     this._info = await _get<
       | Routes.datasets._account._dataset.servicesV1._serviceName.Get
@@ -215,6 +231,10 @@ export default class Service {
 
   private async _getServicePath() {
     return `${await this._dataset["_getDatasetPath"]()}/services/${this._name}`;
+  }
+
+  public getDataset(): Dataset {
+    return this._dataset;
   }
   /**
    * Converts service version types from v1 to v2 and from v2 to v1

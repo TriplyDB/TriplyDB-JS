@@ -37,10 +37,10 @@ export async function addQuery<T extends Account>(this: T, name: string, opts: A
   let dataset: string | undefined;
   let service: string | undefined;
   if (opts.dataset) {
-    dataset = opts.dataset["_info"]?.id;
+    dataset = (await opts.dataset.getInfo()).id;
   }
   if (opts.service) {
-    dataset = opts.service["_dataset"]["_info"]?.id;
+    dataset = (await opts.service.getDataset().getInfo()).id;
     service = (await opts.service.getInfo()).endpoint;
   }
   let query: Models.QueryCreate = {
@@ -262,30 +262,31 @@ export async function ensureDataset<T extends Account>(this: T, name: string, ne
   }
 }
 
-export async function ensureQuery<T extends Account>(this: T, name: string, opts: AddQueryDataset): Promise<Query>;
-export async function ensureQuery<T extends Account>(this: T, name: string, opts: AddQueryService): Promise<Query>;
-export async function ensureQuery<T extends Account>(this: T, name: string, opts: AddQueryDataset | AddQueryService) {
-  try {
-    const query = await this.getQuery(name);
-    const info = await query.getInfo();
-    if (opts?.accessLevel && opts?.accessLevel !== info.accessLevel) {
-      throw getErr(
-        `Query '${name}' already exists with access level '${info.accessLevel}'. Cannot ensure it with access level '${opts?.accessLevel}'. Please change the access level to match the Query, or remove it entirely as a parameter.`
-      );
-    }
-    // ensureQuery functionality to be refined: https://issues.triply.cc/issues/6296
-    if (info.requestConfig?.payload.query !== opts.queryString) {
-      throw getErr(
-        `Query '${name}' already exists but with a different query string. \n Please use 'Query.addVersion(opts)' with the correct options to add a new version to query '${name}'. \n The query string that already exists is: ${info.requestConfig?.payload.query}. \n It does not match: ${opts.queryString}  `
-      );
-    }
-    return query;
-  } catch (e: any) {
-    if (e.statusCode !== 404) throw e;
-    // Cast here to keep typescript happy
-    return this.addQuery(name, opts as AddQueryDataset);
-  }
-}
+// ensureQuery functionality to be refined: https://issues.triply.cc/issues/6296
+// Leave commented out meanwhile
+// export async function ensureQuery<T extends Account>(this: T, name: string, opts: AddQueryDataset): Promise<Query>;
+// export async function ensureQuery<T extends Account>(this: T, name: string, opts: AddQueryService): Promise<Query>;
+// export async function ensureQuery<T extends Account>(this: T, name: string, opts: AddQueryDataset | AddQueryService) {
+//   try {
+//     const query = await this.getQuery(name);
+//     const info = await query.getInfo();
+//     if (opts?.accessLevel && opts?.accessLevel !== info.accessLevel) {
+//       throw getErr(
+//         `Query '${name}' already exists with access level '${info.accessLevel}'. Cannot ensure it with access level '${opts?.accessLevel}'. Please change the access level to match the Query, or remove it entirely as a parameter.`
+//       );
+//     }
+//     if (info.requestConfig?.payload.query !== opts.queryString) {
+//       throw getErr(
+//         `Query '${name}' already exists but with a different query string. \n Please use 'Query.addVersion(opts)' with the correct options to add a new version to query '${name}'. \n The query string that already exists is: ${info.requestConfig?.payload.query}. \n It does not match: ${opts.queryString}  `
+//       );
+//     }
+//     return query;
+//   } catch (e: any) {
+//     if (e.statusCode !== 404) throw e;
+//     // Cast here to keep typescript happy
+//     return this.addQuery(name, opts as AddQueryDataset);
+//   }
+// }
 
 export async function ensureStory<T extends Account>(this: T, name: string, newStory?: NewStory) {
   try {

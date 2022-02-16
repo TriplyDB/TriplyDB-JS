@@ -19,7 +19,6 @@ import {
   update,
   addStory,
   ensureDataset,
-  ensureQuery,
   ensureStory,
 } from "./commonAccountFunctions";
 import { getErr } from "./utils/Error";
@@ -50,7 +49,6 @@ export default class Org implements AccountBase {
   public getPinnedItems = getPinnedItems;
   public pinItems = pinItems;
   public ensureDataset = ensureDataset;
-  public ensureQuery = ensureQuery;
   public ensureStory = ensureStory;
 
   public asUser(): User {

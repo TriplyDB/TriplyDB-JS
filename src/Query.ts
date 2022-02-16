@@ -164,7 +164,7 @@ export default class Query {
     });
   }
   public async getRunLink() {
-    return (await this.getInfo(true)).link + "/run";
+    return (await this.getInfo()).link + "/run";
   }
   public results(variables?: VariableValues, opts?: { cache?: Cache }) {
     const queryType = this._getQueryType();

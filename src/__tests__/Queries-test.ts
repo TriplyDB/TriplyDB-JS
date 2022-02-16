@@ -37,7 +37,6 @@ describe("Queries", function () {
   let user: User;
   let testDs: Dataset;
   let testService: Service;
-  const defaultQueryString = "select ?s?p?o where {?s?p?o}";
   before(async function () {
     this.timeout(30000);
     app = App.get({ token: process.env.UNITTEST_TOKEN_ACCOUNT });
@@ -57,7 +56,7 @@ describe("Queries", function () {
       accessLevel: "private",
       queryString: "select ?s?p?o where {?s?p?o}",
       output: "geo",
-      service: testService,
+      dataset: testDs,
     });
     expect(await query.getInfo().then((q) => q.accessLevel)).to.equal("private");
     await query.update({ accessLevel: "internal" });
@@ -77,15 +76,6 @@ describe("Queries", function () {
     expect(await query.getInfo().then((q) => q.accessLevel)).to.equal("private");
     await query.update({ accessLevel: "internal" });
     expect(await query.getInfo().then((q) => q.accessLevel)).to.equal("internal");
-  });
-  it.skip("Should throw an error if dataset and service are used at the same time", async function () {
-    this.timeout(30000);
-    const ensuredQuery = user.ensureQuery(`${CommonUnittestPrefix}-ensured`, {
-      accessLevel: "private",
-      queryString: defaultQueryString,
-      dataset: testDs,
-    });
-    await expect(ensuredQuery).to.eventually.rejectedWith(/dataset and service options at the same time/);
   });
   it("Should add a new version to an existing query", async function () {
     // Version 1
@@ -122,65 +112,6 @@ describe("Queries", function () {
     // Version 4 will be completely different
     expect(await (await query.useVersion(4)).getString()).to.equal("SELECT ?s ?p ?o WHERE { ?s ?p ?o. }");
     expect((await (await query.useVersion(4)).getInfo()).renderConfig?.output).to.equal("markup");
-  });
-
-  describe("Ensuring query", function () {
-    it("Should create when not already existing", async function () {
-      const ensuredQuery = await user.ensureQuery(`${CommonUnittestPrefix}-ensured`, {
-        accessLevel: "private",
-        dataset: testDs,
-        queryString: defaultQueryString,
-      });
-      const queryInfo = await ensuredQuery.getInfo();
-      expect(queryInfo.autoselectService).to.equal(true);
-      expect(queryInfo.accessLevel).to.equal("private");
-    });
-    it("Should get existing when already existing", async function () {
-      const firstQuery = await user.addQuery(`${CommonUnittestPrefix}-ensured2`, {
-        queryString: "select ?s?p?o where {?s?p?o}",
-        accessLevel: "private",
-        dataset: testDs,
-      });
-      const firstQueryInfo = await firstQuery.getInfo();
-      const ensuredQuery = await user.ensureQuery(`${CommonUnittestPrefix}-ensured2`, {
-        accessLevel: "private",
-        dataset: testDs,
-        description: "This value should not be updated",
-        queryString: defaultQueryString,
-      });
-      const ensuredQueryInfo = await ensuredQuery.getInfo();
-      expect(firstQueryInfo.id).to.equal(ensuredQueryInfo.id);
-      // since the ensuredQuery was not new, the newQueryInfo should not have been applied
-      expect(ensuredQueryInfo.autoselectService).to.equal(true);
-      expect(ensuredQueryInfo.description).to.be.empty;
-    });
-    it("Should throw when access level doesn't match", async function () {
-      await user.addQuery(`${CommonUnittestPrefix}-ensured3`, {
-        queryString: "select ?s?p?o where {?s?p?o}",
-        accessLevel: "private",
-        dataset: testDs,
-      });
-
-      await expect(
-        user.ensureQuery(`${CommonUnittestPrefix}-ensured3`, {
-          accessLevel: "public",
-          dataset: testDs,
-          queryString: defaultQueryString,
-        })
-      ).to.eventually.be.rejectedWith(/already exists with access level/);
-    });
-    it("Should throw when query string doesn't match", async function () {
-      await user.addQuery(`${CommonUnittestPrefix}-ensured4`, {
-        queryString: "select ?subject ?predicate ?object where {?s?p?o}",
-        dataset: testDs,
-      });
-      await expect(
-        user.ensureQuery(`${CommonUnittestPrefix}-ensured4`, {
-          service: testService,
-          queryString: defaultQueryString,
-        })
-      ).to.eventually.be.rejectedWith(/already exists but with a different query string/);
-    });
   });
 
   // these tests are slow (~2 min combined)

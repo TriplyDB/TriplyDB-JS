@@ -28,7 +28,6 @@ export interface AccountBase {
   getPinnedItems(): Promise<Array<Dataset | Story | Query>>;
   pinItems(items: Array<Dataset | Story | Query>): Promise<User | Org>;
   ensureDataset(name: string, newDs?: NewDataset): Promise<Dataset>;
-  ensureQuery(name: string, opts: AddQueryDataset | AddQueryService): Promise<Query>;
   ensureStory(name: string, newStory?: NewStory): Promise<Story>;
 }
 export type Account = User | Org;
