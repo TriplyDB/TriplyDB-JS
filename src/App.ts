@@ -42,7 +42,7 @@ export default class App {
       ...APP_CONFIG_DEFAULTS,
       ...conf,
     };
-    // Extract url form token
+    // Extract url from token
     if ((!this._config.url || this._config.url === APP_CONFIG_DEFAULTS.url) && this._config.token) {
       try {
         const decodedToken: Models.JwtPayload = jwt_decode(this._config.token);
@@ -105,10 +105,10 @@ export default class App {
     if (!accountName) {
       return new User(this);
     }
-    return (await getUserOrOrg(accountName, this)).asUser();
+    return (await getUserOrOrg(accountName, this, "user")).asUser();
   }
   public async getOrganization(accountName: string) {
-    return (await getUserOrOrg(accountName, this)).asOrganization();
+    return (await getUserOrOrg(accountName, this, "organization")).asOrganization();
   }
   public async isCompatible(minimumVersion: string) {
     const apiInfo = await this.getInfo();

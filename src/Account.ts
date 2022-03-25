@@ -31,11 +31,13 @@ export interface AccountBase {
   ensureStory(name: string, newStory?: NewStory): Promise<Story>;
 }
 export type Account = User | Org;
-export async function getUserOrOrg(accountName: string, app: App): Promise<User | Org> {
+export async function getUserOrOrg(accountName: string, app: App, type?: string): Promise<User | Org> {
   const info = await _get<Routes.accounts._account.Get>({
     app: app,
     path: "/accounts/" + accountName,
-    errorWithCleanerStack: getErr(`Failed to fetch information for account ${accountName}.`),
+    errorWithCleanerStack: getErr(
+      `Failed to fetch ${type || "account"} ${accountName}. This ${type || "account"} does not exist.`
+    ),
     query: { verbose: "" },
   });
   if (info.type === "user") {

@@ -58,7 +58,12 @@ export default class User implements AccountBase {
     return this;
   }
   public asOrganization(): Org {
-    throw getErr(`${this._info?.accountName || "This"} is a user. Cannot fetch this as an organization.`);
+    // throw getErr(`${this._info?.accountName || "This"} is a user. Cannot fetch this as an organization.`);
+    throw getErr(
+      `Unable to cast user ${
+        this._info?.accountName || "This"
+      } to an organization. This account represents a TriplyDB user.`
+    );
   }
   public async getInfo(refresh = false) {
     if (refresh || !this._info) {
@@ -66,7 +71,7 @@ export default class User implements AccountBase {
       if (this._name) {
         errMsg = `Failed to get user information of ${this._name}.`;
       } else {
-        errMsg = "Failed to get user information for this token.";
+        errMsg = `Failed to fetch the current {type:account/user}, because no API token is configured. If you want to fetch the current {type:account/user}, you must create an API token on <https://triplydb.com/me>.`;
       }
       const info = (await _get<Routes.accounts._account.Get>({
         errorWithCleanerStack: getErr(errMsg),

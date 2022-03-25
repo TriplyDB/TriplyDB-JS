@@ -52,7 +52,12 @@ export default class Org implements AccountBase {
   public ensureStory = ensureStory;
 
   public asUser(): User {
-    throw getErr(`${this._info?.accountName || "This"} is an organization. Cannot fetch this as a user.`);
+    // throw getErr(`${this._info?.accountName || "This"} is an organization. Cannot fetch this as a user.`);
+    throw getErr(
+      `Failed to fetch user ${
+        this._info?.accountName || "This"
+      }. Note that there there is an organization with that name.`
+    );
   }
   public asOrganization(): this {
     return this;
