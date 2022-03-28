@@ -36,7 +36,9 @@ export async function getUserOrOrg(accountName: string, app: App, type?: string)
     app: app,
     path: "/accounts/" + accountName,
     errorWithCleanerStack: getErr(
-      `Failed to fetch ${type || "account"} ${accountName}. This ${type || "account"} does not exist.`
+      `Failed to fetch ${type || "account"} ${accountName}. This ${
+        type || "account"
+      } does not exist. Make sure that you have not mistyped the ${type || "account"} name.`
     ),
     query: { verbose: "" },
   });
