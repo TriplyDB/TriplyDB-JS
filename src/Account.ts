@@ -10,7 +10,6 @@ import Story from "./Story";
 import { getErr } from "./utils/Error";
 import { NewDataset } from "@triply/utils/lib/Models";
 import { AddQueryDataset, AddQueryService, NewStory } from "./commonAccountFunctions";
-import { appendFile } from "fs-extra";
 export interface AccountBase {
   getInfo(): Promise<Models.Account>;
   getDataset(name: string): Promise<Dataset>;
