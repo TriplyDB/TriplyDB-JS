@@ -46,8 +46,7 @@ describe("User", function () {
 
     it("Should throw error when casting a user to an organization", async function () {
       const account = await App.get().getUser("wouter-1");
-      return expect(() => account.asOrganization()).to.throw(
-        Error,
+      return expect(account.asOrganization()).to.eventually.rejectedWith(
         "Unable to cast user wouter-1 to an organization. A user cannot be cast to an organization."
       );
     });

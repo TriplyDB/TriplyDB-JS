@@ -82,7 +82,11 @@ export default class App {
       //to fetch the account info
       return new User(this);
     }
-    return getUserOrOrg(accountName, this);
+    return getUserOrOrg({
+      accountName: accountName,
+      app: this,
+      notExistsErrorMessage: `Failed to fetch account ${accountName}. This account does not exist.`,
+    });
   }
   public getAccounts() {
     return new AsyncIteratorHelper<Models.Account, Account>({
@@ -105,10 +109,21 @@ export default class App {
     if (!accountName) {
       return new User(this);
     }
-    return (await getUserOrOrg(accountName, this, "user")).asUser();
+    const getUser = await getUserOrOrg({
+      accountName: accountName,
+      app: this,
+      notExistsErrorMessage: `Failed to fetch user ${accountName}. This user does not exist. Make sure that you have not mistyped the user name.`,
+    });
+
+    return getUser.asUser();
   }
   public async getOrganization(accountName: string) {
-    return (await getUserOrOrg(accountName, this, "organization")).asOrganization();
+    const getOrganization = await getUserOrOrg({
+      accountName: accountName,
+      app: this,
+      notExistsErrorMessage: `Failed to fetch organization ${accountName}. This organization does not exist.`,
+    });
+    return getOrganization.asOrganization();
   }
   public async isCompatible(minimumVersion: string) {
     const apiInfo = await this.getInfo();

@@ -53,14 +53,11 @@ export default class Org implements AccountBase {
   public ensureDataset = ensureDataset;
   public ensureStory = ensureStory;
 
-  public asUser(): User {
-    throw getErr(
-      this._info
-        ? `Failed to fetch user ${this._info.accountName}. Note that there is an organization with that name.`
-        : "Please check if you have deleted this organization. "
-    );
+  public async asUser(): Promise<User> {
+    const info = await this.getInfo();
+    throw getErr(`Failed to fetch user ${info.accountName}. Note that there is an organization with that name.`);
   }
-  public asOrganization(): this {
+  public async asOrganization(): Promise<this> {
     return this;
   }
   public async getInfo(refresh = false) {

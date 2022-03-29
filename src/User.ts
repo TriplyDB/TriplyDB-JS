@@ -54,14 +54,13 @@ export default class User implements AccountBase {
     this._name = info.accountName;
   }
 
-  public asUser(): User {
+  public async asUser(): Promise<User> {
     return this;
   }
-  public asOrganization(): Org {
+  public async asOrganization(): Promise<Org> {
+    const info = await this.getInfo();
     throw getErr(
-      `Unable to cast user ${
-        this._info?.accountName || "This"
-      } to an organization. A user cannot be cast to an organization.`
+      `Unable to cast user ${info.accountName} to an organization. A user cannot be cast to an organization.`
     );
   }
   public async getInfo(refresh = false) {

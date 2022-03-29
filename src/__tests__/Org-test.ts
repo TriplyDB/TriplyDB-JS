@@ -102,7 +102,7 @@ describe("Orgs", function () {
 
     it("Should throw error when getting a user with an organization name", async function () {
       return expect(App.get().getUser("Triply")).to.eventually.rejectedWith(
-        "Failed to fetch user Triply. Note that there there is an organization with that name."
+        "Failed to fetch user Triply. Note that there is an organization with that name."
       );
     });
   });
