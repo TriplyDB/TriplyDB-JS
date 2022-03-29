@@ -24,37 +24,3 @@ describe("Account", function () {
     });
   });
 });
-
-describe("Org", function () {
-  describe("Initialization", function () {
-    it("Should throw error when organization does not exist", async function () {
-      return expect(App.get().getOrganization("Triply_")).to.eventually.rejectedWith(
-        "Failed to fetch organization Triply_. This organization does not exist."
-      );
-    });
-  });
-
-  it("Should throw error when getting a user with an organization name", async function () {
-    return expect(App.get().getUser("Triply")).to.eventually.rejectedWith(
-      "Failed to fetch user Triply. Note that there there is an organization with that name."
-    );
-  });
-});
-
-describe("User", function () {
-  describe("Initialization", function () {
-    it("Should throw error when user does not exist", async function () {
-      return expect(App.get().getUser("Triply_")).to.eventually.rejectedWith(
-        "Failed to fetch user Triply_. This user does not exist. Make sure that you have not mistyped the user name."
-      );
-    });
-
-    it("Should throw error when casting a user to an organization", async function () {
-      const account = await App.get().getUser("wouter-1");
-      return expect(() => account.asOrganization()).to.throw(
-        Error,
-        "Unable to cast user wouter-1 to an organization. A user cannot be cast to an organization."
-      );
-    });
-  });
-});

@@ -25,6 +25,8 @@ import { getErr } from "./utils/Error";
 
 export default class Org implements AccountBase {
   private _app: App;
+
+  // Info is undefined when we delete the organization or when we are constructing this class from an array of account.
   private _info?: Models.Org;
   private _name?: string;
   public readonly type = "Org";
@@ -53,9 +55,9 @@ export default class Org implements AccountBase {
 
   public asUser(): User {
     throw getErr(
-      `Failed to fetch user ${
-        this._info?.accountName || "This"
-      }. Note that there there is an organization with that name.`
+      this._info
+        ? `Failed to fetch user ${this._info.accountName}. Note that there is an organization with that name.`
+        : "Please check if you have deleted this organization. "
     );
   }
   public asOrganization(): this {
