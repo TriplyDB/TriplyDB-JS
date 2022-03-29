@@ -31,13 +31,11 @@ export interface AccountBase {
   ensureStory(name: string, newStory?: NewStory): Promise<Story>;
 }
 export type Account = User | Org;
-
 export interface AccountType {
   accountName: string;
   app: App;
   notExistsErrorMessage: string;
 }
-
 export async function getUserOrOrg({ accountName, app, notExistsErrorMessage }: AccountType): Promise<User | Org> {
   const info = await _get<Routes.accounts._account.Get>({
     app: app,
