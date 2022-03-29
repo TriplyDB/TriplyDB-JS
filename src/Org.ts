@@ -25,7 +25,6 @@ import { getErr } from "./utils/Error";
 
 export default class Org implements AccountBase {
   private _app: App;
-
   // Info is undefined when we delete the organization or when we are constructing this class from an array of account.
   private _info?: Models.Org;
   private _name?: string;
