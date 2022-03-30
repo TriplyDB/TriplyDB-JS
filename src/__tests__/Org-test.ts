@@ -91,4 +91,19 @@ describe("Orgs", function () {
       });
     });
   });
+
+  // Error messages
+  describe("Initialization", function () {
+    it("Should throw error when organization does not exist", async function () {
+      return expect(App.get().getOrganization("Triply_")).to.eventually.rejectedWith(
+        "Failed to fetch organization Triply_. This organization does not exist."
+      );
+    });
+
+    it("Should throw error when getting a user with an organization name", async function () {
+      return expect(App.get().getUser("Triply")).to.eventually.rejectedWith(
+        "Failed to fetch user Triply. Note that there is an organization with that name."
+      );
+    });
+  });
 });

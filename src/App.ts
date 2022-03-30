@@ -42,7 +42,7 @@ export default class App {
       ...APP_CONFIG_DEFAULTS,
       ...conf,
     };
-    // Extract url form token
+    // Extract url from token
     if ((!this._config.url || this._config.url === APP_CONFIG_DEFAULTS.url) && this._config.token) {
       try {
         const decodedToken: Models.JwtPayload = jwt_decode(this._config.token);
@@ -82,7 +82,11 @@ export default class App {
       //to fetch the account info
       return new User(this);
     }
-    return getUserOrOrg(accountName, this);
+    return getUserOrOrg({
+      accountName: accountName,
+      app: this,
+      notExistsErrorMessage: `Failed to fetch account ${accountName}. This account does not exist.`,
+    });
   }
   public getAccounts() {
     return new AsyncIteratorHelper<Models.Account, Account>({
@@ -105,10 +109,21 @@ export default class App {
     if (!accountName) {
       return new User(this);
     }
-    return (await getUserOrOrg(accountName, this)).asUser();
+    const getUser = await getUserOrOrg({
+      accountName: accountName,
+      app: this,
+      notExistsErrorMessage: `Failed to fetch user ${accountName}. This user does not exist. Make sure that you have not mistyped the user name.`,
+    });
+
+    return getUser.asUser();
   }
   public async getOrganization(accountName: string) {
-    return (await getUserOrOrg(accountName, this)).asOrganization();
+    const getOrganization = await getUserOrOrg({
+      accountName: accountName,
+      app: this,
+      notExistsErrorMessage: `Failed to fetch organization ${accountName}. This organization does not exist.`,
+    });
+    return getOrganization.asOrganization();
   }
   public async isCompatible(minimumVersion: string) {
     const apiInfo = await this.getInfo();

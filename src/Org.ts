@@ -25,6 +25,7 @@ import { getErr } from "./utils/Error";
 
 export default class Org implements AccountBase {
   private _app: App;
+  // Info is undefined when we delete the organization or when we are constructing this class from an array of account.
   private _info?: Models.Org;
   private _name?: string;
   public readonly type = "Org";
@@ -51,10 +52,11 @@ export default class Org implements AccountBase {
   public ensureDataset = ensureDataset;
   public ensureStory = ensureStory;
 
-  public asUser(): User {
-    throw getErr(`${this._info?.accountName || "This"} is an organization. Cannot fetch this as a user.`);
+  public async asUser(): Promise<User> {
+    const info = await this.getInfo();
+    throw getErr(`Failed to fetch user ${info.accountName}. Note that there is an organization with that name.`);
   }
-  public asOrganization(): this {
+  public async asOrganization(): Promise<this> {
     return this;
   }
   public async getInfo(refresh = false) {

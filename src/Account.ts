@@ -16,8 +16,8 @@ export interface AccountBase {
   getDatasets(): AsyncIteratorHelper<Models.Dataset, Dataset>;
   addDataset(name: string, ds?: Omit<Models.NewDataset, "name">): Promise<Dataset>;
   update(updateObj: Omit<Models.AccountUpdate, "pinnedDatasets">): Promise<User | Org>;
-  asOrganization(): Org;
-  asUser(): User;
+  asOrganization(): Promise<Org>;
+  asUser(): Promise<User>;
   setAvatar(pathOrBuffer: string | Buffer): Promise<void>;
   getQuery(name: string): Promise<Query>;
   getQueries(): AsyncIteratorHelper<Models.Query, Query>;
@@ -31,11 +31,16 @@ export interface AccountBase {
   ensureStory(name: string, newStory?: NewStory): Promise<Story>;
 }
 export type Account = User | Org;
-export async function getUserOrOrg(accountName: string, app: App): Promise<User | Org> {
+export interface AccountType {
+  accountName: string;
+  app: App;
+  notExistsErrorMessage: string;
+}
+export async function getUserOrOrg({ accountName, app, notExistsErrorMessage }: AccountType): Promise<User | Org> {
   const info = await _get<Routes.accounts._account.Get>({
     app: app,
     path: "/accounts/" + accountName,
-    errorWithCleanerStack: getErr(`Failed to fetch information for account ${accountName}.`),
+    errorWithCleanerStack: getErr(notExistsErrorMessage),
     query: { verbose: "" },
   });
   if (info.type === "user") {
