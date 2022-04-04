@@ -69,7 +69,8 @@ export default class User implements AccountBase {
       if (this._name) {
         errMsg = `Failed to get user information of ${this._name}.`;
       } else {
-        errMsg = `Failed to fetch the current user, because no API token is configured. If you want to fetch the current user, you must create an API token on <https://triplydb.com/me/-/settings/tokens>.`;
+        const url = this._app["_config"].url.replace("https://api.", "https://");
+        errMsg = `Failed to fetch the current user, because no API token is configured. If you want to fetch the current user, you must create an API token on <${url}/me/-/settings/tokens>.`;
       }
       const info = (await _get<Routes.accounts._account.Get>({
         errorWithCleanerStack: getErr(errMsg),
