@@ -205,8 +205,16 @@ export default class Query {
         if (queryType !== "SELECT") {
           throw getErr("Bindings are only supported for SELECT queries.");
         }
-        return new AsyncIteratorHelper<Binding, Binding>({
+        // return new AsyncIteratorHelper<Binding, Binding>({
+        return new AsyncIteratorHelperWithToFile<Binding, Binding>({
           ...iteratorOptions,
+          preProcessFile: async (bindings: Array<Binding>) => {
+            // eventually convert bindings to TSV
+            // just return out input + summat
+            const res = bindings.map(binding => "json")
+            console.log(res)
+            return res
+          }, 
           mapResult: async (result) => result,
           getUrl: async () => this._app["_config"].url + ((await this._getPath()) + "/run?" + variablesInUrlString),
         });
