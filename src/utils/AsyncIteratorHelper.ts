@@ -8,8 +8,9 @@ if (!Symbol.asyncIterator) {
   (<any>Symbol).asyncIterator = Symbol.for("Symbol.asyncIterator");
 }
 
+type RequestExtensionType = "csv" | "tsv" | "json" | "srx" | "srj";
 export interface AsyncConfig<ResultType, OutputType> {
-  getUrl: () => Promise<string>;
+  getUrl: (extensionType?: RequestExtensionType) => Promise<string>;
   mapResult: (resource: ResultType) => Promise<OutputType>;
   app: App;
   potentialFutureError: TriplyDbJsError;
@@ -79,27 +80,32 @@ export default class AsyncIteratorHelper<ResultType, OutputClass> implements Asy
     return result;
   }
 
-  private async _getPage(): Promise<ResultType[] | void> {
+  private async _requestParsedPage(): Promise<ResultType[] | void> {
+    const page = await this._requestPage();
+    if (!page) return;
+    const parsePage = this._config.parsePage || JSON.parse;
+    let results: any;
+    try {
+      results = await parsePage(page.pageInfo.responseText);
+      return results;
+    } catch (e) {
+      this._config.potentialFutureError.message =
+        (await this._config.getErrorMessage()) + ": Failed to parse response.";
+      this._config.potentialFutureError.addContext({ method: "GET", url: page.url }).setCause(page.pageInfo, results);
+      throw this._config.potentialFutureError;
+    }
+  }
+  private async _requestPage(extensionType?: RequestExtensionType) {
     if (this._next === null) return; // iteration has finished
     const reqConfig = requestConfigToFetchConfig("GET", {
       app: this._config.app,
     });
-    const url = this._next || (await this._config.getUrl());
+    const url = this._next || (await this._config.getUrl(extensionType));
     try {
-      const pageResponseInfo = await this.possiblyCachedResults(url, reqConfig);
-      this._next = pageResponseInfo.nextPage;
-      const parsePage = this._config.parsePage || JSON.parse;
-      this._page = pageResponseInfo.responseText;
-      let results: any;
-      try {
-        results = await parsePage(pageResponseInfo.responseText);
-      } catch (e) {
-        this._config.potentialFutureError.message =
-          (await this._config.getErrorMessage()) + ": Failed to parse response.";
-        this._config.potentialFutureError.addContext({ method: "GET", url }).setCause(pageResponseInfo, results);
-        throw this._config.potentialFutureError;
-      }
-      return results;
+      const pageInfo = await this.possiblyCachedResults(url, reqConfig);
+      this._next = pageInfo.nextPage;
+      this._page = pageInfo.responseText;
+      return { url, pageInfo };
     } catch (e: any) {
       if (e instanceof TriplyDbJsError) throw e;
       this._config.potentialFutureError.message = await this._config.getErrorMessage();
@@ -109,7 +115,7 @@ export default class AsyncIteratorHelper<ResultType, OutputClass> implements Asy
 
   private async _get(): Promise<ResultType | void> {
     // Reverse and use `.pop`, as `shift` is an O(n) operation.
-    if (!this._currentPage.length) this._currentPage = ((await this._getPage()) || []).reverse();
+    if (!this._currentPage.length) this._currentPage = ((await this._requestParsedPage()) || []).reverse();
     if (this._currentPage.length) return this._currentPage.pop();
   }
   public async toArray() {

@@ -20,7 +20,6 @@ process.on("unhandledRejection", function (reason: any, p: any) {
   console.warn("Possibly Unhandled Rejection at: Promise ", p, " reason: ", reason);
 });
 const tmpDir = buildPathToSrcPath(__dirname, "tmp");
-const datasetsToClean: Dataset[] = [];
 let testDsIndex = 0;
 const getNewTestDs = async (account: Account, accessLevel: "public" | "private") => {
   const ds = await account.addDataset(
@@ -28,7 +27,6 @@ const getNewTestDs = async (account: Account, accessLevel: "public" | "private")
     `${CommonUnittestPrefix}-${testDsIndex++}`,
     { accessLevel: accessLevel }
   );
-  datasetsToClean.push(ds);
   return ds;
 };
 
@@ -307,6 +305,16 @@ WHERE {
           count++;
         }
         expect(count).to.equal(0);
+      });
+
+      it("Should query a saved select-query (to file)", async function () {
+        this.timeout(30000);
+        const targetFile = path.resolve(tmpDir, "query-test-select-target.tsv");
+        const mockFile = buildPathToSrcPath(__dirname, "__data__", "query-test-select-mock.tsv");
+        await selectQuery.results().bindings().toFile(targetFile);
+        const writtenContent = await fs.readFile(targetFile, "utf-8");
+        const mockContent = await fs.readFile(mockFile, "utf-8");
+        expect(writtenContent).to.equal(mockContent);
       });
 
       it("Should support query variables in select-queries", async function () {

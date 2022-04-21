@@ -4,7 +4,6 @@ import App from "./App";
 import { _get, _patch, _delete, _post } from "./RequestHandler";
 import { Account } from "./Account";
 import { getErr } from "./utils/Error";
-import AsyncIteratorHelper from "./utils/AsyncIteratorHelper";
 import { Cache } from "./utils/cache";
 import * as n3 from "n3";
 import sparqljs from "sparqljs";
@@ -205,10 +204,13 @@ export default class Query {
         if (queryType !== "SELECT") {
           throw getErr("Bindings are only supported for SELECT queries.");
         }
-        return new AsyncIteratorHelper<Binding, Binding>({
+        return new AsyncIteratorHelperWithToFile<Binding, Binding>({
           ...iteratorOptions,
+          isBindings: true,
           mapResult: async (result) => result,
-          getUrl: async () => this._app["_config"].url + ((await this._getPath()) + "/run?" + variablesInUrlString),
+          getUrl: async (contentType) =>
+            this._app["_config"].url +
+            ((await this._getPath()) + `/run${contentType ? "." + contentType : ""}?` + variablesInUrlString),
         });
       },
     };
