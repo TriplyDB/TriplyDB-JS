@@ -11,6 +11,7 @@ import sparqljs from "sparqljs";
 import { stringify as stringifyQueryObj } from "query-string";
 import AsyncIteratorHelperWithToFile from "./utils/AsyncIteratorHelperWithToFile";
 import { VariableConfig } from "@triply/utils/lib/Models";
+import { stringify as stringifyTsv } from "csv-stringify/sync";
 
 export type Binding = { [key: string]: string };
 export type VariableValues = { [variable: string]: string | undefined };
@@ -205,18 +206,37 @@ export default class Query {
         if (queryType !== "SELECT") {
           throw getErr("Bindings are only supported for SELECT queries.");
         }
-        // return new AsyncIteratorHelper<Binding, Binding>({
-        return new AsyncIteratorHelperWithToFile<Binding, Binding>({
-          ...iteratorOptions,
-          preProcessFile: async (bindings: Array<Binding>) => {
-            // eventually convert bindings to TSV
-            // just return out input + summat
-            const res = bindings.map(binding => "json")
-            console.log(res)
-            return res
+          return new AsyncIteratorHelperWithToFile<Binding, Binding>({
+            ...iteratorOptions,
+          toFile: async (iterator ,filePath, opts) => {
+            const f = await iterator["getFileHandle"](filePath)
+            let results: Binding[] | void;
+            iterator["_config"].getUrl = async () => this._app["_config"].url + ((await this._getPath()) + "/run.tsv?" + variablesInUrlString);
+            let writeHeader = true;
+            while ((results = await iterator["_getPage"]())) {
+              if (results && results.length && iterator["_page"]) {
+                const page = iterator["_page"];
+                const firstLineBreakIndex = page.indexOf("\n");
+                const pageNoHeader = page.substring(firstLineBreakIndex + 2)
+                if (writeHeader){
+                  await iterator["writeToFile"](f, page, opts)
+                } else {
+                  await iterator["writeToFile"](f, pageNoHeader, opts)
+                }
+                writeHeader = false;
+              } else {
+                break;
+              }
+            }
+            await iterator["closeFile"](f)
           }, 
           mapResult: async (result) => result,
           getUrl: async () => this._app["_config"].url + ((await this._getPath()) + "/run?" + variablesInUrlString),
+          parsePage: async (page: string) => {
+            // parsePage is required in "_getPage()"
+            // Here we don't want to parse anything. We are letting the API parse the results by setting the getURL
+            return Promise.resolve(page);
+          },
         });
       },
     };

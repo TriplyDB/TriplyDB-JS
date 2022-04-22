@@ -288,12 +288,12 @@ WHERE {
       it.only("Should query a saved select-query (to file)", async function () {
         this.timeout(30000);
         const targetFile = path.resolve(tmpDir, "query-test-select-results.tsv");
-        console.log("taget", targetFile)
         await selectQuery.results().bindings().toFile(targetFile);
         const fileContent = await fs.readFile(targetFile, "utf-8");
-        const parser = new n3.Parser();
-        const quads = parser.parse(fileContent);
-        expect(quads.length).to.equal(DATA_SIZE * 2);
+        const header = "?s\t?p\t?o\n"
+        const split = fileContent.split(header);
+        expect(split.length).to.equal(2)
+        expect(fileContent.lastIndexOf(header)).to.equal(0)
       });
 
       it("Should support query variables in select-queries", async function () {

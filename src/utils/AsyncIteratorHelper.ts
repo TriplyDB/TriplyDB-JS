@@ -14,7 +14,7 @@ export interface AsyncConfig<ResultType, OutputType> {
   app: App;
   potentialFutureError: TriplyDbJsError;
   getErrorMessage: () => Promise<string>;
-  parsePage?: (page: string) => Promise<ResultType[]>;
+  parsePage?: (page: string) => Promise<ResultType[] | string>;
   cache?: Cache;
 }
 
