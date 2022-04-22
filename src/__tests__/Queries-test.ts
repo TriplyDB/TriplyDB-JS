@@ -285,15 +285,15 @@ WHERE {
         expect(count).to.equal(0);
       });
 
-      it.only("Should query a saved select-query (to file)", async function () {
+      it("Should query a saved select-query (to file)", async function () {
         this.timeout(30000);
         const targetFile = path.resolve(tmpDir, "query-test-select-results.tsv");
         await selectQuery.results().bindings().toFile(targetFile);
         const fileContent = await fs.readFile(targetFile, "utf-8");
-        const header = "?s\t?p\t?o\n"
+        const header = "?s\t?p\t?o\n";
         const split = fileContent.split(header);
-        expect(split.length).to.equal(2)
-        expect(fileContent.lastIndexOf(header)).to.equal(0)
+        expect(split.length).to.equal(2);
+        expect(fileContent.lastIndexOf(header)).to.equal(0);
       });
 
       it("Should support query variables in select-queries", async function () {
