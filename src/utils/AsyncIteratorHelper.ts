@@ -14,7 +14,7 @@ export interface AsyncConfig<ResultType, OutputType> {
   app: App;
   potentialFutureError: TriplyDbJsError;
   getErrorMessage: () => Promise<string>;
-  parsePage?: (page: string) => Promise<ResultType[] | string>;
+  parsePage?: (page: string) => Promise<ResultType[]>;
   cache?: Cache;
 }
 
@@ -110,68 +110,6 @@ export default class AsyncIteratorHelper<ResultType, OutputClass> implements Asy
       throw this._config.potentialFutureError.addContext({ method: "GET", url }).setCause(e);
     }
   }
-
-  // private async _requestParsedPage(): Promise<ResultType[] | void>{
-  //   const page = await this._requestPage();
-  //   if (!page) return;
-  //   const parsePage = this._config.parsePage || JSON.parse;
-  //   this._page = page.pageResponseInfo.responseText;
-  //   let results: any;
-  //   try {
-  //     results = await parsePage(page.pageResponseInfo.responseText);
-  //   } catch (e) {
-  //     this._config.potentialFutureError.message =
-  //       (await this._config.getErrorMessage()) + ": Failed to parse response.";
-  //     this._config.potentialFutureError.addContext({ method: "GET", url: page.url }).setCause(page.pageResponseInfo, results);
-  //     throw this._config.potentialFutureError;
-  //   }
-  //   return results;
-  // }
-
-  // private async _requestPage() {
-  //   if (this._next === null) return; // iteration has finished
-  //   const reqConfig = requestConfigToFetchConfig("GET", {
-  //     app: this._config.app,
-  //   });
-  //   const url = this._next || (await this._config.getUrl());
-  //   try {
-  //     const pageResponseInfo = await this.possiblyCachedResults(url, reqConfig);
-  //     this._next = pageResponseInfo.nextPage;
-  //     this._page = pageResponseInfo.responseText;
-  //     return {url, pageResponseInfo};
-  //   } catch (e: any) {
-  //     if (e instanceof TriplyDbJsError) throw e;
-  //     this._config.potentialFutureError.message = await this._config.getErrorMessage();
-  //     throw this._config.potentialFutureError.addContext({ method: "GET", url }).setCause(e);
-  //   }
-  // }
-  // private async _getPage(): Promise<ResultType[] | void> {
-  //   if (this._next === null) return; // iteration has finished
-  //   const reqConfig = requestConfigToFetchConfig("GET", {
-  //     app: this._config.app,
-  //   });
-  //   const url = this._next || (await this._config.getUrl());
-  //   try {
-  //     const pageResponseInfo = await this.possiblyCachedResults(url, reqConfig);
-  //     this._next = pageResponseInfo.nextPage;
-  //     const parsePage = this._config.parsePage || JSON.parse;
-  //     this._page = pageResponseInfo.responseText;
-  //     let results: any;
-  //     try {
-  //       results = await parsePage(pageResponseInfo.responseText);
-  //     } catch (e) {
-  //       this._config.potentialFutureError.message =
-  //         (await this._config.getErrorMessage()) + ": Failed to parse response.";
-  //       this._config.potentialFutureError.addContext({ method: "GET", url }).setCause(pageResponseInfo, results);
-  //       throw this._config.potentialFutureError;
-  //     }
-  //     return results;
-  //   } catch (e: any) {
-  //     if (e instanceof TriplyDbJsError) throw e;
-  //     this._config.potentialFutureError.message = await this._config.getErrorMessage();
-  //     throw this._config.potentialFutureError.addContext({ method: "GET", url }).setCause(e);
-  //   }
-  // }
 
   private async _get(): Promise<ResultType | void> {
     // Reverse and use `.pop`, as `shift` is an O(n) operation.

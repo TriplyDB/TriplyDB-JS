@@ -4,7 +4,6 @@ import App from "./App";
 import { _get, _patch, _delete, _post } from "./RequestHandler";
 import { Account } from "./Account";
 import { getErr } from "./utils/Error";
-import AsyncIteratorHelper from "./utils/AsyncIteratorHelper";
 import { Cache } from "./utils/cache";
 import * as n3 from "n3";
 import sparqljs from "sparqljs";
