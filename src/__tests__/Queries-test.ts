@@ -20,7 +20,6 @@ process.on("unhandledRejection", function (reason: any, p: any) {
   console.warn("Possibly Unhandled Rejection at: Promise ", p, " reason: ", reason);
 });
 const tmpDir = buildPathToSrcPath(__dirname, "tmp");
-const datasetsToClean: Dataset[] = [];
 let testDsIndex = 0;
 const getNewTestDs = async (account: Account, accessLevel: "public" | "private") => {
   const ds = await account.addDataset(
@@ -28,7 +27,6 @@ const getNewTestDs = async (account: Account, accessLevel: "public" | "private")
     `${CommonUnittestPrefix}-${testDsIndex++}`,
     { accessLevel: accessLevel }
   );
-  datasetsToClean.push(ds);
   return ds;
 };
 

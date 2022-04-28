@@ -86,6 +86,7 @@ export default class AsyncIteratorHelper<ResultType, OutputClass> implements Asy
     let results: any;
     try {
       results = await parsePage(page.pageInfo.responseText);
+      return results;
     } catch (e) {
       this._config.potentialFutureError.message =
         (await this._config.getErrorMessage()) + ": Failed to parse response.";
