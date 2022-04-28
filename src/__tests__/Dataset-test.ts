@@ -44,7 +44,7 @@ describe("Dataset", function () {
     await resetUnittestAccount(user);
   });
   // See issue https:/......
-  it.skip("Race condition when removing datasets", async function () {
+  it("Race condition when removing datasets", async function () {
     await resetUnittestAccount(user);
     const testDs = await getNewTestDs(user, "private");
     await Promise.all([testDs.delete(), testDs.delete()]);
