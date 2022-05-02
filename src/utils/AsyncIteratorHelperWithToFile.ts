@@ -2,22 +2,17 @@ import * as fs from "fs-extra";
 import AsyncIteratorHelper, { AsyncConfig } from "./AsyncIteratorHelper";
 import zlib from "zlib";
 
-type CustomToFileFn<ResultType, OutputClass> = (
-  iterator: AsyncIteratorHelperWithToFile<ResultType, OutputClass>,
-  filePath: string,
-  opts?: { compressed?: boolean }
-) => Promise<void>;
 export interface AsyncConfigWithToFile<ResultType, OutputClass> extends AsyncConfig<ResultType, OutputClass> {
-  toFile?: CustomToFileFn<ResultType, OutputClass>;
+  isSelectQuery?: boolean;
 }
 export default class AsyncIteratorHelperWithToFile<ResultType, OutputClass> extends AsyncIteratorHelper<
   ResultType,
   OutputClass
 > {
-  private customToFileFn: CustomToFileFn<ResultType, OutputClass> | undefined;
+  private isSelectQuery?: boolean;
   constructor(config: AsyncConfigWithToFile<ResultType, OutputClass>) {
     super(config);
-    this.customToFileFn = config.toFile;
+    this.isSelectQuery = config.isSelectQuery;
   }
   private compress(data: string) {
     return new Promise<Buffer>((resolve, reject) => {
@@ -40,22 +35,38 @@ export default class AsyncIteratorHelperWithToFile<ResultType, OutputClass> exte
   private async closeFile(fileHandle: number) {
     await fs.close(fileHandle);
   }
-  private async _toFile(filePath: string, opts?: { compressed?: boolean }) {
+  public async toFile(filePath: string, opts?: { compressed?: boolean }) {
     const f = await this.getFileHandle(filePath);
-    let results: ResultType[] | void;
-    while ((results = await this["_requestParsedPage"]())) {
-      if (results && results.length && this["_page"]) {
-        await this.writeToFile(f, this["_page"], opts);
-      } else {
-        break;
+    let results: ResultType[] | string | void;
+    if (this.isSelectQuery) {
+      // Write bindings to file as tsv
+      let writeHeader = true;
+      while ((results = (await this["_requestPage"]("tsv"))?.pageInfo.responseText)) {
+        if (results && results.length && this["_page"]) {
+          const page = this["_page"];
+          const lineBreak = "\n";
+          const indexOfLineBreak = page.indexOf(lineBreak);
+          if (writeHeader) {
+            await this.writeToFile(f, page, opts);
+          } else {
+            const pageNoHeader = page.substring(indexOfLineBreak + lineBreak.length);
+            await this.writeToFile(f, pageNoHeader, opts);
+          }
+          writeHeader = false;
+        } else {
+          break;
+        }
+      }
+    } else {
+      // Write statements to file
+      while ((results = await this["_requestParsedPage"]())) {
+        if (results && results.length && this["_page"]) {
+          await this.writeToFile(f, this["_page"], opts);
+        } else {
+          break;
+        }
       }
     }
     await this.closeFile(f);
-  }
-  public async toFile(filePath: string, opts?: { compressed?: boolean }) {
-    if (this.customToFileFn) {
-      return this.customToFileFn(this, filePath, opts);
-    }
-    return this._toFile(filePath, opts);
   }
 }

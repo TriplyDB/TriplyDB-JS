@@ -206,32 +206,11 @@ export default class Query {
         }
         return new AsyncIteratorHelperWithToFile<Binding, Binding>({
           ...iteratorOptions,
-          toFile: async (iterator, filePath, opts) => {
-            const f = await iterator["getFileHandle"](filePath);
-            let results: string | void;
-            iterator["_config"].getUrl = async () =>
-              this._app["_config"].url + ((await this._getPath()) + "/run.tsv?" + variablesInUrlString);
-            let writeHeader = true;
-            while ((results = (await iterator["_requestPage"]())?.pageInfo.responseText)) {
-              if (results && results.length && iterator["_page"]) {
-                const page = iterator["_page"];
-                const firstLineBreakIndex = page.indexOf("\n");
-                if (writeHeader) {
-                  await iterator["writeToFile"](f, page, opts);
-                } else {
-                  const pageNoHeader = page.substring(firstLineBreakIndex + 2);
-                  await iterator["writeToFile"](f, pageNoHeader, opts);
-                }
-                // We want to remove the columnHeaders from subsequent pages
-                writeHeader = false;
-              } else {
-                break;
-              }
-            }
-            await iterator["closeFile"](f);
-          },
+          isSelectQuery: true,
           mapResult: async (result) => result,
-          getUrl: async () => this._app["_config"].url + ((await this._getPath()) + "/run?" + variablesInUrlString),
+          getUrl: async (contentType) =>
+            this._app["_config"].url +
+            ((await this._getPath()) + `/run${contentType ? "." + contentType : ""}?` + variablesInUrlString),
         });
       },
     };

@@ -8,8 +8,9 @@ if (!Symbol.asyncIterator) {
   (<any>Symbol).asyncIterator = Symbol.for("Symbol.asyncIterator");
 }
 
+type RequestContentType = "csv" | "tsv" | "json" | "srx" | "srj";
 export interface AsyncConfig<ResultType, OutputType> {
-  getUrl: () => Promise<string>;
+  getUrl: (contentType?: RequestContentType) => Promise<string>;
   mapResult: (resource: ResultType) => Promise<OutputType>;
   app: App;
   potentialFutureError: TriplyDbJsError;
@@ -94,12 +95,12 @@ export default class AsyncIteratorHelper<ResultType, OutputClass> implements Asy
       throw this._config.potentialFutureError;
     }
   }
-  private async _requestPage() {
+  private async _requestPage(contentType?: RequestContentType) {
     if (this._next === null) return; // iteration has finished
     const reqConfig = requestConfigToFetchConfig("GET", {
       app: this._config.app,
     });
-    const url = this._next || (await this._config.getUrl());
+    const url = this._next || (await this._config.getUrl(contentType));
     try {
       const pageInfo = await this.possiblyCachedResults(url, reqConfig);
       this._next = pageInfo.nextPage;
