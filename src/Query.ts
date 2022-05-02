@@ -206,7 +206,7 @@ export default class Query {
         }
         return new AsyncIteratorHelperWithToFile<Binding, Binding>({
           ...iteratorOptions,
-          isSelectQuery: true,
+          isBindings: true,
           mapResult: async (result) => result,
           getUrl: async (contentType) =>
             this._app["_config"].url +

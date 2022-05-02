@@ -3,16 +3,16 @@ import AsyncIteratorHelper, { AsyncConfig } from "./AsyncIteratorHelper";
 import zlib from "zlib";
 
 export interface AsyncConfigWithToFile<ResultType, OutputClass> extends AsyncConfig<ResultType, OutputClass> {
-  isSelectQuery?: boolean;
+  isBindings?: boolean;
 }
 export default class AsyncIteratorHelperWithToFile<ResultType, OutputClass> extends AsyncIteratorHelper<
   ResultType,
   OutputClass
 > {
-  private isSelectQuery?: boolean;
+  private isBindings?: boolean;
   constructor(config: AsyncConfigWithToFile<ResultType, OutputClass>) {
     super(config);
-    this.isSelectQuery = config.isSelectQuery;
+    this.isBindings = config.isBindings;
   }
   private compress(data: string) {
     return new Promise<Buffer>((resolve, reject) => {
@@ -38,17 +38,17 @@ export default class AsyncIteratorHelperWithToFile<ResultType, OutputClass> exte
   public async toFile(filePath: string, opts?: { compressed?: boolean }) {
     const f = await this.getFileHandle(filePath);
     let results: ResultType[] | string | void;
-    if (this.isSelectQuery) {
+    if (this.isBindings) {
       // Write bindings to file as tsv
       let writeHeader = true;
       while ((results = (await this["_requestPage"]("tsv"))?.pageInfo.responseText)) {
         if (results && results.length && this["_page"]) {
           const page = this["_page"];
-          const lineBreak = "\n";
-          const indexOfLineBreak = page.indexOf(lineBreak);
           if (writeHeader) {
             await this.writeToFile(f, page, opts);
           } else {
+            const lineBreak = "\n";
+            const indexOfLineBreak = page.indexOf(lineBreak);
             const pageNoHeader = page.substring(indexOfLineBreak + lineBreak.length);
             await this.writeToFile(f, pageNoHeader, opts);
           }
