@@ -62,6 +62,30 @@ describe("Queries", function () {
     await query.update({ accessLevel: "internal" });
     expect(await query.getInfo().then((q) => q.accessLevel)).to.equal("internal");
   });
+  it("Should create a query with all possible 'addQuery' options", async () => {
+    const accessLevel = "internal";
+    const queryString = "select ?s?p?o where {?s?p?o}";
+    const output = "response";
+    const description = "description";
+    const displayName = "displayName";
+    const query = await user.addQuery(`${CommonUnittestPrefix}-test-query-properties`, {
+      accessLevel,
+      queryString,
+      output,
+      dataset: testDs,
+      description,
+      displayName,
+      variables: [{ name: "s", termType: "Literal", language: "nl" }],
+    });
+    const queryInfo = await query.getInfo();
+    expect(queryInfo.accessLevel).to.equal(accessLevel);
+    expect(queryInfo.requestConfig?.payload.query).to.equal(queryString);
+    expect(queryInfo.renderConfig?.output).to.equal(output);
+    expect(queryInfo.dataset?.id).to.equal((await testDs.getInfo()).id);
+    expect(queryInfo.description).to.equal(description);
+    expect(queryInfo.displayName).to.equal(displayName);
+    expect(queryInfo.variables && queryInfo.variables[0].name).to.equal("s");
+  });
   it("Should create a query through a service", async function () {
     this.timeout(30000);
     expect((await testService.getInfo()).status).to.equal("running");
