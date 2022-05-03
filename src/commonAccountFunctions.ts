@@ -53,6 +53,8 @@ export async function addQuery<T extends Account>(this: T, name: string, opts: A
       output: opts.output ? opts.output : "table",
     },
     variables: opts.variables,
+    displayName: opts.displayName,
+    description: opts.description,
   };
   return new Query(
     app,
