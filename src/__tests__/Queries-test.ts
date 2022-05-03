@@ -285,13 +285,12 @@ WHERE {
 
       it("Should query a saved select-query (to file)", async function () {
         this.timeout(30000);
-        const targetFile = path.resolve(tmpDir, "query-test-select-results.tsv");
+        const targetFile = path.resolve(tmpDir, "query-test-select-target.tsv");
+        const mockFile = buildPathToSrcPath(__dirname, "__data__", "query-test-select-mock.tsv");
         await selectQuery.results().bindings().toFile(targetFile);
-        const fileContent = await fs.readFile(targetFile, "utf-8");
-        const header = "?s\t?p\t?o\n";
-        const split = fileContent.split(header);
-        expect(split.length).to.equal(2);
-        expect(fileContent.lastIndexOf(header)).to.equal(0);
+        const writtenContent = await fs.readFile(targetFile, "utf-8");
+        const mockContent = await fs.readFile(mockFile, "utf-8");
+        expect(writtenContent).to.equal(mockContent);
       });
 
       it("Should support query variables in select-queries", async function () {
