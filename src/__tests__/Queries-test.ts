@@ -15,8 +15,6 @@ import { fileCache } from "../utils/cache";
 import { TriplyDbJsError } from "../utils/Error";
 import { gzip, gunzip } from "zlib";
 import Service from "../Service";
-import { Models } from "@triply/utils";
-import { isArray } from "lodash";
 
 process.on("unhandledRejection", function (reason: any, p: any) {
   console.warn("Possibly Unhandled Rejection at: Promise ", p, " reason: ", reason);
