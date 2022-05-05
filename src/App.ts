@@ -93,7 +93,7 @@ export default class App {
       potentialFutureError: getErr(`Failed to get accounts`),
       getErrorMessage: async () => `Failed to get all accounts.`,
       app: this,
-      getUrl: async () => this["_config"].url! + `/accounts`,
+      getUrl: async () => this["_config"].url + `/accounts`,
       mapResult: async (account) => {
         // We're explicitly not passing the account object to the _info parameter as it's not the verbose version.
         // On the TDB API, /accounts currently only returns simple information.
