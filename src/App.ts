@@ -9,7 +9,7 @@ import AsyncIteratorHelper from "./utils/AsyncIteratorHelper";
 import * as calver from "@triply/utils/lib/calver";
 import { bootstrap } from "global-agent";
 
-bootstrap();
+if (typeof process === "object" && process.title === "node") bootstrap();
 import semver from "semver";
 import { MarkRequired } from "ts-essentials";
 
