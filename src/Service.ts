@@ -177,22 +177,29 @@ export default class Service {
   }
 
   public async waitUntilRunning() {
+    let failedServiceErrorCount = 0;
     while (true) {
       const info = await this.getInfo(true);
-      if (info.status === "running") {
-        break;
-      } else if (info.error) {
-        throw getErr(
-          `Failed to start service ${this._name} of dataset ${(await this._dataset.getInfo()).name}: ${
-            info.error.message
-          }`
-        );
+      if (info.status === "running") return;
+      if (info.error) {
+        // Remove this check once #6591 is deployed.
+        if (info.error?.message.includes("Failed to get information for service") && failedServiceErrorCount++ < 3) {
+          // This should be momentary. Let's retry a few times and give up if we still get this error.
+        } else {
+          throw getErr(
+            `Failed to start service ${this._name} of dataset ${(await this._dataset.getInfo()).name}: ${
+              info.error.message
+            }`
+          );
+        }
       } else if (!["starting", "updating"].includes(info.status)) {
         throw getErr(
           `Failed to start service ${this._name} of dataset ${
             (await this._dataset.getInfo(true)).name
           } as it is being stopped or removed.`
         );
+      } else {
+        failedServiceErrorCount = 0;
       }
       await wait(5000);
     }
