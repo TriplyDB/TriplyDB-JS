@@ -1,5 +1,5 @@
 include:
-  - project: "public/ci-utils"
+  - project: "shared/ci-utils"
     file: ".yarn.yml"
 
 stages:
