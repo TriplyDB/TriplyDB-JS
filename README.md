@@ -30,9 +30,13 @@ Recommendations for these tokens:
 - `yarn build` transpiles the typescript code, and stores the JS results in the `./lib` directory
 - `yarn dev` does the same, but watches for any changes to the typescript files and incrementally transpiles them when needed
 
-### Releasing
+# To publish a new version:
 
-`yarn version [patch|minor|major]`
+- Run `npm version [patch|minor|major]`
+<details>
+yarn's new version plugin does more than we want. We just want to modify the package.json file. I.e., just use npm 
+</details>
+- The CI will automatically publish the NPM package
 
 ### Building the TriplyDB-js binaries
 
