@@ -41,7 +41,7 @@ publish:
   script:
     - yarn install
     - yarn build
-    - yarn publish --non-interactive
+    - yarn npm publish
   only:
     refs:
       - /^v-.*$/
