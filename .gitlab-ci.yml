@@ -5,7 +5,7 @@ include:
 stages:
   - install
   - test
-  - run
+  - publish
 
 image: node:14.18.1-bullseye-slim
 
