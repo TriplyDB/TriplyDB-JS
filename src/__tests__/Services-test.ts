@@ -7,7 +7,7 @@ import Dataset from "../Dataset";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const expect = chai.expect;
-import { resetUnittestAccount, CommonUnittestPrefix, buildPathToSrcPath } from "./utils";
+import { resetUnittestAccount, CommonUnittestPrefix } from "./utils";
 import Service from "../Service";
 
 process.on("unhandledRejection", function (reason: any, p: any) {
@@ -37,7 +37,7 @@ describe("Services", function () {
     user = await app.getUser();
     await resetUnittestAccount(user);
     testDs = await getNewTestDs(user, "private");
-    await testDs.importFromFiles([buildPathToSrcPath(__dirname, "__data__", "small.nq")]);
+    await testDs.importFromFiles(["./src/__tests__/__data__/small.nq"]);
     service = await testDs.addService("default", { type: "virtuoso" });
   });
   after(async function () {

@@ -1,5 +1,4 @@
 import { Account } from "../Account";
-import * as path from "path";
 export const CommonUnittestPrefix = process.env["UNITTEST_NAMESPACE"] || "triplydb-js-";
 import App from "../App";
 import { TriplyDbJsError, getErr } from "../utils/Error";
@@ -52,20 +51,7 @@ export async function resetUnittestAccount(user: User) {
   //empty pinned datasetes
   await user.pinItems([]);
 }
-/**
- * Rewrite a build path (e.g. /home/...../api/build/src/_data) to a src path
- * (e.g. /home/...../api/src/_data)
- */
-export function buildPathToSrcPath(...pathInBuildDir: string[]) {
-  const fullBuildPath = path.resolve(...pathInBuildDir);
-  //Assume the current-working-dir is the root of this triplydb-js package
-  //(ie the place where we find the package.json of the triplydb-js
 
-  const relativeToCwd = path.relative(path.resolve("./"), fullBuildPath);
-
-  const [, ...newRelative] = path.normalize(relativeToCwd).split("/");
-  return path.resolve("src", ...newRelative);
-}
 //Expecting this username to exist on the instance.
 export const staticOtherUser = "triplydb-js-testuser";
 export async function getOtherUser(app: App) {

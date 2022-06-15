@@ -3,7 +3,7 @@ import { Account } from "../Account";
 import Dataset from "../Dataset";
 import path from "path";
 import * as chai from "chai";
-import { resetUnittestAccount, CommonUnittestPrefix, buildPathToSrcPath } from "./utils";
+import { resetUnittestAccount, CommonUnittestPrefix } from "./utils";
 import User from "../User";
 const expect = chai.expect;
 process.on("unhandledRejection", function (reason: any, p: any) {
@@ -21,7 +21,7 @@ const getNewTestDs = async (account: Account, accessLevel: "public" | "private")
   datasetsToClean.push(ds);
   return ds;
 };
-const dataDir = buildPathToSrcPath(__dirname, "__data__");
+const dataDir = "./src/__tests__/__data__";
 describe("Graphs", function () {
   let app: App;
   let user: User;

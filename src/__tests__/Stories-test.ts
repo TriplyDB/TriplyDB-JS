@@ -6,12 +6,12 @@ import * as chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const expect = chai.expect;
-import { resetUnittestAccount, CommonUnittestPrefix, buildPathToSrcPath } from "./utils";
+import { resetUnittestAccount, CommonUnittestPrefix } from "./utils";
 import User from "../User";
 process.on("unhandledRejection", function (reason: any, p: any) {
   console.warn("Possibly Unhandled Rejection at: Promise ", p, " reason: ", reason);
 });
-const tmpDir = buildPathToSrcPath(__dirname, "tmp");
+const tmpDir = "./src/__tests__/tmp";
 const datasetsToClean: Dataset[] = [];
 let testDsIndex = 0;
 const getNewTestDs = async (account: Account, accessLevel: "public" | "private") => {

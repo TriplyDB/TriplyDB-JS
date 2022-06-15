@@ -6,7 +6,7 @@ import * as chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const expect = chai.expect;
-import { resetUnittestAccount, CommonUnittestPrefix, buildPathToSrcPath } from "./utils";
+import { resetUnittestAccount, CommonUnittestPrefix } from "./utils";
 import User from "../User";
 import path from "path";
 import * as n3 from "n3";
@@ -19,7 +19,7 @@ import Service from "../Service";
 process.on("unhandledRejection", function (reason: any, p: any) {
   console.warn("Possibly Unhandled Rejection at: Promise ", p, " reason: ", reason);
 });
-const tmpDir = buildPathToSrcPath(__dirname, "tmp");
+const tmpDir = "./src/__tests__/tmp";
 let testDsIndex = 0;
 const getNewTestDs = async (account: Account, accessLevel: "public" | "private") => {
   const ds = await account.addDataset(
@@ -42,7 +42,7 @@ describe("Queries", function () {
     await resetUnittestAccount(user);
     testDs = await getNewTestDs(user, "private");
     await fs.mkdirp(tmpDir);
-    await testDs.importFromFiles([buildPathToSrcPath(__dirname, "__data__", "small.nq")]);
+    await testDs.importFromFiles(["./src/__tests__/__data__/small.nq"]);
     testService = await testDs.addService("testService", { type: "virtuoso" });
   });
   after(async function () {
@@ -310,7 +310,7 @@ WHERE {
       it("Should query a saved select-query (to file)", async function () {
         this.timeout(30000);
         const targetFile = path.resolve(tmpDir, "query-test-select-target.tsv");
-        const mockFile = buildPathToSrcPath(__dirname, "__data__", "query-test-select-mock.tsv");
+        const mockFile = "./src/__tests__/__data__/query-test-select-mock.tsv";
         await selectQuery.results().bindings().toFile(targetFile);
         const writtenContent = await fs.readFile(targetFile, "utf-8");
         const mockContent = await fs.readFile(mockFile, "utf-8");

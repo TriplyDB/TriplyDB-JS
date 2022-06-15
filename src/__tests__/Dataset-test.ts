@@ -6,7 +6,7 @@ import * as chai from "chai";
 import { promisify } from "util";
 import * as zlib from "zlib";
 import { Store, DataFactory, Util } from "n3";
-import { resetUnittestAccount, buildPathToSrcPath, CommonUnittestPrefix } from "./utils";
+import { resetUnittestAccount, CommonUnittestPrefix } from "./utils";
 import User from "../User";
 import Graph from "../Graph";
 import Service from "../Service";
@@ -17,7 +17,12 @@ const expect = chai.expect;
 process.on("unhandledRejection", function (reason: any, p: any) {
   console.warn("Possibly Unhandled Rejection at: Promise ", p, " reason: ", reason);
 });
-const tmpDir = buildPathToSrcPath(__dirname, "tmp");
+function getTmpDir(...subpaths: string[]) {
+  return path.resolve("./src/__tests__/tmp", ...subpaths);
+}
+function getDataDir(...subpaths: string[]) {
+  return path.resolve("./src/__tests__/__data__", ...subpaths);
+}
 const datasetsToClean: Dataset[] = [];
 let testDsIndex = 0;
 const getNewTestDs = async (account: Account, accessLevel: "public" | "private") => {
@@ -34,7 +39,7 @@ describe("Dataset", function () {
   let app: App;
   let user: User;
   before(async function () {
-    await fs.mkdirp(tmpDir);
+    await fs.mkdirp(getTmpDir());
     app = App.get({
       url: process.env.UNITTEST_API_URL,
       token: process.env.UNITTEST_TOKEN_ACCOUNT,
@@ -109,7 +114,7 @@ describe("Dataset", function () {
       this.timeout(15000);
       let dsInfo = await testDs.getInfo();
       expect(dsInfo.avatarUrl).to.be.undefined;
-      await testDs.setAvatar(buildPathToSrcPath(__dirname, "__data__", "logo.png"));
+      await testDs.setAvatar(getDataDir("logo.png"));
       dsInfo = await testDs.getInfo();
       expect(dsInfo.avatarUrl).to.contain("imgs/avatars/d/");
     });
@@ -170,10 +175,7 @@ describe("Dataset", function () {
     it("Upload", async function () {
       this.timeout(15000);
 
-      await testDs.importFromFiles([
-        buildPathToSrcPath(__dirname, "__data__", "test102.nt"),
-        buildPathToSrcPath(__dirname, "__data__", "test103.nq"),
-      ]);
+      await testDs.importFromFiles([getDataDir("test102.nt"), getDataDir("test103.nq")]);
       const info = testDs["_lastJob"]?.info();
       expect(info?.files).to.have.lengthOf(2);
     });
@@ -191,21 +193,12 @@ describe("Dataset", function () {
 
     it("Upload", async function () {
       this.timeout(15000);
-      await testDs.importFromFiles([
-        buildPathToSrcPath(__dirname, "__data__", "test102.nt"),
-        buildPathToSrcPath(__dirname, "__data__", "test103.nq"),
-      ]);
+      await testDs.importFromFiles([getDataDir("test102.nt"), getDataDir("test103.nq")]);
       let info = testDs["_lastJob"]?.info();
       expect(info?.files).to.have.lengthOf(2);
       this.timeout(15000);
       expect(testDs["_lastJob"]?.info()?.status).to.equal("finished");
-      await testDs.importFromFiles(
-        [
-          buildPathToSrcPath(__dirname, "__data__", "test102.nt"),
-          buildPathToSrcPath(__dirname, "__data__", "test103.nq"),
-        ],
-        { overwriteAll: true }
-      );
+      await testDs.importFromFiles([getDataDir("test102.nt"), getDataDir("test103.nq")], { overwriteAll: true });
       info = testDs["_lastJob"]?.info();
       expect(info?.files).to.have.lengthOf(2);
       expect(await testDs.getGraphs().toArray()).to.have.lengthOf(2);
@@ -237,7 +230,7 @@ describe("Dataset", function () {
     before(async function () {
       this.timeout(15000);
       testDs = await getNewTestDs(user, "private");
-      await testDs.importFromFiles([buildPathToSrcPath(__dirname, "__data__", "test102.nt")]);
+      await testDs.importFromFiles([getDataDir("test102.nt")]);
     });
     it("With empty iri", async function () {
       await expect(testDs.describe("")).eventually.rejectedWith(/Failed to describe '' of/);
@@ -258,7 +251,7 @@ describe("Dataset", function () {
       return expect(
         Promise.all([
           ds.importFromUrls(["https://api.triplydb.com/datasets/vocabulary/music-keys/download"]),
-          ds.importFromFiles([buildPathToSrcPath(__dirname, "__data__", "test103.nq")]),
+          ds.importFromFiles([getDataDir("test103.nq")]),
         ])
       ).to.eventually.rejectedWith("There is already an ongoing job for this dataset. Await that one first.");
     });
@@ -266,7 +259,7 @@ describe("Dataset", function () {
       this.timeout(15000);
       const ds = await getNewTestDs(user, "private");
       await ds.importFromUrls(["https://api.triplydb.com/datasets/vocabulary/music-keys/download"]);
-      await ds.importFromFiles([buildPathToSrcPath(__dirname, "__data__", "test103.nq")]);
+      await ds.importFromFiles([getDataDir("test103.nq")]);
     });
   });
   describe("Clear resources", function () {
@@ -276,20 +269,20 @@ describe("Dataset", function () {
     });
     it("Clear graphs", async function () {
       this.timeout(10000);
-      await testDs.importFromFiles([buildPathToSrcPath(__dirname, "__data__", "small.nq")]);
+      await testDs.importFromFiles([getDataDir("small.nq")]);
       expect((await testDs.getInfo(true)).graphCount).to.equal(2);
       await testDs.clear("graphs");
       expect((await testDs.getInfo(true)).graphCount).to.equal(0);
     });
     it("Clear assets", async function () {
-      await testDs.uploadAsset(buildPathToSrcPath(__dirname, "__data__", "small.nq"), "small.nq");
+      await testDs.uploadAsset(getDataDir("small.nq"), "small.nq");
       expect((await testDs.getInfo(true)).assetCount).to.equal(1);
       await testDs.clear("assets");
       expect((await testDs.getInfo(true)).assetCount).to.equal(0);
     });
     it("Clear services", async function () {
       this.timeout(30000);
-      await testDs.importFromFiles([buildPathToSrcPath(__dirname, "__data__", "small.nq")]);
+      await testDs.importFromFiles([getDataDir("small.nq")]);
       await testDs.addService("sparql");
       expect((await testDs.getInfo(true)).serviceCount).to.equal(1);
       await testDs.clear("services");
@@ -299,10 +292,8 @@ describe("Dataset", function () {
     it("Clear all resources", async function () {
       this.timeout(35000);
       await Promise.all([
-        testDs
-          .importFromFiles([buildPathToSrcPath(__dirname, "__data__", "small.nq")])
-          .then(() => testDs.addService("sparql")),
-        testDs.uploadAsset(buildPathToSrcPath(__dirname, "__data__", "small.nq"), "small.nq"),
+        testDs.importFromFiles([getDataDir("small.nq")]).then(() => testDs.addService("sparql")),
+        testDs.uploadAsset(getDataDir("small.nq"), "small.nq"),
       ]).then(() => testDs.getInfo(true));
       const preClear = await testDs.getInfo();
       expect(preClear.serviceCount).to.equal(1);
@@ -326,10 +317,7 @@ describe("Dataset", function () {
 
     it("add an asset", async function () {
       this.timeout(15000);
-      expect(
-        (await testDs.uploadAsset(buildPathToSrcPath(__dirname, "__data__", "test102.nt"), "test102.nt")).getInfo()
-          .versions.length
-      ).to.equal(1);
+      expect((await testDs.uploadAsset(getDataDir("test102.nt"), "test102.nt")).getInfo().versions.length).to.equal(1);
       let assetCount = 0;
       for await (let asset of testDs.getAssets()) asset && assetCount++;
       expect(assetCount).to.equal(1);
@@ -345,9 +333,9 @@ describe("Dataset", function () {
 
     it("download an asset", async function () {
       this.timeout(15000);
-      const originalFile = buildPathToSrcPath(__dirname, "__data__", "test102.nt");
+      const originalFile = getDataDir("test102.nt");
 
-      const toLocation = path.resolve(tmpDir, "test102.nt");
+      const toLocation = getTmpDir("test102.nt");
       await testDs.uploadAsset(originalFile, "test102.nt");
       const asset = await testDs.getAsset("test102.nt");
       await asset.toFile(toLocation);
@@ -360,7 +348,7 @@ describe("Dataset", function () {
     it("stream through an asset", async function () {
       this.timeout(10000);
 
-      const originalFile = buildPathToSrcPath(__dirname, "__data__", "test102.nt");
+      const originalFile = getDataDir("test102.nt");
       await testDs.uploadAsset(originalFile, "test102.nt");
       const asset = await testDs.getAsset("test102.nt");
 
@@ -383,9 +371,9 @@ describe("Dataset", function () {
       // this test fails, but shouldn't.
       // it leads to assets with the same name for the same ds. This shouldn't happen.
       // this is a problem with the server, not triplydb-js
-      await testDs.uploadAsset(buildPathToSrcPath(__dirname, "__data__", "test102.nt"), "test102.nt");
+      await testDs.uploadAsset(getDataDir("test102.nt"), "test102.nt");
       try {
-        await testDs.uploadAsset(buildPathToSrcPath(__dirname, "__data__", "test102.nt"), "test102.nt");
+        await testDs.uploadAsset(getDataDir("test102.nt"), "test102.nt");
       } catch (e) {
         return;
       }
@@ -398,17 +386,14 @@ describe("Dataset", function () {
     before(async function () {
       this.timeout(10000);
       testDs = await getNewTestDs(user, "private");
-      await testDs.importFromFiles([
-        buildPathToSrcPath(__dirname, "__data__", "test102.nt"),
-        buildPathToSrcPath(__dirname, "__data__", "test103.nq"),
-      ]);
+      await testDs.importFromFiles([getDataDir("test102.nt"), getDataDir("test103.nq")]);
     });
     describe("Download graphs", function () {
       it("and decompress", async function () {
-        await testDs.graphsToFile(path.resolve(tmpDir, "out.trig"));
+        await testDs.graphsToFile(getTmpDir("out.trig"));
       });
       it("keep compression", async function () {
-        const outfile = path.resolve(tmpDir, "out.trig.gz");
+        const outfile = getTmpDir("out.trig.gz");
         await testDs.graphsToFile(outfile);
         //should be compressed (the below fails if it isnt)
 
@@ -424,10 +409,10 @@ describe("Dataset", function () {
     });
     it("download a graph", async function () {
       this.timeout(10000);
-      await fs.mkdirp(buildPathToSrcPath(__dirname, "tmp"));
+      await fs.mkdirp(getTmpDir());
       for await (let g of testDs.getGraphs()) {
-        const gzipped = buildPathToSrcPath(__dirname, "tmp", "testf.jsonld.gz");
-        const gunzipped = buildPathToSrcPath(__dirname, "tmp", "testf.jsonld");
+        const gzipped = getTmpDir("testf.jsonld.gz");
+        const gunzipped = getTmpDir("testf.jsonld");
 
         await fs.remove(gzipped);
         await fs.remove(gunzipped);
@@ -451,9 +436,9 @@ describe("Dataset", function () {
     });
     it("download the whole dataset", async function () {
       this.timeout(10000);
-      await fs.mkdirp(buildPathToSrcPath(__dirname, "tmp"));
-      const gzipped = buildPathToSrcPath(__dirname, "tmp", "testf.nt.gz");
-      const gunzipped = buildPathToSrcPath(__dirname, "tmp", "testf.nq");
+      await fs.mkdirp(getTmpDir());
+      const gzipped = getTmpDir("testf.nt.gz");
+      const gunzipped = getTmpDir("testf.nq");
 
       await fs.remove(gzipped);
       await fs.remove(gunzipped);
@@ -487,10 +472,7 @@ describe("Dataset", function () {
       before(async function () {
         this.timeout(10000);
         dsToImportFrom = await getNewTestDs(user, "private");
-        await dsToImportFrom.importFromFiles([
-          buildPathToSrcPath(__dirname, "__data__", "test102.nt"),
-          buildPathToSrcPath(__dirname, "__data__", "test103.nq"),
-        ]);
+        await dsToImportFrom.importFromFiles([getDataDir("test102.nt"), getDataDir("test103.nq")]);
         // Sanity check
         expect(testDs["_lastJob"]?.info()?.status).to.equal("finished");
       });
@@ -566,7 +548,7 @@ describe("Dataset", function () {
          * Create dataset
          */
         const dsToImportFrom = await getNewTestDs(user, "private");
-        await dsToImportFrom.importFromFiles([buildPathToSrcPath(__dirname, "__data__", "test103.nq")]);
+        await dsToImportFrom.importFromFiles([getDataDir("test103.nq")]);
         const dsToImportFromGraphs: Graph[] = [];
         for await (const graph of dsToImportFrom.getGraphs()) dsToImportFromGraphs.push(graph);
         await testDs.importFromDataset(dsToImportFrom, {
