@@ -10,3 +10,12 @@ uploadAssets-*
 uploadFiles-*
 yarn-error.log
 .cjs2esm.js
+
+# Based on https://yarnpkg.com/getting-started/qa#which-files-should-be-gitignored
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions

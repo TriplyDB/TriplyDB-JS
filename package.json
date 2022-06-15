@@ -5,9 +5,7 @@
   "author": "Triply <info@triply.cc>",
   "license": "MIT",
   "repository": "github:TriplyDB/TriplyDB-JS",
-  "bin": {
-    "triplydb": "./lib/bin/triplydb.js"
-  },
+  "bin": "./lib/bin/triplydb.js",
   "scripts": {
     "build": "rm -rf ./lib  && tsc -p tsconfig-build.json && chmod +x ./lib/bin/*",
     "build:watch": "rm -rf ./lib && tsc -p tsconfig-build.json --watch --preserveWatchOutput",
@@ -24,7 +22,7 @@
     "util:validateTs:withLib": "tsc -p ./tsconfig-validate.json --noEmit --skipLibCheck false",
     "util:validateTs:watch": "tsc -p ./tsconfig-validate.json --noEmit --watch --preserveWatchOutput",
     "util:validateFull": "yarn run util:validateTs && yarn run util:lint && yarn run build && yarn run test",
-    "prepare": "husky install ./bin/hooks"
+    "postinstall": "husky install ./bin/hooks"
   },
   "lint-staged": {
     "*.ts?(x)": [
@@ -93,5 +91,6 @@
     "prettier": "^2.4.0",
     "source-map-support": "^0.5.20",
     "typescript": "4.4.3"
-  }
+  },
+  "packageManager": "yarn@3.2.1"
 }
