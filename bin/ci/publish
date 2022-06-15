@@ -1,8 +1,0 @@
-#!/bin/bash
-set -e
-
-
-source ./bin/ci/.env
-echoinfo "Publishing from image ${DOCKER_CI_IMAGE}"
-docker run --rm ${DOCKER_CI_IMAGE} bash -c "cd /triplydb-js \
-    && CI=true yarn publish --non-interactive"

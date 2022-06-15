@@ -1,24 +1,46 @@
+include:
+  - project: "shared/ci-utils"
+    file: ".yarn.yml"
+
 stages:
-  - build
+  - install
   - test
-  - publish
+  - run
 
-image: triply/ci:20210723-2
+image: node:14.18.1-bullseye-slim
 
-build:
-  stage: build
+install:
+  stage: install
+  cache: !reference [.readWriteYarnCache]
   script:
-    - ./bin/ci/build
+    - yarn install --immutable --mode=skip-build
 
 test:
   stage: test
+  cache: !reference [.readOnlyYarnCache]
   script:
-    - ./bin/ci/test
+    - yarn run util:lint
+    - yarn run util:validateTs
+
+test-packed:
+  stage: test
+  cache: !reference [.readOnlyYarnCache]
+  script:
+    - yarn install
+    - yarn build
+    - yarn pack
+    - tar -xzf triply-triplydb-*.tgz
+    - cd ./package
+    - cp -r ../node_modules ./
+    - node ./lib/bin/triplydb.js --help
 
 publish:
   stage: publish
+  cache: !reference [.readOnlyYarnCache]
+  script:
+    - yarn install
+    - yarn build
+    - yarn publish --non-interactive
   only:
     refs:
       - /^v-.*$/
-  script:
-    - ./bin/ci/publish
