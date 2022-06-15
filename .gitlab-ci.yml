@@ -30,7 +30,7 @@ test-packed:
     - yarn install
     - yarn build
     - yarn pack
-    - tar -xzf triply-triplydb-*.tgz
+    - tar -xzf package.tgz
     - cd ./package
     - cp -r ../node_modules ./
     - node ./lib/bin/triplydb.js --help
