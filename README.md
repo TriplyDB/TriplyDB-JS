@@ -32,7 +32,7 @@ Recommendations for these tokens:
 
 ### Releasing
 
-`yarn version [--patch|--minor|--major]`
+`yarn version [patch|minor|major]`
 
 ### Building the TriplyDB-js binaries
 
