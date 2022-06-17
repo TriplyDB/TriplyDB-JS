@@ -41,7 +41,7 @@ export async function getUserOrOrg({ accountName, app, notExistsErrorMessage }: 
     app: app,
     path: "/accounts/" + accountName,
     errorWithCleanerStack: getErr(notExistsErrorMessage),
-    query: { verbose: "" },
+    query: { verbose: "" }, // Verbose, so that we can see the account's pinned datasets/stories/queries.
   });
   if (info.type === "user") {
     return new User(app, info.accountName, info);
