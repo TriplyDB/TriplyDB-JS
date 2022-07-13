@@ -49,14 +49,14 @@ describe("App", function () {
     expect(await app.isCompatible("9.9.9-9")).to.equal(true);
   });
   it("Should postprocess URLs when needed", async function () {
-    const app = App.get({ url: "http://api.triplydb-prd.svc.mfip.local:5000/" });
+    const app = App.get({ url: "http://something.com:5000/" });
 
     expect(
       app["getPostProcessedApiUrl"](
-        "https://datahub-api.fin.rijksweb.nl/queries/DGRB-ACCEPTATIE/structureSelectionQuery/run.nt?article=https%3A%2F%2Fwww.rijksfinancien.nl%2Frijksbegrotingsstructuur%2FBC6BA34-2018-27938&chapter=https%3A%2F%2Fwww.rijksfinancien.nl%2Frijksbegrotingsstructuur%2FBC6-2018-786&page=2&pageSize=5000"
+        "https://somethingelse.com/somepath/run.nt?somearg=https%3A%2F%2Fwww%2Frijksbegrotingsstructuur%2FBC6BA34-2018-27938&pageSize=5000"
       )
     ).to.equal(
-      "http://api.triplydb-prd.svc.mfip.local:5000/queries/DGRB-ACCEPTATIE/structureSelectionQuery/run.nt?article=https%3A%2F%2Fwww.rijksfinancien.nl%2Frijksbegrotingsstructuur%2FBC6BA34-2018-27938&chapter=https%3A%2F%2Fwww.rijksfinancien.nl%2Frijksbegrotingsstructuur%2FBC6-2018-786&page=2&pageSize=5000"
+      "http://something.com:5000/somepath/run.nt?somearg=https%3A%2F%2Fwww%2Frijksbegrotingsstructuur%2FBC6BA34-2018-27938&pageSize=5000"
     );
   });
 });

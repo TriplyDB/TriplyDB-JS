@@ -137,8 +137,8 @@ export default class App {
   }
 
   /**
-   * There may be situations where we access the API via a different domain. E.g., for minfin, SBP
-   * hosts TriplyDB on one domain, but the ETL accesses it directly in the kubernetes cluster to avoid latency.
+   * There may be situations where we access the API via a different domain. E.g., we may
+   * host TriplyDB on one domain, but have an ETL access it directly in the kubernetes cluster to avoid latency.
    * In that case we want the TriplyDB-API to post-process link headers from the API, so that we send a next page to
    * the correct location
    */
