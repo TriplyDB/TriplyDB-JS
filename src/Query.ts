@@ -163,7 +163,7 @@ export default class Query {
     });
   }
   public async getRunLink() {
-    return (await this.getInfo()).link + "/run";
+    return this._app["getPostProcessedApiUrl"]((await this.getInfo()).link + "/run");
   }
   public results(variables?: VariableValues, opts?: { cache?: Cache }) {
     const queryType = this._getQueryType();

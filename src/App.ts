@@ -137,6 +137,28 @@ export default class App {
   }
 
   /**
+   * There may be situations where we access the API via a different domain. E.g., for minfin, SBP
+   * hosts TriplyDB on one domain, but the ETL accesses it directly in the kubernetes cluster to avoid latency.
+   * In that case we want the TriplyDB-API to post-process link headers from the API, so that we send a next page to
+   * the correct location
+   */
+  // @ts-ignore Used other deps, but dont want to bloat the app js api
+  private getPostProcessedApiUrl(urlFromApi: string) {
+    const parsedApiUrl = new URL(urlFromApi);
+    if (this._config.url) {
+      // Only modify when we explicitly pass a different URL as argument.
+      // Assuming that the URL from the `/info` API route is already always the same as all other URLs used in
+      // e.g. link headers that we get from that same API
+      const parsedConfigUrl = new URL(this._config.url);
+      // see https://nodejs.org/docs/latest-v14.x/api/url.html#url_url_strings_and_url_objects
+      parsedApiUrl.host = parsedConfigUrl.host; // e.g. `triplydb.com:5000`
+      parsedApiUrl.protocol = parsedConfigUrl.protocol; // e.g. `http`
+      return parsedApiUrl.toString();
+    }
+    return urlFromApi;
+  }
+
+  /**
    * Get a TriplyDB-JS instance.
    */
   public static get(conf?: AppConfig | string) {

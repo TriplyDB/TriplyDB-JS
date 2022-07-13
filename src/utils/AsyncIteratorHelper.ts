@@ -52,7 +52,10 @@ export default class AsyncIteratorHelper<ResultType, OutputClass> implements Asy
     const responseText = await res.text();
     const contentType = res.headers.get("content-type");
     const linkHeaders = parseLinkHeader(res.headers.get("link") || "");
-    const nextPage = linkHeaders?.["next"] && linkHeaders["next"].url ? linkHeaders["next"].url : null;
+    const nextPage =
+      linkHeaders?.["next"] && linkHeaders["next"].url
+        ? this._config.app["getPostProcessedApiUrl"](linkHeaders["next"].url)
+        : null;
     const result: CachedResult = {
       statusCode,
       responseText,
