@@ -232,6 +232,7 @@ __metadata:
     "@types/md5": ^2.3.2
     "@types/mocha": ^9.1.1
     "@types/n3": ^1.10.4
+    "@types/node": 16
     "@types/parse-link-header": ^2.0.0
     "@types/pumpify": ^1.4.1
     "@types/semver": ^7.3.10
@@ -435,6 +436,13 @@ __metadata:
   version: 16.3.2
   resolution: "@types/node@npm:16.3.2"
   checksum: 242d23b6f9f93afa49eecac179444762000e99667a742c8b1de18c7875c7c952436ab319ea4fe3dca3e66bacb9e4f0ed69a25df9a155c6cedfc8cdaf52cb3453
+  languageName: node
+  linkType: hard
+
+"@types/node@npm:16":
+  version: 16.11.44
+  resolution: "@types/node@npm:16.11.44"
+  checksum: 6fc2214bab40bbab1d76e02bd2fbcc1b5ed0ae383b4c892bcde6c231734582fca8a45185eb1b0283bae434600d3e44bdacbbdc05725661910e6372778e1881c1
   languageName: node
   linkType: hard
 

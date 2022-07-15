@@ -7,7 +7,7 @@ stages:
   - test
   - publish
 
-image: node:14.18.1-bullseye-slim
+image: node:16.16.0-bullseye-slim
 
 install:
   stage: install
