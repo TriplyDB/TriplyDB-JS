@@ -36,37 +36,17 @@ interface ImportFromDatasetArgs {
 }
 export type Prefixes = { [label: string]: n3.PrefixedToIri | string | NamedNode };
 type DsResourceType = "assets" | "graphs" | "services";
-export type NewService =
-  | NewServiceVirtuosoV2
-  | NewServiceElasticSearchV2
-  | NewServiceJenaV2
-  | NewServiceVirtuosoV1
-  | NewServiceElasticSearchV1
-  | NewServiceJenaV1;
-type NewServiceVirtuosoV2 = {
+export type NewService = NewServiceVirtuoso | NewServiceElasticsearch | NewServiceJena;
+type NewServiceVirtuoso = {
   type: "virtuoso";
   config?: never;
 };
-type NewServiceElasticSearchV2 = {
+type NewServiceElasticsearch = {
   type: "elasticSearch";
   config?: never;
 };
-type NewServiceJenaV2 = {
+type NewServiceJena = {
   type: "jena";
-  config?: {
-    reasoner?: Models.JenaReasoner;
-  };
-};
-type NewServiceVirtuosoV1 = {
-  type: "sparql";
-  config?: never;
-};
-type NewServiceElasticSearchV1 = {
-  type: "elasticsearch";
-  config?: never;
-};
-type NewServiceJenaV1 = {
-  type: "sparql-jena";
   config?: {
     reasoner?: Models.JenaReasoner;
   };
@@ -87,12 +67,12 @@ export default class Dataset {
   }
 
   public getServices() {
-    return new AsyncIteratorHelper<Models.ServiceMetadataV1 | Models.ServiceMetadataV2, Service>({
+    return new AsyncIteratorHelper<Models.ServiceMetadata, Service>({
       potentialFutureError: getErr(`Failed to get services`),
       getErrorMessage: async () => `Failed to get services for dataset ${await this._getDatasetNameWithOwner()}.`,
       app: this._app,
       getUrl: async () => this._app["_config"].url + (await this._getDatasetPath("/services")),
-      mapResult: async (info: Models.ServiceV1 | Models.ServiceMetadataV2) => {
+      mapResult: async (info: Models.ServiceMetadata) => {
         return new Service({
           app: this._app,
           dataset: this,

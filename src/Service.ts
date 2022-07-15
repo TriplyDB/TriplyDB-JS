@@ -3,7 +3,6 @@ import App from "./App";
 import { wait } from "./utils";
 import { _get, _post, _delete, _patch } from "./RequestHandler";
 import { getErr, TriplyDbJsError } from "./utils/Error";
-import { ServiceMetadataV1 } from "@triply/utils/lib/Models";
 import Dataset from "./Dataset";
 
 type ServiceAdminInfo = {
@@ -20,22 +19,22 @@ type ServiceAdminInfo = {
   foundInDocker?: boolean;
   foundInMongo?: boolean;
 };
-type ServiceInfo = Models.ServiceV1 | Omit<Models.ServiceMetadataV2, keyof ServiceAdminInfo>;
+type ServiceInfo = Omit<Models.ServiceMetadata, keyof ServiceAdminInfo>;
 
 export default class Service {
   private _app: App;
   private _info?: ServiceInfo;
-  private _graphs?: Models.ServiceGraphInfoV2[];
+  private _graphs?: Models.ServiceGraphInfo[];
   private _dataset: Dataset;
   private _name: string;
-  private _type: Models.ServiceTypeV1 | Models.ServiceTypeV2;
+  private _type: Models.ServiceType;
   private _reasoner?: Models.JenaReasoner;
   public readonly type = "Service";
   constructor(conf: {
     app: App;
     name: string;
     dataset: Dataset;
-    type: Models.ServiceTypeV1 | Models.ServiceTypeV2;
+    type: Models.ServiceType;
     reasoner?: Models.JenaReasoner;
   }) {
     this._app = conf.app;
@@ -47,10 +46,7 @@ export default class Service {
 
   public async getInfo(refresh = false): Promise<ServiceInfo> {
     if (!refresh && this._info) return this._info;
-    this._info = await _get<
-      | Routes.datasets._account._dataset.servicesV1._serviceName.Get
-      | Routes.datasets._account._dataset.services._serviceName.Get
-    >({
+    this._info = await _get<Routes.datasets._account._dataset.services._serviceName.Get>({
       errorWithCleanerStack: getErr(
         `Failed to get information of service '${this._name}' in dataset '${(await this._dataset.getInfo()).name}'.`
       ),
@@ -65,14 +61,7 @@ export default class Service {
     return !info.outOfSync;
   }
 
-  isV1Service() {
-    return this._type === "sparql-jena" || this._type === "sparql" || this._type === "elasticsearch";
-  }
-
   public async rename(newName: string): Promise<Service> {
-    if (this.isV1Service()) {
-      throw getErr(`This TriplyDB API does not support renaming a service.`);
-    }
     await _patch<Routes.datasets._account._dataset.services._serviceName.Patch>({
       errorWithCleanerStack: getErr(
         `Failed to rename service ${this._name} of dataset ${(await this._dataset.getInfo()).name}.`
@@ -87,10 +76,7 @@ export default class Service {
     return this;
   }
 
-  public async getGraphs(refresh = false): Promise<Models.ServiceGraphInfoV2[] | Models.ServiceGraphsInfoV1> {
-    if (this.isV1Service()) {
-      return ((await this.getInfo(refresh)) as ServiceMetadataV1).graphs;
-    }
+  public async getGraphs(refresh = false): Promise<Models.ServiceGraphInfo[]> {
     if (!this._graphs || refresh) {
       this._graphs = await _get<Routes.datasets._account._dataset.services._serviceName.graphs.Get>({
         errorWithCleanerStack: getErr(
@@ -104,10 +90,7 @@ export default class Service {
   }
 
   public async delete() {
-    this._info = await _delete<
-      | Routes.datasets._account._dataset.servicesV1._serviceName.Delete
-      | Routes.datasets._account._dataset.services._serviceName.Delete
-    >({
+    this._info = await _delete<Routes.datasets._account._dataset.services._serviceName.Delete>({
       errorWithCleanerStack: getErr(
         `Failed to delete service ${this._name} of dataset ${(await this._dataset.getInfo()).name}.`
       ),
@@ -129,7 +112,7 @@ export default class Service {
           name: this._name,
           type: this._type,
           config:
-            (this._type === "sparql-jena" || this._type === "jena") && this._reasoner
+            this._type === "jena" && this._reasoner
               ? {
                   reasonerType: this._reasoner,
                 }
@@ -142,7 +125,7 @@ export default class Service {
         e.statusCode === 400 &&
         (e.message.indexOf("Service of type") >= 0 || e.message.indexOf("Invalid service type") >= 0)
       ) {
-        this._type = this._convertServiceVersionTypes(this._type);
+        this._type = this._type;
         return this.create();
       } else {
         throw e;
@@ -238,7 +221,7 @@ export default class Service {
       ),
       app: this._app,
       path: await this._getServicePath(),
-      data: this.isV1Service() ? { recreate: true } : { sync: true },
+      data: { sync: true },
     });
     await this.waitUntilRunning();
   }
@@ -249,30 +232,5 @@ export default class Service {
 
   public getDataset(): Dataset {
     return this._dataset;
-  }
-  /**
-   * Converts service version types from v1 to v2 and from v2 to v1
-   * This ensures interoperability between service types. And we can start using the new types for old instances
-   * @param type
-   * @returns converted service type
-   */
-  private _convertServiceVersionTypes(
-    type: Models.ServiceTypeV1 | Models.ServiceTypeV2
-  ): Models.ServiceTypeV1 | Models.ServiceTypeV2 {
-    switch (type) {
-      case "elasticsearch":
-        return "elasticSearch";
-      case "elasticSearch":
-        return "elasticsearch";
-      case "sparql":
-        return "virtuoso";
-      case "virtuoso":
-        return "sparql";
-      case "sparql-jena":
-        return "jena";
-      case "jena":
-        return "sparql-jena";
-    }
-    throw getErr("Unknown Service type");
   }
 }

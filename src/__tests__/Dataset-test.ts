@@ -596,7 +596,7 @@ describe("Dataset", function () {
     });
     describe("Services in Dataset", () => {
       it("Should get a service by name", async function () {
-        this.timeout(50000);
+        this.timeout(100_000);
         const serviceName1 = `${CommonUnittestPrefix}-addService-1`;
         const serviceName2 = `${CommonUnittestPrefix}-addService-2`;
         await testDs.ensureService(serviceName1, { type: "virtuoso" });
@@ -606,8 +606,7 @@ describe("Dataset", function () {
         const gottenService2 = await testDs.getService(serviceName2);
         const gottenService2Info = await gottenService2.getInfo();
         expect(gottenService2Info.name).to.equal(serviceName2);
-        if (gottenService2.isV1Service()) expect(gottenService2Info.type).to.equal("sparql-jena");
-        else expect(gottenService2Info.type).to.equal("jena");
+        expect(gottenService2Info.type).to.equal("jena");
       });
     });
   });

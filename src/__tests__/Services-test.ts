@@ -61,11 +61,6 @@ describe("Services", function () {
     expect(serviceInfo.status).to.equal("running");
   });
   it("Be able to rename a service", async function () {
-    if (service.isV1Service()) {
-      return expect(service.rename("newName")).to.be.rejectedWith(
-        "This TriplyDB API does not support renaming a service."
-      );
-    }
     await service.rename("newName");
     const serviceInfo = await service.getInfo(true);
     expect(serviceInfo.status).to.equal("running");
@@ -81,44 +76,20 @@ describe("Services", function () {
   });
   it("Should be able to get graph info", async function () {
     const graphs = await service.getGraphs(true);
-    if (service.isV1Service()) {
-      expect(Object.keys(graphs).length).to.equal((await testDs.getGraphs().toArray()).length);
-    } else {
-      expect(graphs.length).to.equal((await testDs.getInfo(true)).graphCount);
-    }
+    expect(graphs.length).to.equal((await testDs.getInfo(true)).graphCount);
   });
-  describe("V1/V2 interoperability", () => {
-    let tempService: Service;
-    before(async () => {
-      tempService = await testDs.addService("otherService", { type: service.isV1Service() ? "virtuoso" : "sparql" });
-    });
-    after(async () => {
-      await tempService.delete();
-    });
-    it("Creating a service of type V1 returns a service of type V2", async function () {
-      const serviceInfo = await tempService.getInfo(true);
-      if (tempService.isV1Service()) {
-        expect(serviceInfo.status).to.equal("running");
-        expect(serviceInfo.type).to.equal("sparql");
-      } else {
-        expect(serviceInfo.status).to.equal("running");
-        expect(serviceInfo.type).to.equal("virtuoso");
-      }
-    });
-  });
+
   describe("Ensuring a service", function () {
     it("Should create when not already existing", async function () {
       const ensuredService = await testDs.ensureService(`${CommonUnittestPrefix}-ensured`, { type: "jena" });
       expect((await ensuredService?.getInfo()).name).to.equal(`${CommonUnittestPrefix}-ensured`);
-      if (ensuredService.isV1Service()) expect((await ensuredService?.getInfo()).type).to.equal("sparql-jena");
-      else expect((await ensuredService?.getInfo()).type).to.equal("jena");
+      expect((await ensuredService?.getInfo()).type).to.equal("jena");
       await ensuredService?.delete();
     });
     it("Should get existing when already existing", async function () {
       const ensuredService = await testDs.ensureService("default");
       expect((await ensuredService?.getInfo()).name).to.equal("default");
-      if (ensuredService.isV1Service()) expect((await ensuredService?.getInfo()).type).to.equal("sparql");
-      else expect((await ensuredService?.getInfo()).type).to.equal("virtuoso");
+      expect((await ensuredService?.getInfo()).type).to.equal("virtuoso");
     });
   });
 });

@@ -47,7 +47,7 @@ export default class App {
       try {
         const decodedToken: Models.JwtPayload = jwt_decode(this._config.token);
         // Skip old hardcoded issuer
-        if (decodedToken && decodedToken.iss !== "triply.cc") this._config.url = decodedToken.iss;
+        if (decodedToken && decodedToken.iss && decodedToken.iss !== "triply.cc") this._config.url = decodedToken.iss;
       } catch {
         throw getErr("Invalid token").addContext({ token: this._config.token });
       }
