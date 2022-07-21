@@ -85,7 +85,7 @@ export default class App {
     return getUserOrOrg({
       accountName: accountName,
       app: this,
-      notExistsErrorMessage: `Failed to fetch account ${accountName}. This account does not exist.`,
+      notExistsErrorMessage: `Failed to fetch account ${accountName}.`,
     });
   }
   public getAccounts() {
