@@ -85,7 +85,7 @@ export default class App {
     return getUserOrOrg({
       accountName: accountName,
       app: this,
-      notExistsErrorMessage: `Failed to fetch account ${accountName}.`,
+      notExistsErrorMessage: `Failed to fetch account ${accountName}. This account does not exist.`,
     });
   }
   public getAccounts() {
@@ -112,7 +112,7 @@ export default class App {
     const getUser = await getUserOrOrg({
       accountName: accountName,
       app: this,
-      notExistsErrorMessage: `Failed to fetch user ${accountName}.`,
+      notExistsErrorMessage: `Failed to fetch user ${accountName}. This user does not exist. Make sure that you have not mistyped the user name.`,
     });
 
     return getUser.asUser();
@@ -121,7 +121,7 @@ export default class App {
     const getOrganization = await getUserOrOrg({
       accountName: accountName,
       app: this,
-      notExistsErrorMessage: `Failed to fetch organization ${accountName}.`,
+      notExistsErrorMessage: `Failed to fetch organization ${accountName}. This organization does not exist.`,
     });
     return getOrganization.asOrganization();
   }
