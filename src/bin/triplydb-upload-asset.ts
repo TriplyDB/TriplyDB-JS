@@ -4,8 +4,6 @@ import { program } from "commander";
 import colors from "colors";
 import App from "../App";
 import Dataset from "../Dataset";
-import { TriplyDbJsError } from "../utils/Error";
-import statuses from "http-status-codes";
 let defaultTriplyDBToken = process.env["TRIPLYDB_TOKEN"];
 let defaultTriplyDBAccount = process.env["TRIPLYDB_ACCOUNT"];
 let defaultTriplyDBDataset = process.env["TRIPLYDB_DATASET"];
@@ -28,6 +26,11 @@ const command = program
   .option("-u, --url <url>", "Optional: Url of the triply API. (default: the API where the token was created)", String)
   .option("--http-proxy <proxy>", "TriplyDB access token (default: $HTTP_PROXY)", defaultHttpProxy || undefined)
   .option("--https-proxy <proxy>", "TriplyDB access token (default: $HTTPS_PROXY)", defaultHttpsProxy || undefined)
+  .option(
+    "--overwrite",
+    "Overwrite the asset if it already exists. By default, this script will add a new version if an asset already exists",
+    false
+  )
   .action(async () => {
     function sanityCheckError(msg: string) {
       console.error(colors.red(msg));
@@ -63,15 +66,16 @@ const command = program
       const filename = file.indexOf("/") === -1 ? file : file.split("/").pop();
       console.info("  - Uploading", filename);
       const assetName = filename || "unknown";
-      try {
-        await dataset.uploadAsset(file, assetName);
-      } catch (e) {
-        if (e instanceof TriplyDbJsError && e.statusCode === statuses.CONFLICT) {
-          const asset = await dataset.getAsset(assetName);
-          await asset.addVersion(assetName);
-          continue;
+      const asset = await dataset.getAsset(filename || "unknown").catch(() => undefined);
+      if (asset) {
+        if (options.overwrite) {
+          await asset.delete();
+          await dataset.uploadAsset(file, assetName);
+        } else {
+          await asset.addVersion(file);
         }
-        throw e;
+      } else {
+        await dataset.uploadAsset(file, assetName);
       }
     }
     console.info(
