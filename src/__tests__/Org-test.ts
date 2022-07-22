@@ -96,7 +96,7 @@ describe("Orgs", function () {
   describe("Initialization", function () {
     it("Should throw error when organization does not exist", async function () {
       return expect(App.get().getOrganization("Triply_")).to.eventually.rejectedWith(
-        "Failed to fetch organization Triply_. This organization does not exist."
+        "Failed to fetch organization Triply_."
       );
     });
 
