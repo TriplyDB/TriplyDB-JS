@@ -14,8 +14,8 @@ type ServiceAdminInfo = {
   adminInfo?: {
     fromOrchestrator?: {};
     fromService?: {};
-    canUpdate?: boolean;
   };
+  canUpdate?: boolean;
   foundInDocker?: boolean;
   foundInMongo?: boolean;
 };
@@ -30,6 +30,7 @@ export default class Service {
   private _type: Models.ServiceType;
   private _reasoner?: Models.JenaReasoner;
   public readonly type = "Service";
+
   constructor(conf: {
     app: App;
     name: string;
@@ -135,30 +136,6 @@ export default class Service {
     return this;
   }
 
-  public async stop(): Promise<Service> {
-    await _post({
-      app: this._app,
-      errorWithCleanerStack: getErr(
-        `Failed to stop service ${this._name} in dataset ${(await this._dataset.getInfo()).name}.`
-      ),
-      data: { stop: true },
-      path: await this._getServicePath(),
-    });
-    await this.waitUntilStopped();
-    return this;
-  }
-  public async start(): Promise<Service> {
-    await _post({
-      app: this._app,
-      errorWithCleanerStack: getErr(
-        `Failed to resume the stopped service ${this._name} in dataset ${(await this._dataset.getInfo()).name}.`
-      ),
-      data: { start: true },
-      path: await this._getServicePath(),
-    });
-    return this;
-  }
-
   public async waitUntilRunning() {
     let failedServiceErrorCount = 0;
     while (true) {
@@ -193,25 +170,6 @@ export default class Service {
       }
       await wait(5000);
     }
-  }
-
-  private async waitUntilStopped() {
-    let running = true;
-    while (running) {
-      const info = await this.getInfo(true);
-      if (info.status === "stopped") {
-        running = false;
-        continue;
-      } else if (info.error) {
-        throw getErr(
-          `Failed to stop service ${this._name} of dataset ${(await this._dataset.getInfo()).name}: ${
-            info.error.message
-          }`
-        );
-      }
-      await wait(1000);
-    }
-    return;
   }
 
   public async update() {

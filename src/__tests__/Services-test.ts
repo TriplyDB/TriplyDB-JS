@@ -47,19 +47,6 @@ describe("Services", function () {
     const serviceInfo = await service.getInfo(true);
     expect(serviceInfo.status).to.equal("running");
   });
-  it("Be able to stop a service", async function () {
-    await service.stop();
-    const serviceInfo = await service.getInfo(true);
-    expect(serviceInfo.status).to.equal("stopped");
-  });
-  it("Be able to resume a service", async function () {
-    let serviceInfo = await service.getInfo(true);
-    expect(serviceInfo.status).to.equal("stopped");
-    await service.start();
-    await service.waitUntilRunning();
-    serviceInfo = await service.getInfo(true);
-    expect(serviceInfo.status).to.equal("running");
-  });
   it("Be able to rename a service", async function () {
     await service.rename("newName");
     const serviceInfo = await service.getInfo(true);
