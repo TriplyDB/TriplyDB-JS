@@ -18,6 +18,15 @@ describe("App", function () {
         "Failed to fetch API information of https://google.com. (Expected a JSON response, but got text/html"
       );
     });
+    it("Should not break when the API url contains a trailing slash", async function () {
+      return expect(
+        (
+          await App.get({
+            url: "https://api.nightly.triplydb.com/",
+          }).getInfo()
+        ).apiUrl
+      ).to.equal("https://api.nightly.triplydb.com");
+    });
     it("Should throw error on domain that doesnt exist", async function () {
       return expect(
         App.get({

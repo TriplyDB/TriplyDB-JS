@@ -60,6 +60,7 @@ export default class App {
       (global as any).GLOBAL_AGENT.HTTP_PROXY = this._config.httpsProxy || this._config.httpProxy;
       (global as any).GLOBAL_AGENT.HTTPS_PROXY = this._config.httpsProxy;
     }
+    if (this._config.url.endsWith("/")) this._config.url = this._config.url.slice(0, -1);
   }
 
   public getConfig() {
