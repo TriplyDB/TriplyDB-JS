@@ -325,7 +325,7 @@ describe("Dataset", function () {
     it("add and remove an asset", async function () {
       this.timeout(5000);
       const assetsBefore = await testDs.getAssets().toArray();
-      const addedAsset = await testDs.uploadAsset(__filename, "test");
+      const addedAsset = await testDs.uploadAsset("./package.json", "test");
       expect(await testDs.getAssets().toArray()).to.have.lengthOf(assetsBefore.length + 1);
       await addedAsset.delete();
       expect(await testDs.getAssets().toArray()).to.have.lengthOf(assetsBefore.length);
