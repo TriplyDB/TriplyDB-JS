@@ -4,6 +4,7 @@ import { TriplyDbJsError } from "./utils/Error";
 import fetch from "cross-fetch";
 import FormData from "form-data";
 import debug from "debug";
+import fs from "fs";
 const log = debug("triply:triplydb-js:http");
 type ReqMethod = "GET" | "PUT" | "PATCH" | "DELETE" | "POST" | "HEAD";
 export interface ReqOptsObj<E extends RequestTemplate = any> {
@@ -79,7 +80,7 @@ export function requestConfigToFetchConfig(
     const data = new FormData();
     for (const [name, body] of Object.entries(config.attach)) {
       if (typeof body === "string") {
-        data.append(name, require("fs").createReadStream(body));
+        data.append(name, fs.createReadStream(body));
       } else {
         data.append(name, body);
       }
