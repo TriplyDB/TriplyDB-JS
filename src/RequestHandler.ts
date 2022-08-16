@@ -106,6 +106,7 @@ async function handleFetchAsPromise<T extends HttpMethodTemplate>(
     // This error only occurs when there are network errors and such
     throw opts.errorWithCleanerStack.addContext(context).setCause(e);
   }
+  const contextIncludingBody = { ...context, body: response.statusText };
   errorContext.errorToThrow.statusCode = response.status;
   const consoleOnlyHeader = response.headers.get("x-triply-api");
   if (consoleOnlyHeader) {
@@ -124,7 +125,7 @@ async function handleFetchAsPromise<T extends HttpMethodTemplate>(
   if (expectJsonResponse && !hasJsonResponse) {
     // This should never happen. If it does, there's probably a bug in our API
     throw opts.errorWithCleanerStack
-      .addContext(context)
+      .addContext(contextIncludingBody)
       .setCause(new Error(`Expected a JSON response, but got ${responseContentType}.`));
   }
   let result: undefined | {} | [] | Buffer;
@@ -139,9 +140,16 @@ async function handleFetchAsPromise<T extends HttpMethodTemplate>(
   } else if (opts.expectedResponseBody === "buffer") {
     result = await (response as any).buffer();
   }
+
+  if (response.status === 404) {
+    throw opts.errorWithCleanerStack
+      .addContext(contextIncludingBody)
+      .setCause(new TriplyDbJsError(`It does not exist`));
+  }
+
   if (response.status >= 400) {
     throw opts.errorWithCleanerStack
-      .addContext(context)
+      .addContext(contextIncludingBody)
       .setCause(response, result instanceof Buffer ? undefined : result);
   }
   return result;
