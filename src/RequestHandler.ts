@@ -108,6 +108,7 @@ async function handleFetchAsPromise<T extends HttpMethodTemplate>(
     throw opts.errorWithCleanerStack.addContext(errorContext).setCause(e);
   }
   opts.errorWithCleanerStack.statusCode = response.status;
+  errorContext.message = response.statusText;
   const consoleOnlyHeader = response.headers.get("x-triply-api");
   if (consoleOnlyHeader) {
     throw opts.errorWithCleanerStack
@@ -118,7 +119,7 @@ async function handleFetchAsPromise<T extends HttpMethodTemplate>(
         )
       );
   }
-  errorContext.message = response.statusText;
+
   const expectJsonResponse = !opts.expectedResponseBody || opts.expectedResponseBody === "json";
   const responseContentType = response.headers.get("Content-Type");
   const hasJsonResponse = responseContentType && responseContentType.indexOf("application/json") === 0;
