@@ -107,6 +107,8 @@ async function handleFetchAsPromise<T extends HttpMethodTemplate>(
     // This error only occurs when there are network errors and such
     throw opts.errorWithCleanerStack.addContext(errorContext).setCause(e);
   }
+  // We kept the statusCode outside errorContext because the tests were breaking, for example when testing ensureDataset().
+  // We can fix the ensureDataset function in another ticket.
   opts.errorWithCleanerStack.statusCode = response.status;
   errorContext.message = response.statusText;
   const consoleOnlyHeader = response.headers.get("x-triply-api");
