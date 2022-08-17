@@ -33,14 +33,16 @@ describe("User", function () {
     expect((await user.getInfo()).accountName).to.equal(originalName);
   });
   it("ensure that we get an error when the user doesn't exist", async function () {
-    await expect(app.getAccount("maocpwnuzrls")).to.eventually.be.rejectedWith(/404: Account/);
+    await expect(app.getAccount("maocpwnuzrls")).to.eventually.be.rejectedWith(
+      "Failed to fetch account maocpwnuzrls. (It does not exist)"
+    );
   });
 
   // Error messages
   describe("Initialization", function () {
     it("Should throw error when user does not exist", async function () {
       return expect(App.get().getUser("Triply_")).to.eventually.rejectedWith(
-        "Failed to fetch user Triply_. This user does not exist. Make sure that you have not mistyped the user name."
+        "Failed to fetch user Triply_. (It does not exist)"
       );
     });
 

@@ -7,6 +7,7 @@ import debug from "debug";
 import fs from "fs";
 const log = debug("triply:triplydb-js:http");
 type ReqMethod = "GET" | "PUT" | "PATCH" | "DELETE" | "POST" | "HEAD";
+type ErrorContext = { method: ReqMethod; url: string; message?: Response["statusText"] };
 export interface ReqOptsObj<E extends RequestTemplate = any> {
   app: App;
   errorWithCleanerStack: TriplyDbJsError;
@@ -97,20 +98,23 @@ async function handleFetchAsPromise<T extends HttpMethodTemplate>(
   const url = getUrl(opts);
   log(`_${method.toLowerCase()}`, url);
   const reqOpts = requestConfigToFetchConfig(method, opts);
-  const context = { method, url };
-  const errorContext = { errorToThrow: opts.errorWithCleanerStack, context: { method, url } };
+  const errorContext: ErrorContext = { method, url };
+
   let response: Response;
   try {
     response = await fetch(url, reqOpts);
   } catch (e: any) {
     // This error only occurs when there are network errors and such
-    throw opts.errorWithCleanerStack.addContext(context).setCause(e);
+    throw opts.errorWithCleanerStack.addContext(errorContext).setCause(e);
   }
-  errorContext.errorToThrow.statusCode = response.status;
+  // We kept the statusCode outside errorContext because the tests were breaking, for example when testing ensureDataset().
+  // We can fix the ensureDataset function in another ticket.
+  opts.errorWithCleanerStack.statusCode = response.status;
+  errorContext.message = response.statusText;
   const consoleOnlyHeader = response.headers.get("x-triply-api");
   if (consoleOnlyHeader) {
     throw opts.errorWithCleanerStack
-      .addContext(context)
+      .addContext(errorContext)
       .setCause(
         new Error(
           `You tried connecting TriplyDB-js to a TriplyDB front-end. Please use the URL of the API instead: ${consoleOnlyHeader}`
@@ -124,7 +128,7 @@ async function handleFetchAsPromise<T extends HttpMethodTemplate>(
   if (expectJsonResponse && !hasJsonResponse) {
     // This should never happen. If it does, there's probably a bug in our API
     throw opts.errorWithCleanerStack
-      .addContext(context)
+      .addContext(errorContext)
       .setCause(new Error(`Expected a JSON response, but got ${responseContentType}.`));
   }
   let result: undefined | {} | [] | Buffer;
@@ -134,14 +138,19 @@ async function handleFetchAsPromise<T extends HttpMethodTemplate>(
     } catch (e: any) {
       // We failed to parse the response as json.
       // This should never happen. If it does, there's probably a bug in our API
-      throw opts.errorWithCleanerStack.addContext(context).setCause(e);
+      throw opts.errorWithCleanerStack.addContext(errorContext).setCause(e);
     }
   } else if (opts.expectedResponseBody === "buffer") {
     result = await (response as any).buffer();
   }
+
+  if (response.status === 404) {
+    throw opts.errorWithCleanerStack.addContext(errorContext).setCause(new TriplyDbJsError(`It does not exist`));
+  }
+
   if (response.status >= 400) {
     throw opts.errorWithCleanerStack
-      .addContext(context)
+      .addContext(errorContext)
       .setCause(response, result instanceof Buffer ? undefined : result);
   }
   return result;
