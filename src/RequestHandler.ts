@@ -125,7 +125,7 @@ async function handleFetchAsPromise<T extends HttpMethodTemplate>(
   if (expectJsonResponse && !hasJsonResponse) {
     // This should never happen. If it does, there's probably a bug in our API
     throw opts.errorWithCleanerStack
-      .addContext({ ...errorContext, message: response.statusText })
+      .addContext(errorContext)
       .setCause(new Error(`Expected a JSON response, but got ${responseContentType}.`));
   }
   let result: undefined | {} | [] | Buffer;
@@ -142,14 +142,12 @@ async function handleFetchAsPromise<T extends HttpMethodTemplate>(
   }
 
   if (response.status === 404) {
-    throw opts.errorWithCleanerStack
-      .addContext({ ...errorContext, message: response.statusText })
-      .setCause(new TriplyDbJsError(`It does not exist`));
+    throw opts.errorWithCleanerStack.addContext(errorContext).setCause(new TriplyDbJsError(`It does not exist`));
   }
 
   if (response.status >= 400) {
     throw opts.errorWithCleanerStack
-      .addContext({ ...errorContext, message: response.statusText })
+      .addContext(errorContext)
       .setCause(response, result instanceof Buffer ? undefined : result);
   }
   return result;
