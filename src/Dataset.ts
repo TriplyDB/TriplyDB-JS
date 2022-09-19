@@ -411,7 +411,7 @@ export default class Dataset {
      * This can be improved at a later moment in time by uploading from memory using Buffer
      */
     const quads = store.getQuads(null, null, null, null);
-    const quadsString = new n3.Writer().quadsToString(quads); // This always returns nquads or ntriples. See https://github.com/rdfjs/N3.js/issues/253
+    const quadsString = new n3.Writer({ format: "n-quads" }).quadsToString(quads);
     const tmpFile = path.resolve(tmpdir(), `triplydb-${md5(quadsString)}.nq`);
     await fs.writeFile(tmpFile, quadsString, "utf-8");
     return this.importFromFiles([tmpFile], opts || {});

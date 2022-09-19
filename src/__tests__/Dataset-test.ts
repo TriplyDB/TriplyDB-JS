@@ -210,16 +210,48 @@ describe("Dataset", function () {
   });
   describe("Import from store", function () {
     let testDs: Dataset;
-    before(async function () {
+    beforeEach(async function () {
       this.timeout(10000);
       await resetUnittestAccount(user);
       testDs = await getNewTestDs(user, "private");
     });
-    it("Import", async function () {
+    it("Import a quad", async function () {
       this.timeout(10000);
       const store = new Store();
       const term = DataFactory.namedNode("a:a");
       store.addQuad(term, term, term, term);
+      await testDs.importFromStore(store);
+      const dsInfo = await testDs.getInfo();
+      expect(dsInfo.statements).to.equal(1);
+    });
+    it("Import a triple", async function () {
+      this.timeout(10000);
+      const store = new Store();
+      const term = DataFactory.namedNode("a:a");
+      store.addQuad(term, term, term);
+      await testDs.importFromStore(store);
+      const dsInfo = await testDs.getInfo();
+      expect(dsInfo.statements).to.equal(1);
+    });
+    it("Import a boolean literal", async function () {
+      this.timeout(10000);
+      const store = new Store();
+      const term = DataFactory.namedNode("a:a");
+      store.addQuad(
+        term,
+        term,
+        DataFactory.literal("true", DataFactory.namedNode("http://www.w3.org/2001/XMLSchema#boolean")),
+        term
+      );
+      await testDs.importFromStore(store);
+      const dsInfo = await testDs.getInfo();
+      expect(dsInfo.statements).to.equal(1);
+    });
+    it("Import a language-tagged literal", async function () {
+      this.timeout(10000);
+      const store = new Store();
+      const term = DataFactory.namedNode("a:a");
+      store.addQuad(term, term, DataFactory.literal("true", "en"), term);
       await testDs.importFromStore(store);
       const dsInfo = await testDs.getInfo();
       expect(dsInfo.statements).to.equal(1);
