@@ -162,8 +162,11 @@ export default class Query {
       variableValues: variableValues || {},
     });
   }
-  public async getRunLink() {
+  public async getApiUrl(subpath?: string) {
     return this._app["getPostProcessedApiUrl"]((await this.getInfo()).link + "/run");
+  }
+  public async getRunLink() {
+    return this.getApiUrl("/run");
   }
   public results(variables?: VariableValues, opts?: { cache?: Cache }) {
     const queryType = this._getQueryType();
