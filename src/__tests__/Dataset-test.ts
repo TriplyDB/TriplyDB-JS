@@ -208,6 +208,47 @@ describe("Dataset", function () {
       expect((await ds2.getInfo()).graphCount).to.equal(2);
     });
   });
+  describe("Import from files with merge", function () {
+    let testDs: Dataset;
+    before(async function () {
+      await resetUnittestAccount(user);
+      testDs = await getNewTestDs(user, "private");
+    });
+
+    it("Upload", async function () {
+      this.timeout(15000);
+      await testDs.importFromFiles([getDataDir("test102.nt"), getDataDir("test103.nq")]);
+      let info = testDs["_lastJob"]?.info();
+      expect(info?.files).to.have.lengthOf(2, "initially");
+
+      expect(testDs["_lastJob"]?.info()?.status).to.equal("finished");
+      await testDs.importFromFiles([getDataDir("test102.nt"), getDataDir("test103.nq")], { mergeGraphs: true });
+      info = testDs["_lastJob"]?.info();
+      expect(info?.files).to.have.lengthOf(2);
+      const graphs1 = await testDs.getGraphs().toArray();
+      ``;
+      expect(graphs1).to.have.lengthOf(2, "after merging with duplicate data");
+      const ds2 = await user.getDataset((await testDs.getInfo()).name);
+      const graphs2 = await ds2.getGraphs().toArray();
+      expect(graphs2).to.have.lengthOf(2);
+      expect((await ds2.getInfo()).graphCount).to.equal(2);
+      expect((await graphs2[0].getInfo()).numberOfStatements).to.equal(103);
+
+      expect(testDs["_lastJob"]?.info()?.status).to.equal("finished");
+      await testDs.importFromFiles([getDataDir("small.nt")], { mergeGraphs: true });
+      info = testDs["_lastJob"]?.info();
+      expect(info?.files).to.have.lengthOf(1);
+      expect(await testDs.getGraphs().toArray()).to.have.lengthOf(2, "after merging with new data");
+      const ds3 = await user.getDataset((await testDs.getInfo()).name);
+      const graphs3 = await ds2.getGraphs().toArray();
+      expect(graphs3).to.have.lengthOf(2);
+      expect((await ds2.getInfo()).graphCount).to.equal(2);
+      expect((await graphs3[0].getInfo()).numberOfStatements).to.equal(105);
+
+      expect(await ds3.getGraphs().toArray()).to.have.lengthOf(2);
+      expect((await ds3.getInfo()).graphCount).to.equal(2);
+    });
+  });
   describe("Import from store", function () {
     let testDs: Dataset;
     beforeEach(async function () {

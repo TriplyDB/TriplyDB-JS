@@ -24,11 +24,12 @@ import Graph from "./Graph";
 import { stringify as stringifyQueryObj } from "query-string";
 import statuses from "http-status-codes";
 import { NamedNode } from "rdf-js";
-interface JobDefaultsConfig {
-  defaultGraphName?: string;
-  baseIRI?: string;
-  overwriteAll?: boolean;
-}
+
+type JobDefaultsConfig = Omit<
+  Routes.datasets._account._dataset.jobs.Post["Req"]["Body"],
+  "type" | "url" | "downloadUrls"
+>;
+
 interface ImportFromDatasetArgs {
   graphMap?: { [from: string]: string | Graph | NamedNode };
   graphNames?: Array<string | Graph | NamedNode>;
@@ -390,9 +391,7 @@ export default class Dataset {
       }
       const job = new JobUpload({
         app: this._app,
-        baseIRI: defaultsConfig?.baseIRI,
-        defaultGraphName: defaultsConfig?.defaultGraphName,
-        overwriteAll: !!defaultsConfig?.overwriteAll,
+        ...defaultsConfig,
         datasetPath: await this._getDatasetPath(),
         datasetNameWithOwner: await this._getDatasetNameWithOwner(),
       });
@@ -414,7 +413,7 @@ export default class Dataset {
     const quadsString = new n3.Writer({ format: "n-quads" }).quadsToString(quads);
     const tmpFile = path.resolve(tmpdir(), `triplydb-${md5(quadsString)}.nq`);
     await fs.writeFile(tmpFile, quadsString, "utf-8");
-    return this.importFromFiles([tmpFile], opts || {});
+    return this.importFromFiles([tmpFile], opts);
   }
   public async importFromUrls(urls: string[], defaultConfig?: JobDefaultsConfig): Promise<Dataset> {
     const dsId = await this.getInfo().then((info) => info.id);
@@ -432,11 +431,9 @@ export default class Dataset {
         app: this._app,
         path: "/datasets/" + ownerName + "/" + this._name + "/jobs",
         data: {
+          ...defaultConfig,
           type: "download",
           downloadUrls: urls,
-          defaultGraphName: defaultConfig?.defaultGraphName,
-          overwriteAll: !!defaultConfig?.overwriteAll,
-          baseIRI: defaultConfig?.baseIRI,
         },
       });
 
@@ -607,11 +604,8 @@ async function waitForJobToFinish(app: App, jobUrl: string, dsId: string) {
 }
 
 const maxJobUploadWindow = 8;
-interface JobConfig {
+interface JobConfig extends JobDefaultsConfig {
   app: App;
-  baseIRI?: string;
-  defaultGraphName?: string;
-  overwriteAll?: boolean;
   datasetPath: string;
   datasetNameWithOwner: string;
 }
@@ -627,16 +621,14 @@ export class JobUpload {
   }
 
   public async create() {
+    const { app, datasetPath, datasetNameWithOwner: _ignored, ...data } = this._config;
     this._info = await _post<Routes.datasets._account._dataset.jobs.Post>({
       errorWithCleanerStack: getErr(`Failed to create job for dataset ${this._config.datasetNameWithOwner}.`),
-      app: this._config.app,
-      path: this._config.datasetPath + "/jobs",
-      data: {
-        defaultGraphName: this._config.defaultGraphName,
-        baseIRI: this._config.baseIRI,
-      },
+      app: app,
+      path: datasetPath + "/jobs",
+      data,
     });
-    this.jobUrl = `${this._config.app["_config"].url}${this._config.datasetPath}/jobs/${this._info.jobId}`;
+    this.jobUrl = `${app["_config"].url}${datasetPath}/jobs/${this._info.jobId}`;
 
     return this;
   }
@@ -721,9 +713,6 @@ export class JobUpload {
       }),
       app: this._config.app,
       url: this.jobUrl + "/start",
-      data: {
-        overwriteAll: !!this._config.overwriteAll,
-      },
     });
     this._info = await waitForJobToFinish(this._config.app, this.jobUrl, this._info.datasetId);
   }

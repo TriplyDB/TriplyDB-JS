@@ -163,7 +163,7 @@ export default class Query {
     });
   }
   public async getApiUrl(subpath?: string) {
-    return this._app["getPostProcessedApiUrl"]((await this.getInfo()).link + "/run");
+    return this._app["getPostProcessedApiUrl"]((await this.getInfo()).link + subpath);
   }
   public async getRunLink() {
     return this.getApiUrl("/run");
