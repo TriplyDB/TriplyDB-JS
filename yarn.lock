@@ -70,6 +70,30 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@elastic/elasticsearch@npm:^8.4.0":
+  version: 8.5.0
+  resolution: "@elastic/elasticsearch@npm:8.5.0"
+  dependencies:
+    "@elastic/transport": ^8.2.0
+    tslib: ^2.4.0
+  checksum: 774c4dce4a15786674111a25051895149e19cb46c2ee6fc594c3390ee6d9e1b100abadf4485c6bd32d6f1362fe5ed31810ea84d14c2d11ef470ad55e976b44e5
+  languageName: node
+  linkType: hard
+
+"@elastic/transport@npm:^8.2.0":
+  version: 8.2.0
+  resolution: "@elastic/transport@npm:8.2.0"
+  dependencies:
+    debug: ^4.3.4
+    hpagent: ^1.0.0
+    ms: ^2.1.3
+    secure-json-parse: ^2.4.0
+    tslib: ^2.4.0
+    undici: ^5.1.1
+  checksum: edcb7b57e458d13bf1e9a7ebc0686c2d576d41e57dc160576026824ccbddad3bec867bae2eda69b4c898d36b260f655d0a735817d56a24979c4f5d2a6b15b4e4
+  languageName: node
+  linkType: hard
+
 "@eslint/eslintrc@npm:^1.3.0":
   version: 1.3.0
   resolution: "@eslint/eslintrc@npm:1.3.0"
@@ -222,7 +246,7 @@ __metadata:
   resolution: "@triply/triplydb@workspace:."
   dependencies:
     "@triply/tus-js-client": 2.3.0
-    "@triply/utils": ^1.4.0
+    "@triply/utils": ^1.4.1
     "@types/chai": ^4.3.1
     "@types/chai-as-promised": ^7.1.5
     "@types/debug": ^4.1.7
@@ -290,10 +314,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@triply/utils@npm:^1.4.0":
-  version: 1.4.0
-  resolution: "@triply/utils@npm:1.4.0"
+"@triply/utils@npm:^1.4.1":
+  version: 1.4.1
+  resolution: "@triply/utils@npm:1.4.1"
   dependencies:
+    "@elastic/elasticsearch": ^8.4.0
     "@types/jsonld": ^1.5.6
     "@types/wellknown": ^0.5.3
     autocast: 0.0.4
@@ -320,7 +345,7 @@ __metadata:
     ensureCalver: ./lib/bin/ensureCalver.js
     isCleanBranch: ./lib/bin/isCleanBranch.js
     versionToBranch: ./lib/bin/versionToBranch.js
-  checksum: 91c20ad0b453e615c5a2c73645113a2f0b2f5cdb2f90a7fc611659882c74a9e20d59f033a2bbaac9a2e871e21f787f89225165ddd4d2cda205528c1469989198
+  checksum: 9b121073b55ae5395eaf07b1ac184c36296dcf48cbdac45f16358ed6493789c43de25c7606706707e57e0790f2878396b786d7cddf4f9aa4c93ead4d5eac5990
   languageName: node
   linkType: hard
 
@@ -2226,6 +2251,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"hpagent@npm:^1.0.0":
+  version: 1.2.0
+  resolution: "hpagent@npm:1.2.0"
+  checksum: b029da695edae438cee4da2a437386f9db4ac27b3ceb7306d02e1b586c9c194741ed2e943c8a222e0cfefaf27ee3f863aca7ba1721b0950a2a19bf25bc0d85e2
+  languageName: node
+  linkType: hard
+
 "http-cache-semantics@npm:^4.1.0":
   version: 4.1.0
   resolution: "http-cache-semantics@npm:4.1.0"
@@ -3122,7 +3154,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ms@npm:2.1.3, ms@npm:^2.0.0":
+"ms@npm:2.1.3, ms@npm:^2.0.0, ms@npm:^2.1.3":
   version: 2.1.3
   resolution: "ms@npm:2.1.3"
   checksum: aa92de608021b242401676e35cfa5aa42dd70cbdc082b916da7fb925c542173e36bce97ea3e804923fe92c0ad991434e4a38327e15a1b5b5f945d66df615ae6d
@@ -3981,6 +4013,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"secure-json-parse@npm:^2.4.0":
+  version: 2.5.0
+  resolution: "secure-json-parse@npm:2.5.0"
+  checksum: 84147a32615ce0d93d2fbba60cde85ae362f45cc948ea134e4d6d1e678bb4b7f3a5ce9b9692ed052baefeb2e1c8ba183b34920390e6a089925b97b0d8f7ab064
+  languageName: node
+  linkType: hard
+
 "semver-compare@npm:^1.0.0":
   version: 1.0.0
   resolution: "semver-compare@npm:1.0.0"
@@ -4532,6 +4571,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"tslib@npm:^2.4.0":
+  version: 2.4.1
+  resolution: "tslib@npm:2.4.1"
+  checksum: 19480d6e0313292bd6505d4efe096a6b31c70e21cf08b5febf4da62e95c265c8f571f7b36fcc3d1a17e068032f59c269fab3459d6cd3ed6949eafecf64315fca
+  languageName: node
+  linkType: hard
+
 "tsutils@npm:^3.21.0":
   version: 3.21.0
   resolution: "tsutils@npm:3.21.0"
@@ -4613,6 +4659,15 @@ __metadata:
     tsc: bin/tsc
     tsserver: bin/tsserver
   checksum: 9096d8f6c16cb80ef3bf96fcbbd055bf1c4a43bd14f3b7be45a9fbe7ada46ec977f604d5feed3263b4f2aa7d4c7477ce5f9cd87de0d6feedec69a983f3a4f93e
+  languageName: node
+  linkType: hard
+
+"undici@npm:^5.1.1":
+  version: 5.13.0
+  resolution: "undici@npm:5.13.0"
+  dependencies:
+    busboy: ^1.6.0
+  checksum: 15b8f7df4bd8c9bf9d777456d16b51eb621f25d3ee60f575a8693192a647b3a8b33671e984386636e8df42085488f86a52d0d47db1b8c22edcc591134892a424
   languageName: node
   linkType: hard
 
