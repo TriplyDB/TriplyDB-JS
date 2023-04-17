@@ -1,9 +1,9 @@
 import { Models, Routes } from "@triply/utils";
-import App from "./App";
-import { wait } from "./utils";
-import { _get, _post, _delete, _patch } from "./RequestHandler";
-import { getErr, TriplyDbJsError } from "./utils/Error";
-import Dataset from "./Dataset";
+import App from "./App.js";
+import { wait } from "./utils/index.js";
+import { _get, _post, _delete, _patch } from "./RequestHandler.js";
+import { getErr, TriplyDbJsError } from "./utils/Error.js";
+import Dataset from "./Dataset.js";
 
 type ServiceAdminInfo = {
   autoResume?: boolean;

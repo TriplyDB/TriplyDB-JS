@@ -1,10 +1,9 @@
-#!/usr/bin/env node
-require("source-map-support/register");
+#!/usr/bin/env nodeimport "source-map-support/register";
 import { program } from "commander";
-import importFromFiles from "./triplydb-import-from-file";
-import uploadAssets from "./triplydb-upload-asset";
+import importFromFiles from "./triplydb-import-from-file.js";
+import uploadAssets from "./triplydb-upload-asset.js";
 import colors from "colors";
-import * as fs from "fs-extra";
+import fs from "fs-extra";
 
 program.usage("[command] [options] <files...>");
 program.addCommand(importFromFiles);

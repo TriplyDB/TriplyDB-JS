@@ -1,8 +1,8 @@
 import { Models, Routes } from "@triply/utils";
-import App from "./App";
-import { _get, _delete } from "./RequestHandler";
-import { Account } from "./Account";
-import { getErr } from "./utils/Error";
+import App from "./App.js";
+import { _get, _delete } from "./RequestHandler.js";
+import { Account } from "./Account.js";
+import { getErr } from "./utils/Error.js";
 
 export default class Story {
   private _app: App;

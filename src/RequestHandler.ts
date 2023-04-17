@@ -1,6 +1,6 @@
-import { HttpMethodTemplate, RequestTemplate } from "@triply/utils/lib/Routes";
-import App from "./App";
-import { TriplyDbJsError } from "./utils/Error";
+import { HttpMethodTemplate, RequestTemplate } from "@triply/utils/Routes.js";
+import App from "./App.js";
+import { TriplyDbJsError } from "./utils/Error.js";
 import fetch from "cross-fetch";
 import FormData from "form-data";
 import debug from "debug";

@@ -1,13 +1,13 @@
-import { Account } from "../Account";
+import { Account } from "../Account.js";
 import chai from "chai";
-import Dataset from "../Dataset";
+import Dataset from "../Dataset.js";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const expect = chai.expect;
-import App from "../App";
-import User from "../User";
-import { resetUnittestAccount, CommonUnittestPrefix } from "./utils";
-import { TriplyDbJsError } from "../utils/Error";
+import App from "../App.js";
+import User from "../User.js";
+import { resetUnittestAccount, CommonUnittestPrefix } from "./utils.js";
+import { TriplyDbJsError } from "../utils/Error.js";
 
 const readToken = process.env.UNITTEST_TOKEN_READ;
 const writeToken = process.env.UNITTEST_TOKEN_WRITE;

@@ -1,8 +1,8 @@
-import { Account } from "../Account";
+import { Account } from "../Account.js";
 export const CommonUnittestPrefix = process.env["UNITTEST_NAMESPACE"] || "triplydb-js-";
-import App from "../App";
-import { TriplyDbJsError, getErr } from "../utils/Error";
-import User from "../User";
+import App from "../App.js";
+import { TriplyDbJsError, getErr } from "../utils/Error.js";
+import User from "../User.js";
 function throwErrorWhenNameNotPrefixed(name: string) {
   if (!name.startsWith(CommonUnittestPrefix)) {
     throw new Error(

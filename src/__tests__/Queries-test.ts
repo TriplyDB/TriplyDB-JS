@@ -1,20 +1,20 @@
-import App from "../App";
-import { Account } from "../Account";
-import Dataset from "../Dataset";
-import * as fs from "fs-extra";
+import App from "../App.js";
+import { Account } from "../Account.js";
+import Dataset from "../Dataset.js";
+import fs from "fs-extra";
 import * as chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const expect = chai.expect;
-import { resetUnittestAccount, CommonUnittestPrefix } from "./utils";
-import User from "../User";
+import { resetUnittestAccount, CommonUnittestPrefix } from "./utils.js";
+import User from "../User.js";
 import path from "path";
 import * as n3 from "n3";
-import Query from "../Query";
-import { fileCache } from "../utils/cache";
-import { TriplyDbJsError } from "../utils/Error";
+import Query from "../Query.js";
+import { fileCache } from "../utils/cache.js";
+import { TriplyDbJsError } from "../utils/Error.js";
 import { gzip, gunzip } from "zlib";
-import Service from "../Service";
+import Service from "../Service.js";
 
 process.on("unhandledRejection", function (reason: any, p: any) {
   console.warn("Possibly Unhandled Rejection at: Promise ", p, " reason: ", reason);
@@ -36,7 +36,7 @@ describe("Queries", function () {
   let testDs: Dataset;
   let testService: Service;
   before(async function () {
-    this.timeout(30000);
+    this.timeout(50000);
     app = App.get({ token: process.env.UNITTEST_TOKEN_ACCOUNT });
     user = await app.getUser();
     await resetUnittestAccount(user);

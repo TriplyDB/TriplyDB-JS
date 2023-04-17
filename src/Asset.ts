@@ -1,15 +1,14 @@
 import { Models, Routes } from "@triply/utils";
 import * as tus from "@triply/tus-js-client";
-import Dataset from "./Dataset";
-import App from "./App";
-import * as fs from "fs-extra";
-import { _delete, _get, getFetchOpts } from "./RequestHandler";
+import Dataset from "./Dataset.js";
+import App from "./App.js";
+import { _delete, _get, getFetchOpts } from "./RequestHandler.js";
 import pumpify from "pumpify";
 import fetch from "cross-fetch";
-import { getErr } from "./utils/Error";
+import { getErr } from "./utils/Error.js";
+import fs from "fs-extra";
 
-import { ReadStream } from "fs-extra";
-import { omit, last } from "lodash";
+import { omit, last } from "lodash-es";
 
 export default class Asset {
   private _info: Models.Asset;
@@ -119,7 +118,12 @@ export default class Asset {
   }
   public async addVersion(fileOrPath: File | string) {
     if (this._deleted) throw getErr("This asset does not exist.");
-    await Asset.uploadAsset({ fileOrPath, dataset: this._dataset, versionOf: this._info.identifier });
+    await Asset.uploadAsset({
+      fileOrPath,
+      assetName: this._info.assetName,
+      dataset: this._dataset,
+      versionOf: this._info.identifier,
+    });
     await this.refreshInfo();
     return this;
   }
@@ -158,7 +162,7 @@ export default class Asset {
     dataset: Dataset;
     versionOf?: string;
   }) {
-    let rs: ReadStream | File;
+    let rs: fs.ReadStream | File;
     let fileSize: number;
     if (typeof opts.fileOrPath === "string") {
       if (fs.createReadStream === undefined) {

@@ -1,14 +1,14 @@
-import App from "../App";
-import User from "../User";
+import App from "../App.js";
+import User from "../User.js";
 
 import * as chai from "chai";
-import { Account } from "../Account";
-import Dataset from "../Dataset";
+import { Account } from "../Account.js";
+import Dataset from "../Dataset.js";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const expect = chai.expect;
-import { resetUnittestAccount, CommonUnittestPrefix } from "./utils";
-import Service from "../Service";
+import { resetUnittestAccount, CommonUnittestPrefix } from "./utils.js";
+import Service from "../Service.js";
 
 process.on("unhandledRejection", function (reason: any, p: any) {
   console.warn("Possibly Unhandled Rejection at: Promise ", p, " reason: ", reason);

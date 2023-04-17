@@ -1,9 +1,9 @@
 import parseLinkHeader from "parse-link-header";
-import { _get, requestConfigToFetchConfig } from "../RequestHandler";
-import { TriplyDbJsError } from "./Error";
-import App from "../App";
+import { _get, requestConfigToFetchConfig } from "../RequestHandler.js";
+import { TriplyDbJsError } from "./Error.js";
+import App from "../App.js";
 import fetch from "cross-fetch";
-import { CachedResult, Cache } from "./cache";
+import { CachedResult, Cache } from "./cache.js";
 if (!Symbol.asyncIterator) {
   (<any>Symbol).asyncIterator = Symbol.for("Symbol.asyncIterator");
 }

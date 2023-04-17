@@ -2,8 +2,8 @@
 
 import { program } from "commander";
 import colors from "colors";
-import App from "../App";
-import Dataset from "../Dataset";
+import App from "../App.js";
+import Dataset from "../Dataset.js";
 let defaultTriplyDBToken = process.env["TRIPLYDB_TOKEN"];
 let defaultTriplyDBAccount = process.env["TRIPLYDB_ACCOUNT"];
 let defaultTriplyDBDataset = process.env["TRIPLYDB_DATASET"];

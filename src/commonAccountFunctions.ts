@@ -1,15 +1,15 @@
-import Query from "./Query";
+import Query from "./Query.js";
 import { Models, Routes } from "@triply/utils";
-import AsyncIteratorHelper from "./utils/AsyncIteratorHelper";
-import Story from "./Story";
-import { Account } from "./Account";
-import User from "./User";
-import { _get, _post, _patch } from "./RequestHandler";
-import Dataset, { Prefixes } from "./Dataset";
-import { getErr } from "./utils/Error";
-import { AccessLevel, PinnedItemUpdate, SparqlQuery, VariableConfig } from "@triply/utils/lib/Models";
-import { omit } from "lodash";
-import Service from "./Service";
+import AsyncIteratorHelper from "./utils/AsyncIteratorHelper.js";
+import Story from "./Story.js";
+import { Account } from "./Account.js";
+import User from "./User.js";
+import { _get, _post, _patch } from "./RequestHandler.js";
+import Dataset, { Prefixes } from "./Dataset.js";
+import { getErr } from "./utils/Error.js";
+import { AccessLevel, PinnedItemUpdate, SparqlQuery, VariableConfig } from "@triply/utils/Models.js";
+import { omit } from "lodash-es";
+import Service from "./Service.js";
 
 /* This file contains functions that are shared by the Org and User classes.
 Since the classes are implementing an interface rather than extending a class,

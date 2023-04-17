@@ -1,9 +1,9 @@
 {
   "compilerOptions": {
-    "target": "es2017",
-    "lib": ["es6", "esnext"],
-    "module": "commonjs",
-    "moduleResolution": "node",
+    "target": "es2020",
+    "lib": ["es2020", "esnext"],
+    "module": "es2020",
+    "moduleResolution": "node16",
     "declaration": true,
 
     "strict": true,

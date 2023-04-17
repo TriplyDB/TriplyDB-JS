@@ -1,15 +1,15 @@
 import { Routes, Models } from "@triply/utils";
-import App from "./App";
-import Dataset from "./Dataset";
-import User from "./User";
-import Org from "./Org";
-import { _get } from "./RequestHandler";
-import AsyncIteratorHelper from "./utils/AsyncIteratorHelper";
-import Query from "./Query";
-import Story from "./Story";
-import { getErr } from "./utils/Error";
-import { NewDataset } from "@triply/utils/lib/Models";
-import { AddQueryDataset, AddQueryService, NewStory } from "./commonAccountFunctions";
+import App from "./App.js";
+import Dataset from "./Dataset.js";
+import User from "./User.js";
+import Org from "./Org.js";
+import { _get } from "./RequestHandler.js";
+import AsyncIteratorHelper from "./utils/AsyncIteratorHelper.js";
+import Query from "./Query.js";
+import Story from "./Story.js";
+import { getErr } from "./utils/Error.js";
+import { NewDataset } from "@triply/utils/Models.js";
+import { AddQueryDataset, AddQueryService, NewStory } from "./commonAccountFunctions.js";
 export interface AccountBase {
   getInfo(): Promise<Models.Account>;
   getDataset(name: string): Promise<Dataset>;

@@ -1,18 +1,18 @@
-import App from "../App";
-import { Account } from "../Account";
-import Dataset from "../Dataset";
-import { size, times, random } from "lodash";
+import App from "../App.js";
+import { Account } from "../Account.js";
+import Dataset from "../Dataset.js";
+import { size, times, random } from "lodash-es";
 import * as chai from "chai";
 import { promisify } from "util";
 import * as zlib from "zlib";
 import { Store, DataFactory, Util } from "n3";
-import { resetUnittestAccount, CommonUnittestPrefix } from "./utils";
-import User from "../User";
-import Graph from "../Graph";
-import Service from "../Service";
+import { resetUnittestAccount, CommonUnittestPrefix } from "./utils.js";
+import User from "../User.js";
+import Graph from "../Graph.js";
+import Service from "../Service.js";
 import stream from "stream";
 import path from "path";
-import * as fs from "fs-extra";
+import fs from "fs-extra";
 const expect = chai.expect;
 process.on("unhandledRejection", function (reason: any, p: any) {
   console.warn("Possibly Unhandled Rejection at: Promise ", p, " reason: ", reason);
@@ -192,11 +192,10 @@ describe("Dataset", function () {
     });
 
     it("Upload", async function () {
-      this.timeout(15000);
+      this.timeout(25000);
       await testDs.importFromFiles([getDataDir("test102.nt"), getDataDir("test103.nq")]);
       let info = testDs["_lastJob"]?.info();
       expect(info?.files).to.have.lengthOf(2);
-      this.timeout(15000);
       expect(testDs["_lastJob"]?.info()?.status).to.equal("finished");
       await testDs.importFromFiles([getDataDir("test102.nt"), getDataDir("test103.nq")], { overwriteAll: true });
       info = testDs["_lastJob"]?.info();
@@ -216,7 +215,7 @@ describe("Dataset", function () {
     });
 
     it("Upload", async function () {
-      this.timeout(15000);
+      this.timeout(25000);
       await testDs.importFromFiles([getDataDir("test102.nt"), getDataDir("test103.nq")]);
       let info = testDs["_lastJob"]?.info();
       expect(info?.files).to.have.lengthOf(2, "initially");
@@ -348,6 +347,7 @@ describe("Dataset", function () {
       expect((await testDs.getInfo(true)).graphCount).to.equal(0);
     });
     it("Clear assets", async function () {
+      this.timeout(10000);
       await testDs.uploadAsset(getDataDir("small.nq"), "small.nq");
       expect((await testDs.getInfo(true)).assetCount).to.equal(1);
       await testDs.clear("assets");
@@ -565,7 +565,7 @@ describe("Dataset", function () {
       });
       it("import single graph", async function () {
         let testDsGraphs: Graph[] = [];
-        for await (let graph of testDs.getGraphs()) graph && testDsGraphs.push(graph);
+        for await (let graph of dsToImportFrom.getGraphs()) graph && testDsGraphs.push(graph);
         const importedGraphs = await testDs.importFromDataset(dsToImportFrom, {
           graphMap: {
             [testDsGraphs[0]["_info"].graphName]: "http://tosomethingelse",

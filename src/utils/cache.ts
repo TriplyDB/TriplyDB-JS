@@ -1,4 +1,4 @@
-import * as fs from "fs-extra";
+import fs from "fs-extra";
 import md5 from "md5";
 import path from "path";
 import { gzip, gunzip } from "zlib";

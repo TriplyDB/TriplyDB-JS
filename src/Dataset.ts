@@ -1,9 +1,9 @@
 import { Models, Routes } from "@triply/utils";
-import App from "./App";
-import * as fs from "fs-extra";
-import { wait } from "./utils";
+import App from "./App.js";
+import fs from "fs-extra";
+import { wait } from "./utils/index.js";
 import debug from "debug";
-import Service from "./Service";
+import Service from "./Service.js";
 const log = debug("triply:triplydb-js:upload");
 import * as tus from "@triply/tus-js-client";
 import md5 from "md5";
@@ -13,14 +13,13 @@ import path from "path";
 import * as zlib from "zlib";
 import * as n3 from "n3";
 import pumpify from "pumpify";
-import { Account } from "./Account";
-import { fromPairs, toPairs, pick, size, uniq, zipObject } from "lodash";
-import { TriplyDbJsError, getErr, IncompatibleError } from "./utils/Error";
-import { _get, _delete, _patch, _post, handleFetchAsStream } from "./RequestHandler";
-import { ReadStream } from "fs-extra";
-import AsyncIteratorHelper from "./utils/AsyncIteratorHelper";
-import Asset from "./Asset";
-import Graph from "./Graph";
+import { Account } from "./Account.js";
+import { fromPairs, toPairs, pick, size, uniq, zipObject } from "lodash-es";
+import { TriplyDbJsError, getErr, IncompatibleError } from "./utils/Error.js";
+import { _get, _delete, _patch, _post, handleFetchAsStream } from "./RequestHandler.js";
+import AsyncIteratorHelper from "./utils/AsyncIteratorHelper.js";
+import Asset from "./Asset.js";
+import Graph from "./Graph.js";
 import { stringify as stringifyQueryObj } from "query-string";
 import statuses from "http-status-codes";
 import { NamedNode } from "rdf-js";
@@ -637,7 +636,7 @@ export class JobUpload {
   }
 
   private async uploadFile(fileOrPath: string | File) {
-    let rs: ReadStream | File;
+    let rs: fs.ReadStream | File;
     let fileSize: number;
     let fileName: string;
     if (typeof fileOrPath === "string") {

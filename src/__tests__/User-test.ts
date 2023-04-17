@@ -1,8 +1,8 @@
-import App from "../App";
+import App from "../App.js";
 import * as chai from "chai";
-import { CommonUnittestPrefix } from "./utils";
-import User from "../User";
-import { times, random } from "lodash";
+import { CommonUnittestPrefix } from "./utils.js";
+import User from "../User.js";
+import { times, random } from "lodash-es";
 const expect = chai.expect;
 process.on("unhandledRejection", function (reason: any, p: any) {
   console.warn("Possibly Unhandled Rejection at: Promise ", p, " reason: ", reason);

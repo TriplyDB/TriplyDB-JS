@@ -1,12 +1,13 @@
 import { Models, Routes } from "@triply/utils";
-import User from "./User";
-import { Account, getUserOrOrg } from "./Account";
-import Org from "./Org";
-import jwt_decode from "jwt-decode";
-import { _get } from "./RequestHandler";
-import { getErr } from "./utils/Error";
-import AsyncIteratorHelper from "./utils/AsyncIteratorHelper";
-import * as calver from "@triply/utils/lib/calver";
+import User from "./User.js";
+import { Account, getUserOrOrg } from "./Account.js";
+import Org from "./Org.js";
+import _jwt_decode from "jwt-decode";
+const jwt_decode = _jwt_decode as any as typeof _jwt_decode.default;
+import { _get } from "./RequestHandler.js";
+import { getErr } from "./utils/Error.js";
+import AsyncIteratorHelper from "./utils/AsyncIteratorHelper.js";
+import * as calver from "@triply/utils/calver.js";
 import { bootstrap } from "global-agent";
 
 if (typeof process === "object" && process.title === "node") bootstrap();

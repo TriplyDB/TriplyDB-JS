@@ -1,15 +1,15 @@
 import { Models, Routes } from "@triply/utils";
-import { parseAndInjectVariablesIntoQuery, validate } from "@triply/utils/lib/sparqlVarUtils";
-import App from "./App";
-import { _get, _patch, _delete, _post } from "./RequestHandler";
-import { Account } from "./Account";
-import { getErr } from "./utils/Error";
-import { Cache } from "./utils/cache";
+import { parseAndInjectVariablesIntoQuery, validate } from "@triply/utils/sparqlVarUtils.js";
+import App from "./App.js";
+import { _get, _patch, _delete, _post } from "./RequestHandler.js";
+import { Account } from "./Account.js";
+import { getErr } from "./utils/Error.js";
+import { Cache } from "./utils/cache.js";
 import * as n3 from "n3";
 import sparqljs from "sparqljs";
 import { stringify as stringifyQueryObj } from "query-string";
-import AsyncIteratorHelperWithToFile from "./utils/AsyncIteratorHelperWithToFile";
-import { VariableConfig } from "@triply/utils/lib/Models";
+import AsyncIteratorHelperWithToFile from "./utils/AsyncIteratorHelperWithToFile.js";
+import { VariableConfig } from "@triply/utils/Models.js";
 
 export type Binding = { [key: string]: string };
 export type VariableValues = { [variable: string]: string | undefined };

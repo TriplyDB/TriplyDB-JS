@@ -1,11 +1,11 @@
 import { Models, Routes } from "@triply/utils";
-import App from "./App";
-import { _delete, _patch, _get } from "./RequestHandler";
-import Dataset from "./Dataset";
+import App from "./App.js";
+import { _delete, _patch, _get } from "./RequestHandler.js";
+import Dataset from "./Dataset.js";
 import * as n3 from "n3";
 
 import stream from "stream";
-import { getErr } from "./utils/Error";
+import { getErr } from "./utils/Error.js";
 
 export default class Graph {
   private _info: Models.Graph;

@@ -1,5 +1,5 @@
-import * as fs from "fs-extra";
-import AsyncIteratorHelper, { AsyncConfig } from "./AsyncIteratorHelper";
+import fs from "fs-extra";
+import AsyncIteratorHelper, { AsyncConfig } from "./AsyncIteratorHelper.js";
 import zlib from "zlib";
 
 export interface AsyncConfigWithToFile<ResultType, OutputClass> extends AsyncConfig<ResultType, OutputClass> {

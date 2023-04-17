@@ -1,8 +1,8 @@
 import { Models, Routes } from "@triply/utils";
-import App from "./App";
-import { AccountBase } from "./Account";
-import User from "./User";
-import { _delete, _patch, _post, _get } from "./RequestHandler";
+import App from "./App.js";
+import { AccountBase } from "./Account.js";
+import User from "./User.js";
+import { _delete, _patch, _post, _get } from "./RequestHandler.js";
 
 import {
   addQuery,
@@ -20,8 +20,8 @@ import {
   addStory,
   ensureDataset,
   ensureStory,
-} from "./commonAccountFunctions";
-import { getErr } from "./utils/Error";
+} from "./commonAccountFunctions.js";
+import { getErr } from "./utils/Error.js";
 
 export default class Org implements AccountBase {
   private _app: App;
