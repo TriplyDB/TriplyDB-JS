@@ -109,7 +109,13 @@
   "exports": {
     ".": {
       "import": {
-        "default": "./lib/App.js"
+        "types": "./lib/index.d.ts",
+        "default": "./lib/index.js"
+      }
+    },
+    "./*": {
+      "import": {
+        "default": "./lib/*"
       }
     }
   },
