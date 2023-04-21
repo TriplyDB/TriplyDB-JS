@@ -31,7 +31,6 @@ describe("Services", function () {
   let user: User;
   let testDs: Dataset;
   let service: Service;
-  this.timeout(50000);
   before(async function () {
     app = App.get({ token: process.env.UNITTEST_TOKEN_ACCOUNT });
     user = await app.getUser();
@@ -54,7 +53,6 @@ describe("Services", function () {
     expect(serviceInfo.name).to.equal("newName");
   });
   it("Should indicate when out of sync and be able to update", async function () {
-    this.timeout(10000);
     expect(await service.isUpToDate()).to.equal(true);
     await testDs.importFromDataset(testDs);
     expect(await service.isUpToDate()).to.equal(false);

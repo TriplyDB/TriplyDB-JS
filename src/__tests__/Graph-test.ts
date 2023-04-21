@@ -27,7 +27,6 @@ describe("Graphs", function () {
   let user: User;
   let testDs: Dataset;
   before(async function () {
-    this.timeout(10000);
     app = App.get({ token: process.env.UNITTEST_TOKEN_ACCOUNT });
     user = await app.getUser();
     await resetUnittestAccount(user);

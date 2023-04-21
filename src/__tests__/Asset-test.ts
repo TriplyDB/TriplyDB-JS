@@ -29,7 +29,6 @@ describe("Assets", function () {
   let user: User;
   let testDs: Dataset;
   before(async function () {
-    this.timeout(10000);
     app = App.get({
       url: process.env.UNITTEST_API_URL,
       token: process.env.UNITTEST_TOKEN_ACCOUNT,

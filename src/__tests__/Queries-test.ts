@@ -36,7 +36,6 @@ describe("Queries", function () {
   let testDs: Dataset;
   let testService: Service;
   before(async function () {
-    this.timeout(50000);
     app = App.get({ token: process.env.UNITTEST_TOKEN_ACCOUNT });
     user = await app.getUser();
     await resetUnittestAccount(user);
@@ -46,7 +45,6 @@ describe("Queries", function () {
     testService = await testDs.addService("testService", { type: "virtuoso" });
   });
   after(async function () {
-    this.timeout(10000); // Resetting could take a while
     await resetUnittestAccount(user);
   });
   it("Should create, update, and delete query", async function () {
@@ -85,7 +83,6 @@ describe("Queries", function () {
     expect(queryInfo.variables && queryInfo.variables[0].name).to.equal("s");
   });
   it("Should create a query through a service", async function () {
-    this.timeout(30000);
     expect((await testService.getInfo()).status).to.equal("running");
     const query = await user.addQuery(`${CommonUnittestPrefix}-test-query-service`, {
       accessLevel: "private",
@@ -141,7 +138,6 @@ describe("Queries", function () {
     const DATA_SIZE = 10100; // enough for >1 page
     let dataset: Dataset;
     before(async function () {
-      this.timeout(120000);
       dataset = await getNewTestDs(user, "private");
       const dataFile = path.resolve(tmpDir, "query-test-source.ttl");
       await fs.writeFile(
@@ -187,7 +183,6 @@ WHERE {
         });
       });
       it("Should query a saved construct-query (quad iterator)", async function () {
-        this.timeout(60000);
         const expectedStatements = await constructQuery.getInfo().then((info) => info.dataset!.statements * 2);
         expect(expectedStatements).to.equal(DATA_SIZE * 2);
         let count = 0;
@@ -204,7 +199,6 @@ WHERE {
       });
 
       it("Should query a saved construct-query (to file)", async function () {
-        this.timeout(30000);
         const targetFile = path.resolve(tmpDir, "query-test-results.nt");
         await constructQuery.results().statements().toFile(targetFile);
         const fileContent = await fs.readFile(targetFile, "utf-8");
@@ -243,7 +237,6 @@ WHERE {
       });
 
       it("Should query a saved select-query (statements iterator)", async function () {
-        this.timeout(60000);
         const expectedStatements = await selectQuery.getInfo().then((info) => info.dataset?.statements);
         let count = 0;
         for await (const _ of selectQuery.results().bindings()) {
@@ -258,8 +251,6 @@ WHERE {
         expect(count).to.equal(asArrayCount);
       });
       it("Should cache page when needed", async function () {
-        this.timeout(60000);
-
         await fs.remove(tmpDir);
         await fs.mkdir(tmpDir);
 
@@ -308,7 +299,6 @@ WHERE {
       });
 
       it("Should query a saved select-query (to file)", async function () {
-        this.timeout(30000);
         const targetFile = path.resolve(tmpDir, "query-test-select-target.tsv");
         const mockFile = "./src/__tests__/__data__/query-test-select-mock.tsv";
         await selectQuery.results().bindings().toFile(targetFile);

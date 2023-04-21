@@ -57,7 +57,6 @@ describe("Dataset", function () {
   describe("Adding datasets", function () {
     let testDs: Dataset;
     before(async function () {
-      this.timeout(15000);
       await resetUnittestAccount(user);
       testDs = await getNewTestDs(user, "private");
     });
@@ -111,7 +110,6 @@ describe("Dataset", function () {
     });
 
     it("Set avatar", async function () {
-      this.timeout(15000);
       let dsInfo = await testDs.getInfo();
       expect(dsInfo.avatarUrl).to.be.undefined;
       await testDs.setAvatar(getDataDir("logo.png"));
@@ -173,14 +171,11 @@ describe("Dataset", function () {
     });
 
     it("Upload", async function () {
-      this.timeout(15000);
-
       await testDs.importFromFiles([getDataDir("test102.nt"), getDataDir("test103.nq")]);
       const info = testDs["_lastJob"]?.info();
       expect(info?.files).to.have.lengthOf(2);
     });
     it("Run job", async function () {
-      this.timeout(15000);
       expect(testDs["_lastJob"]?.info()?.status).to.equal("finished");
     });
   });
@@ -192,7 +187,6 @@ describe("Dataset", function () {
     });
 
     it("Upload", async function () {
-      this.timeout(25000);
       await testDs.importFromFiles([getDataDir("test102.nt"), getDataDir("test103.nq")]);
       let info = testDs["_lastJob"]?.info();
       expect(info?.files).to.have.lengthOf(2);
@@ -215,7 +209,6 @@ describe("Dataset", function () {
     });
 
     it("Upload", async function () {
-      this.timeout(25000);
       await testDs.importFromFiles([getDataDir("test102.nt"), getDataDir("test103.nq")]);
       let info = testDs["_lastJob"]?.info();
       expect(info?.files).to.have.lengthOf(2, "initially");
@@ -224,14 +217,15 @@ describe("Dataset", function () {
       await testDs.importFromFiles([getDataDir("test102.nt"), getDataDir("test103.nq")], { mergeGraphs: true });
       info = testDs["_lastJob"]?.info();
       expect(info?.files).to.have.lengthOf(2);
+
       const graphs1 = await testDs.getGraphs().toArray();
-      ``;
       expect(graphs1).to.have.lengthOf(2, "after merging with duplicate data");
       const ds2 = await user.getDataset((await testDs.getInfo()).name);
       const graphs2 = await ds2.getGraphs().toArray();
       expect(graphs2).to.have.lengthOf(2);
       expect((await ds2.getInfo()).graphCount).to.equal(2);
-      expect((await graphs2[0].getInfo()).numberOfStatements).to.equal(103);
+      const statements2 = (await Promise.all(graphs2.map((g) => g.getInfo()))).map((x) => x.numberOfStatements).sort();
+      expect(statements2).to.deep.equal([1, 103]);
 
       expect(testDs["_lastJob"]?.info()?.status).to.equal("finished");
       await testDs.importFromFiles([getDataDir("small.nt")], { mergeGraphs: true });
@@ -242,7 +236,8 @@ describe("Dataset", function () {
       const graphs3 = await ds2.getGraphs().toArray();
       expect(graphs3).to.have.lengthOf(2);
       expect((await ds2.getInfo()).graphCount).to.equal(2);
-      expect((await graphs3[0].getInfo()).numberOfStatements).to.equal(105);
+      const statements3 = (await Promise.all(graphs3.map((g) => g.getInfo()))).map((x) => x.numberOfStatements).sort();
+      expect(statements3).to.deep.equal([1, 105]);
 
       expect(await ds3.getGraphs().toArray()).to.have.lengthOf(2);
       expect((await ds3.getInfo()).graphCount).to.equal(2);
@@ -251,12 +246,10 @@ describe("Dataset", function () {
   describe("Import from store", function () {
     let testDs: Dataset;
     beforeEach(async function () {
-      this.timeout(10000);
       await resetUnittestAccount(user);
       testDs = await getNewTestDs(user, "private");
     });
     it("Import a quad", async function () {
-      this.timeout(10000);
       const store = new Store();
       const term = DataFactory.namedNode("a:a");
       store.addQuad(term, term, term, term);
@@ -265,7 +258,6 @@ describe("Dataset", function () {
       expect(dsInfo.statements).to.equal(1);
     });
     it("Import a triple", async function () {
-      this.timeout(10000);
       const store = new Store();
       const term = DataFactory.namedNode("a:a");
       store.addQuad(term, term, term);
@@ -274,7 +266,6 @@ describe("Dataset", function () {
       expect(dsInfo.statements).to.equal(1);
     });
     it("Import a boolean literal", async function () {
-      this.timeout(10000);
       const store = new Store();
       const term = DataFactory.namedNode("a:a");
       store.addQuad(
@@ -288,7 +279,6 @@ describe("Dataset", function () {
       expect(dsInfo.statements).to.equal(1);
     });
     it("Import a language-tagged literal", async function () {
-      this.timeout(10000);
       const store = new Store();
       const term = DataFactory.namedNode("a:a");
       store.addQuad(term, term, DataFactory.literal("true", "en"), term);
@@ -300,7 +290,6 @@ describe("Dataset", function () {
   describe("Describing IRI", function () {
     let testDs: Dataset;
     before(async function () {
-      this.timeout(15000);
       testDs = await getNewTestDs(user, "private");
       await testDs.importFromFiles([getDataDir("test102.nt")]);
     });
@@ -318,7 +307,6 @@ describe("Dataset", function () {
   });
   describe("Blocking simultaneous jobs for same dataset", function () {
     it("Should block two simultaneous jobs for the same dataset", async function () {
-      this.timeout(10000);
       const ds = await getNewTestDs(user, "private");
       return expect(
         Promise.all([
@@ -328,7 +316,6 @@ describe("Dataset", function () {
       ).to.eventually.rejectedWith("There is already an ongoing job for this dataset. Await that one first.");
     });
     it("Should not block two consequtive jobs for the same dataset", async function () {
-      this.timeout(15000);
       const ds = await getNewTestDs(user, "private");
       await ds.importFromUrls(["https://api.triplydb.com/datasets/vocabulary/music-keys/download"]);
       await ds.importFromFiles([getDataDir("test103.nq")]);
@@ -340,21 +327,18 @@ describe("Dataset", function () {
       testDs = await getNewTestDs(user, "private");
     });
     it("Clear graphs", async function () {
-      this.timeout(10000);
       await testDs.importFromFiles([getDataDir("small.nq")]);
       expect((await testDs.getInfo(true)).graphCount).to.equal(2);
       await testDs.clear("graphs");
       expect((await testDs.getInfo(true)).graphCount).to.equal(0);
     });
     it("Clear assets", async function () {
-      this.timeout(10000);
       await testDs.uploadAsset(getDataDir("small.nq"), "small.nq");
       expect((await testDs.getInfo(true)).assetCount).to.equal(1);
       await testDs.clear("assets");
       expect((await testDs.getInfo(true)).assetCount).to.equal(0);
     });
     it("Clear services", async function () {
-      this.timeout(30000);
       await testDs.importFromFiles([getDataDir("small.nq")]);
       await testDs.addService("sparql");
       expect((await testDs.getInfo(true)).serviceCount).to.equal(1);
@@ -363,7 +347,6 @@ describe("Dataset", function () {
     });
 
     it("Clear all resources", async function () {
-      this.timeout(35000);
       await Promise.all([
         testDs.importFromFiles([getDataDir("small.nq")]).then(() => testDs.addService("sparql")),
         testDs.uploadAsset(getDataDir("small.nq"), "small.nq"),
@@ -389,14 +372,12 @@ describe("Dataset", function () {
     });
 
     it("add an asset", async function () {
-      this.timeout(15000);
       expect((await testDs.uploadAsset(getDataDir("test102.nt"), "test102.nt")).getInfo().versions.length).to.equal(1);
       let assetCount = 0;
       for await (let asset of testDs.getAssets()) asset && assetCount++;
       expect(assetCount).to.equal(1);
     });
     it("add and remove an asset", async function () {
-      this.timeout(5000);
       const assetsBefore = await testDs.getAssets().toArray();
       const addedAsset = await testDs.uploadAsset("./package.json", "test");
       expect(await testDs.getAssets().toArray()).to.have.lengthOf(assetsBefore.length + 1);
@@ -405,7 +386,6 @@ describe("Dataset", function () {
     });
 
     it("download an asset", async function () {
-      this.timeout(15000);
       const originalFile = getDataDir("test102.nt");
 
       const toLocation = getTmpDir("test102.nt");
@@ -419,8 +399,6 @@ describe("Dataset", function () {
     });
 
     it("stream through an asset", async function () {
-      this.timeout(10000);
-
       const originalFile = getDataDir("test102.nt");
       await testDs.uploadAsset(originalFile, "test102.nt");
       const asset = await testDs.getAsset("test102.nt");
@@ -440,7 +418,6 @@ describe("Dataset", function () {
     });
 
     it("add asset with used name", async function () {
-      this.timeout(5000);
       // this test fails, but shouldn't.
       // it leads to assets with the same name for the same ds. This shouldn't happen.
       // this is a problem with the server, not triplydb-js
@@ -457,7 +434,6 @@ describe("Dataset", function () {
   describe("With dataset that has graphs", function () {
     let testDs: Dataset;
     before(async function () {
-      this.timeout(10000);
       testDs = await getNewTestDs(user, "private");
       await testDs.importFromFiles([getDataDir("test102.nt"), getDataDir("test103.nq")]);
     });
@@ -481,7 +457,6 @@ describe("Dataset", function () {
       expect(graphs.find((g) => g["_info"].numberOfStatements === 1)).to.exist;
     });
     it("download a graph", async function () {
-      this.timeout(10000);
       await fs.mkdirp(getTmpDir());
       for await (let g of testDs.getGraphs()) {
         const gzipped = getTmpDir("testf.jsonld.gz");
@@ -508,7 +483,6 @@ describe("Dataset", function () {
       }
     });
     it("download the whole dataset", async function () {
-      this.timeout(10000);
       await fs.mkdirp(getTmpDir());
       const gzipped = getTmpDir("testf.nt.gz");
       const gunzipped = getTmpDir("testf.nq");
@@ -523,7 +497,6 @@ describe("Dataset", function () {
       expect(await fs.pathExists(gunzipped));
     });
     it("stream through a graph", async function () {
-      this.timeout(10000);
       for await (let g of testDs.getGraphs()) {
         if (g) {
           const stream = (await g.toStream("rdf-js")) as stream.Readable;
@@ -543,7 +516,6 @@ describe("Dataset", function () {
     describe("Import from dataset", function () {
       let dsToImportFrom: Dataset;
       before(async function () {
-        this.timeout(10000);
         dsToImportFrom = await getNewTestDs(user, "private");
         await dsToImportFrom.importFromFiles([getDataDir("test102.nt"), getDataDir("test103.nq")]);
         // Sanity check
@@ -615,8 +587,6 @@ describe("Dataset", function () {
     });
     describe("Service tests", function () {
       it("Should make, restart, and delete a service", async function () {
-        this.timeout(60000); // needs to start and restart a service. takes some time
-
         /**
          * Create dataset
          */
@@ -669,7 +639,6 @@ describe("Dataset", function () {
     });
     describe("Services in Dataset", () => {
       it("Should get a service by name", async function () {
-        this.timeout(100_000);
         const serviceName1 = `${CommonUnittestPrefix}-addService-1`;
         const serviceName2 = `${CommonUnittestPrefix}-addService-2`;
         await testDs.ensureService(serviceName1, { type: "virtuoso" });
