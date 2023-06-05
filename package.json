@@ -109,8 +109,8 @@
   "exports": {
     ".": {
       "import": {
-        "types": "./lib/index.d.ts",
-        "default": "./lib/index.js"
+        "types": "./lib/App.d.ts",
+        "default": "./lib/App.js"
       }
     },
     "./*": {
