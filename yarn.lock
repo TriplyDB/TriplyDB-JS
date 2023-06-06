@@ -421,7 +421,7 @@ __metadata:
     "@rollup/plugin-sucrase": ^5.0.1
     "@rollup/plugin-typescript": ^11.1.0
     "@triply/tus-js-client": 2.3.0
-    "@triply/utils": ^2.0.1
+    "@triply/utils": ^2.0.2
     "@types/chai": ^4.3.1
     "@types/chai-as-promised": ^7.1.5
     "@types/debug": ^4.1.7
@@ -490,14 +490,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@triply/utils@npm:^2.0.1":
-  version: 2.0.1
-  resolution: "@triply/utils@npm:2.0.1"
+"@triply/utils@npm:^2.0.2":
+  version: 2.0.2
+  resolution: "@triply/utils@npm:2.0.2"
   dependencies:
     "@elastic/elasticsearch": ^8.6.0
     "@types/jsonld": ^1.5.8
     "@types/wellknown": ^0.5.4
     autocast: 0.0.4
+    commander: ^10.0.1
     deepdash: ^5.3.9
     find-up: 5.0.0
     fs-extra: ^10.1.0
@@ -513,14 +514,14 @@ __metadata:
     ts-essentials: ^9.3.1
     url-parse: ^1.5.10
     wellknown: ^0.5.0
-    yaml: ^2.2.1
+    yaml: ^2.3.1
   bin:
     auditor: ./lib/bin/auditor.js
     calverIncrement: ./lib/bin/calverIncrement.js
     ensureCalver: ./lib/bin/ensureCalver.js
     isCleanBranch: ./lib/bin/isCleanBranch.js
     versionToBranch: ./lib/bin/versionToBranch.js
-  checksum: 1f2291d27bd5043f10077c717a6535bd953bc67a6613e67b5d0ee17ea6bf72240abfce452255ab6832b25b2a4db68c7c1e31ed7d49ec7a48caf613a3504c9e2d
+  checksum: c8318c5cf24a41032f16a5b0b5a17f783ea87a668d0d6df83fab0fa677320c0b49a282dc1427ed299cd44d2acd710241b32885abd8c2622a8d3257525df1f4d8
   languageName: node
   linkType: hard
 
@@ -1422,7 +1423,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"commander@npm:^10.0.0":
+"commander@npm:^10.0.0, commander@npm:^10.0.1":
   version: 10.0.1
   resolution: "commander@npm:10.0.1"
   checksum: 436901d64a818295803c1996cd856621a74f30b9f9e28a588e726b2b1670665bccd7c1a77007ebf328729f0139838a88a19265858a0fa7a8728c4656796db948
@@ -5185,6 +5186,13 @@ __metadata:
   version: 2.2.1
   resolution: "yaml@npm:2.2.1"
   checksum: 84f68cbe462d5da4e7ded4a8bded949ffa912bc264472e5a684c3d45b22d8f73a3019963a32164023bdf3d83cfb6f5b58ff7b2b10ef5b717c630f40bd6369a23
+  languageName: node
+  linkType: hard
+
+"yaml@npm:^2.3.1":
+  version: 2.3.1
+  resolution: "yaml@npm:2.3.1"
+  checksum: 2c7bc9a7cd4c9f40d3b0b0a98e370781b68b8b7c4515720869aced2b00d92f5da1762b4ffa947f9e795d6cd6b19f410bd4d15fdd38aca7bd96df59bd9486fb54
   languageName: node
   linkType: hard
 

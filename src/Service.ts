@@ -28,7 +28,7 @@ export default class Service {
   private _dataset: Dataset;
   private _name: string;
   private _type: Models.ServiceType;
-  private _reasoner?: Models.JenaReasoner;
+  private _config?: Models.ServiceConfig;
   public readonly type = "Service";
 
   constructor(conf: {
@@ -36,13 +36,13 @@ export default class Service {
     name: string;
     dataset: Dataset;
     type: Models.ServiceType;
-    reasoner?: Models.JenaReasoner;
+    config?: Models.ServiceConfig;
   }) {
     this._app = conf.app;
     this._name = conf.name;
     this._dataset = conf.dataset;
     this._type = conf.type;
-    this._reasoner = conf.reasoner;
+    this._config = conf.config;
   }
 
   public async getInfo(refresh = false): Promise<ServiceInfo> {
@@ -112,12 +112,7 @@ export default class Service {
         data: {
           name: this._name,
           type: this._type,
-          config:
-            this._type === "jena" && this._reasoner
-              ? {
-                  reasonerType: this._reasoner,
-                }
-              : {},
+          config: this._config,
         },
       });
     } catch (e) {
