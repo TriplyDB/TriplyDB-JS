@@ -43,13 +43,11 @@ type NewServiceVirtuoso = {
 };
 type NewServiceElasticsearch = {
   type: "elasticSearch";
-  config?: never;
+  config?: Models.ServiceConfigElastic;
 };
 type NewServiceJena = {
   type: "jena";
-  config?: {
-    reasoner?: Models.JenaReasoner;
-  };
+  config?: Models.ServiceConfigJena;
 };
 export default class Dataset {
   private _app: App;
@@ -78,7 +76,7 @@ export default class Dataset {
           dataset: this,
           name: info.name,
           type: info.type,
-          reasoner: info.config?.reasonerType,
+          config: info.config,
         });
       },
     });
@@ -95,7 +93,7 @@ export default class Dataset {
       dataset: this,
       name: sv2Metadata.name,
       type: sv2Metadata.type,
-      reasoner: sv2Metadata.config?.reasonerType,
+      config: sv2Metadata.config,
     });
   }
 
@@ -503,7 +501,7 @@ export default class Dataset {
       dataset: this,
       name,
       type: opts ? opts.type : "virtuoso",
-      reasoner: opts?.config?.reasoner ? opts?.config?.reasoner : undefined,
+      config: opts?.config || undefined,
     }).create();
   }
 
