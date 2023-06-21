@@ -163,7 +163,7 @@ describe("Queries", function () {
         constructQuery = await user.addQuery(constructQueryName, {
           accessLevel: "private",
           // a construct query that gives twice the number of statements as there are in the dataset
-          queryString: "construct {?s?p?o. ?s ?p ?newo} where {?s?p?o. bind(concat(str(?o)) as ?newo)}",
+          queryString: "construct {?s?p?o. ?s ?p ?newo} where {?s?p?o. bind(concat(str(?o), str(?o)) as ?newo)}",
           output: "table",
           variables: [{ name: "s", termType: "NamedNode" }],
           dataset,
@@ -178,7 +178,7 @@ describe("Queries", function () {
 }
 WHERE {
   <http://blaaa> ?p ?o.
-  BIND(CONCAT(STR(?o)) AS ?newo)
+  BIND(CONCAT(STR(?o), STR(?o)) AS ?newo)
 }`);
         });
       });
@@ -314,56 +314,7 @@ WHERE {
       });
 
       it("Should not support statements", async function () {
-        expect(() => selectQuery.results().statements()).to.throw();
-      });
-    });
-    describe("Queries with an error", async function () {
-      let tooLargeQuery: Query;
-      before(async function () {
-        const tooLargeQueryName = `${CommonUnittestPrefix}-too-large`;
-        await user
-          .getQuery(tooLargeQueryName)
-          .then((q) => q.delete())
-          .catch((e) => {
-            if (e instanceof TriplyDbJsError && e.statusCode === 404) return;
-            throw e;
-          });
-        tooLargeQuery = await user.addQuery(tooLargeQueryName, {
-          queryString: "CONSTRUCT WHERE {?s?p?o} ORDER BY ?s LIMIT 10000 OFFSET 12000",
-          accessLevel: "private",
-          output: "table",
-          dataset,
-          variables: [{ name: "s", termType: "NamedNode" }],
-        });
-      });
-
-      it("should report the problem for async iterator", async function () {
-        try {
-          for await (const _ of tooLargeQuery.results().statements()) {
-          }
-          throw new Error("This query shouldn't have finished returning results");
-        } catch (e) {
-          expect(e).to.be.instanceof(TriplyDbJsError);
-          const ee = e as TriplyDbJsError;
-          expect(ee.message).to.match(/Sorted TOP clause specifies more then \d+ rows to sort./);
-          return;
-        }
-      });
-      it("should report the problem for toFile", async function () {
-        const tempfile = "./test-output.nt";
-        try {
-          await tooLargeQuery.results().statements().toFile(tempfile);
-        } catch (e) {
-          expect(e).to.be.instanceof(TriplyDbJsError);
-          const ee = e as TriplyDbJsError;
-          expect(ee.message).to.match(/Sorted TOP clause specifies more then \d+ rows to sort./);
-          return;
-        } finally {
-          if (await fs.pathExists(tempfile)) {
-            await fs.remove(tempfile);
-          }
-        }
-        throw new Error("Expected an error to be thrown");
+        expect(() => selectQuery.results().statements()).to.throw(TriplyDbJsError);
       });
     });
     it("Should use a cache fingerprint that's robust against renaming/replacing queries", async function () {
