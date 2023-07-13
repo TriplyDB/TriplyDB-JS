@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import "source-map-support/register";
+import "source-map-support/register.js";
 import { program } from "commander";
 import importFromFiles from "./triplydb-import-from-file.js";
 import uploadAssets from "./triplydb-upload-asset.js";
