@@ -22,6 +22,8 @@ import {
 } from "./commonAccountFunctions.js";
 import { getErr } from "./utils/Error.js";
 
+type NewOrganization = Omit<Models.AccountUpdate, "pinnedDatasets" | "accountName">;
+
 export default class User implements AccountBase {
   private _app: App;
   private _info?: Models.User;
@@ -55,6 +57,7 @@ export default class User implements AccountBase {
   }
 
   public async asUser(): Promise<User> {
+    this._setInfo(await this.getInfo());
     return this;
   }
   public async asOrganization(): Promise<Org> {
@@ -109,5 +112,31 @@ export default class User implements AccountBase {
       // On the TDB API, /accounts/_account/orgs currently only returns simple information.
       return new Org(this._app, org.accountName);
     });
+  }
+
+  private async _getOrganization(name: string) {
+    return (
+      await _get<Routes.accounts._account.orgs.Get>({
+        errorWithCleanerStack: getErr(`Failed to get organizations of ${this._name}`),
+        app: this._app,
+        path: "/accounts/" + this._name + "/orgs",
+      })
+    )
+      .filter((org) => org.accountName === name)
+      .shift();
+  }
+
+  public async getOrganization(name: string) {
+    const org = await this._getOrganization(name);
+    if (org === undefined) {
+      throw getErr(`Failed to get organization '${name}' of account '${this._name}'`);
+    }
+    return new Org(this._app, name);
+  }
+
+  public async ensureOrganization(name: string, newOrg?: NewOrganization) {
+    const org = await this._getOrganization(name);
+    if (org !== undefined) return Promise.resolve(new Org(this._app, org.accountName));
+    return this.createOrganization(name, newOrg);
   }
 }
