@@ -86,10 +86,7 @@ export default class User implements AccountBase {
     return this._info as Models.User;
   }
 
-  public async createOrganization(
-    accountName: string,
-    info?: Omit<Models.AccountUpdate, "pinnedDatasets" | "accountName">
-  ): Promise<Org> {
+  public async createOrganization(accountName: string, info?: NewOrganization): Promise<Org> {
     const newOrgJson = await _post<Routes.accounts._account.orgs.Post>({
       errorWithCleanerStack: getErr(
         `Failed to create organization ${accountName} and set ${this._name} as it's owner.`
