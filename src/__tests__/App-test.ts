@@ -49,6 +49,13 @@ describe("App", function () {
     it("Should throw on malformed jwt token", async function () {
       expect(() => App.get("InvalidToken")).to.throw("Invalid token");
     });
+    it("Tokens which are invalid headers should throw", async function () {
+      expect(() => App.get(`${process.env.UNITTEST_TOKEN_ACCOUNT}\n`)).to.throw("Illegal character in token");
+      expect(() => App.get(`${process.env.UNITTEST_TOKEN_ACCOUNT}€`)).to.throw("Illegal character in token");
+      expect(() => App.get(`${process.env.UNITTEST_TOKEN_ACCOUNT}🔵`)).to.throw("Illegal character in token");
+      expect(() => App.get(`${process.env.UNITTEST_TOKEN_ACCOUNT} `)).to.not.throw("Illegal character in token");
+      expect(() => App.get(`${process.env.UNITTEST_TOKEN_ACCOUNT}asd`)).to.not.throw("Illegal character in token");
+    });
   });
   it("Should correctly compare versions", async function () {
     const app = App.get({ url: "https://api.triplydb.com" });

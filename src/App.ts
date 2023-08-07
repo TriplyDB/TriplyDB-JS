@@ -53,6 +53,10 @@ export default class App {
         throw getErr("Invalid token").addContext({ token: this._config.token });
       }
     }
+    // Validate token, headers only allow ASCII range " "-"~"
+    if (this._config.token && !/^[\x20-\x7F]+$/.test(this._config.token)) {
+      throw getErr("Illegal character in token").addContext({ token: this._config.token });
+    }
     if (this._config.httpProxy || this._config.httpsProxy) {
       /**
        * We cannot set the proxy per request, as we're not using fetch alone, but e.g. tus uses the http/https module directly.
