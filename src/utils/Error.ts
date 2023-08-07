@@ -40,3 +40,11 @@ export function getErr(message: string) {
   Error.captureStackTrace?.(err, getErr);
   return err;
 }
+
+const TokenErrorRegex = /Bearer .*\n* is not a legal HTTP header value/m;
+export function postprocessFetchError(e: unknown) {
+  if (e instanceof Error && TokenErrorRegex.test(e.message)) {
+    e.message = "Bearer <token> is not a legal HTTP header value";
+  }
+  return e;
+}

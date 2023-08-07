@@ -1,6 +1,6 @@
 import parseLinkHeader from "parse-link-header";
 import { _get, requestConfigToFetchConfig } from "../RequestHandler.js";
-import { TriplyDbJsError } from "./Error.js";
+import { TriplyDbJsError, postprocessFetchError } from "./Error.js";
 import App from "../App.js";
 import fetch from "cross-fetch";
 import { CachedResult, Cache } from "./cache.js";
@@ -47,7 +47,12 @@ export default class AsyncIteratorHelper<ResultType, OutputClass> implements Asy
         throw e;
       }
     }
-    const res = await fetch(url, reqConfig);
+    let res;
+    try {
+      res = await fetch(url, reqConfig);
+    } catch (e) {
+      throw postprocessFetchError(e);
+    }
     const statusCode = res.status;
     const responseText = await res.text();
     const contentType = res.headers.get("content-type");
