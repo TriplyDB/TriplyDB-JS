@@ -5,7 +5,7 @@ import App from "./App.js";
 import { _delete, _get, getFetchOpts } from "./RequestHandler.js";
 import pumpify from "pumpify";
 import fetch from "cross-fetch";
-import { postprocessFetchError, getErr } from "./utils/Error.js";
+import { getErr } from "./utils/Error.js";
 import fs from "fs-extra";
 
 import { omit, last } from "lodash-es";
@@ -44,20 +44,15 @@ export default class Asset {
     const url = await this._getUrl(
       versionNumber === undefined ? this._getLastVersionInfo() : this.getVersionInfo(versionNumber)
     );
-    let res;
-    try {
-      res = await fetch(
-        url,
-        getFetchOpts(
-          {
-            method: "get",
-          },
-          { app: this._app }
-        )
-      );
-    } catch (e) {
-      throw postprocessFetchError(e);
-    }
+    const res = await fetch(
+      url,
+      getFetchOpts(
+        {
+          method: "get",
+        },
+        { app: this._app }
+      )
+    );
     const stream = new pumpify(res.body as any, fs.createWriteStream(destinationPath));
     await new Promise((resolve, reject) => {
       stream.on("error", reject);
@@ -68,20 +63,16 @@ export default class Asset {
     if (this._deleted) throw getErr("This asset does not exist.");
     if (versionNumber === undefined) versionNumber = this._selectedVersion;
     const url = await this._getUrl(versionNumber === undefined ? undefined : this.getVersionInfo(versionNumber));
-    try {
-      const res = await fetch(
-        url,
-        getFetchOpts(
-          {
-            method: "get",
-          },
-          { app: this._app }
-        )
-      );
-      return res.body as any as NodeJS.WriteStream;
-    } catch (e) {
-      throw postprocessFetchError(e);
-    }
+    const res = await fetch(
+      url,
+      getFetchOpts(
+        {
+          method: "get",
+        },
+        { app: this._app }
+      )
+    );
+    return res.body as any as NodeJS.WriteStream;
   }
   private _getLastVersionInfo() {
     if (this._deleted) throw getErr("This asset does not exist.");

@@ -7,7 +7,7 @@ const expect = chai.expect;
 import App from "../App.js";
 import User from "../User.js";
 import { resetUnittestAccount, CommonUnittestPrefix } from "./utils.js";
-import { TriplyDbJsError } from "../utils/Error.js";
+import { TriplyDbJsError, getErr } from "../utils/Error.js";
 
 const readToken = process.env.UNITTEST_TOKEN_READ;
 const writeToken = process.env.UNITTEST_TOKEN_WRITE;
@@ -87,5 +87,19 @@ describe("Tokens", function () {
     if (!found) {
       throw new Error("new private ds not in list of datasets when using readToken");
     }
+  });
+  describe("Errors should not expose token", function () {
+    it("Directly in the error message", function () {
+      expect(getErr(`Something ${readToken} is not allowed`).message).to.equal("Something <token> is not allowed");
+      expect(getErr("hallo").setMessage(`Something ${readToken} is not allowed`).message).to.equal(
+        "Something <token> is not allowed"
+      );
+    });
+    it("Should omit if the token is in the cause", function () {
+      const innerError = new Error(`Something ${readToken} is not allowed`);
+      expect(getErr(`FirstError`).setCause(innerError).message).to.equal(
+        "FirstError (Something <token> is not allowed)"
+      );
+    });
   });
 });

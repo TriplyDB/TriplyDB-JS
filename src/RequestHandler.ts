@@ -1,6 +1,6 @@
 import { HttpMethodTemplate, RequestTemplate } from "@triply/utils/Routes.js";
 import App from "./App.js";
-import { TriplyDbJsError, postprocessFetchError } from "./utils/Error.js";
+import { TriplyDbJsError } from "./utils/Error.js";
 import fetch from "cross-fetch";
 import FormData from "form-data";
 import debug from "debug";
@@ -104,7 +104,6 @@ async function handleFetchAsPromise<T extends HttpMethodTemplate>(
   try {
     response = await fetch(url, reqOpts);
   } catch (e: any) {
-    e = postprocessFetchError(e);
     // This error only occurs when there are network errors and such
     throw opts.errorWithCleanerStack.addContext(errorContext).setCause(e);
   }
@@ -168,7 +167,6 @@ export async function handleFetchAsStream<T extends HttpMethodTemplate>(
   try {
     response = await fetch(url, reqOpts);
   } catch (e: any) {
-    e = postprocessFetchError(e);
     // This error only occurs when there are network errors and such
     throw opts.errorWithCleanerStack.addContext(errorContext).setCause(e);
   }
