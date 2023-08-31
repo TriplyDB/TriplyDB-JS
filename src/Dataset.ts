@@ -610,8 +610,15 @@ export class JobUpload {
   private _config: JobConfig;
   private _info?: Models.Job;
   private jobUrl?: string;
+  private urlMapper: (url: string) => string = (url: string) => url;
   public constructor(conf: JobConfig) {
     this._config = conf;
+    if (conf.app["_info"]?.apiUrl !== conf.app.getConfig().url) {
+      this.urlMapper = (url: string) => {
+        const u = new URL(url);
+        return conf.app.getConfig().url.replace(/\/+$/g, "") + u.pathname + u.search;
+      };
+    }
   }
   public getJobUrl() {
     return this.jobUrl;
@@ -659,6 +666,7 @@ export class JobUpload {
         headers: {
           Authorization: "Bearer " + this._config.app["_config"].token,
         },
+        mapUrl: this.urlMapper,
         chunkSize: 5 * 1024 * 1024,
         uploadSize: fileSize,
         retryDelays: [2000, 5000, 10000, 40000, 50000],
