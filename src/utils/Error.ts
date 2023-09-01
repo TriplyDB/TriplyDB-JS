@@ -7,7 +7,11 @@ type Context = { [key: string]: any };
 export class IncompatibleError extends Error {}
 export class TriplyDbJsError extends Error {
   constructor(message: string, options?: ErrorOptions) {
-    message = message.replaceAll(tokenRegex, "<token>");
+    if (typeof message === "string") {
+      try {
+        message = message.replaceAll(tokenRegex, "<token>");
+      } catch (e) {}
+    }
     if (options?.cause) {
       if (options.cause instanceof Error) {
         options.cause.message = options.cause.message.replaceAll(tokenRegex, "<token>");
