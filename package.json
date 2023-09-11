@@ -107,17 +107,8 @@
     "access": "public"
   },
   "exports": {
-    ".": {
-      "import": {
-        "types": "./lib/App.d.ts",
-        "default": "./lib/App.js"
-      }
-    },
-    "./*": {
-      "import": {
-        "default": "./lib/*"
-      }
-    }
+    ".": "./lib/App.js",
+    "./*":"./lib/*"
   },
   "type": "module"
 }
