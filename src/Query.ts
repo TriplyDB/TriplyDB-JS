@@ -204,8 +204,8 @@ export default class Query {
         });
       },
       bindings: () => {
-        if (queryType !== "SELECT") {
-          throw getErr("Bindings are only supported for SELECT queries.");
+        if (queryType !== "SELECT" && queryType !== "ASK") {
+          throw getErr(`Bindings are only supported for SELECT and ASK queries (got ${queryType}).`);
         }
         return new AsyncIteratorHelperWithToFile<Binding, Binding>({
           ...iteratorOptions,
