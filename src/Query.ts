@@ -189,7 +189,7 @@ export default class Query {
     return {
       statements: () => {
         if (queryType !== "CONSTRUCT" && queryType !== "DESCRIBE") {
-          throw getErr("Statements are only supported for CONSTRUCT and DESCRIBE queries.");
+          throw getErr(`Statements are only supported for CONSTRUCT and DESCRIBE queries (got ${queryType}).`);
         }
         const parser = new n3.Parser();
         return new AsyncIteratorHelperWithToFile<n3.Quad, n3.Quad>({
@@ -203,9 +203,21 @@ export default class Query {
           },
         });
       },
+      boolean: () => {
+        if (queryType !== "ASK") {
+          throw getErr(`Bindings are only supported for ASK queries (got ${queryType}).`);
+        }
+        return new AsyncIteratorHelperWithToFile<{ boolean: boolean }, { boolean: boolean }>({
+          ...iteratorOptions,
+          mapResult: async (result) => result,
+          getUrl: async (contentType) =>
+            this._app["_config"].url +
+            ((await this._getPath()) + `/run${contentType ? "." + contentType : ""}?` + variablesInUrlString),
+        });
+      },
       bindings: () => {
-        if (queryType !== "SELECT" && queryType !== "ASK") {
-          throw getErr(`Bindings are only supported for SELECT and ASK queries (got ${queryType}).`);
+        if (queryType !== "SELECT") {
+          throw getErr(`Bindings are only supported for SELECT queries (got ${queryType}).`);
         }
         return new AsyncIteratorHelperWithToFile<Binding, Binding>({
           ...iteratorOptions,
