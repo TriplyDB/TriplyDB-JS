@@ -10,6 +10,7 @@ import sparqljs from "sparqljs";
 import { stringify as stringifyQueryObj } from "query-string";
 import AsyncIteratorHelperWithToFile from "./utils/AsyncIteratorHelperWithToFile.js";
 import { VariableConfig } from "@triply/utils/Models.js";
+import { map } from "lodash-es";
 
 export type Binding = { [key: string]: string };
 export type VariableValues = { [variable: string]: string | undefined };
@@ -186,10 +187,21 @@ export default class Query {
       cache: opts?.cache,
     };
 
+    const getAsyncIteratorHelperWithToFile = <FromType, ToType>(mapResult: (result: FromType) => Promise<ToType>) => {
+      return new AsyncIteratorHelperWithToFile<FromType, ToType>({
+        ...iteratorOptions,
+        isBindings: true,
+        mapResult,
+        getUrl: async (contentType) =>
+          this._app["_config"].url +
+          ((await this._getPath()) + `/run${contentType ? "." + contentType : ""}?` + variablesInUrlString),
+      });
+    };
+
     return {
       statements: () => {
         if (queryType !== "CONSTRUCT" && queryType !== "DESCRIBE") {
-          throw getErr("Statements are only supported for CONSTRUCT and DESCRIBE queries.");
+          throw getErr(`Statements are only supported for CONSTRUCT and DESCRIBE queries (got ${queryType}).`);
         }
         const parser = new n3.Parser();
         return new AsyncIteratorHelperWithToFile<n3.Quad, n3.Quad>({
@@ -203,18 +215,19 @@ export default class Query {
           },
         });
       },
+      boolean: () => {
+        if (queryType !== "ASK") {
+          throw getErr(`Bindings are only supported for ASK queries (got ${queryType}).`);
+        }
+        return getAsyncIteratorHelperWithToFile<{ boolean: boolean }, boolean>((result) =>
+          Promise.resolve(result.boolean)
+        );
+      },
       bindings: () => {
         if (queryType !== "SELECT") {
-          throw getErr("Bindings are only supported for SELECT queries.");
+          throw getErr(`Bindings are only supported for SELECT queries (got ${queryType}).`);
         }
-        return new AsyncIteratorHelperWithToFile<Binding, Binding>({
-          ...iteratorOptions,
-          isBindings: true,
-          mapResult: async (result) => result,
-          getUrl: async (contentType) =>
-            this._app["_config"].url +
-            ((await this._getPath()) + `/run${contentType ? "." + contentType : ""}?` + variablesInUrlString),
-        });
+        return getAsyncIteratorHelperWithToFile<Binding, Binding>((result) => Promise.resolve(result));
       },
     };
   }

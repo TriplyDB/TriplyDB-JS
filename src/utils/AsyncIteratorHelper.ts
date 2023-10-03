@@ -4,6 +4,7 @@ import { TriplyDbJsError } from "./Error.js";
 import App from "../App.js";
 import fetch from "cross-fetch";
 import { CachedResult, Cache } from "./cache.js";
+import { isEqual } from "lodash-es";
 if (!Symbol.asyncIterator) {
   (<any>Symbol).asyncIterator = Symbol.for("Symbol.asyncIterator");
 }
@@ -117,8 +118,18 @@ export default class AsyncIteratorHelper<ResultType, OutputClass> implements Asy
   }
 
   private async _get(): Promise<ResultType | void> {
-    // Reverse and use `.pop`, as `shift` is an O(n) operation.
-    if (!this._currentPage.length) this._currentPage = ((await this._requestParsedPage()) || []).reverse();
+    const requestedPage = await this._requestParsedPage();
+    if (!this._currentPage.length) {
+      // test if we have result of an ASK query and make it into a normal binding response:
+      if (isEqual(requestedPage, { head: {}, boolean: true }) || isEqual(requestedPage, { head: {}, boolean: false })) {
+        this._currentPage = [
+          { boolean: ((requestedPage ?? { boolean: false }) as { boolean: boolean }).boolean },
+        ] as ResultType[];
+      } else {
+        // Reverse and use `.pop`, as `shift` is an O(n) operation.
+        this._currentPage = (requestedPage || []).reverse();
+      }
+    }
     if (this._currentPage.length) return this._currentPage.pop();
   }
   public async toArray() {

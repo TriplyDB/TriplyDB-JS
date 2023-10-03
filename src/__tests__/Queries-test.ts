@@ -16,6 +16,9 @@ import { TriplyDbJsError } from "../utils/Error.js";
 import { gzip, gunzip } from "zlib";
 import Service from "../Service.js";
 
+import dotenv from "dotenv";
+dotenv.config();
+
 process.on("unhandledRejection", function (reason: any, p: any) {
   console.warn("Possibly Unhandled Rejection at: Promise ", p, " reason: ", reason);
 });

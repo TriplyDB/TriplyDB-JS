@@ -5,6 +5,9 @@ import User from "../User.js";
 import Org from "../Org.js";
 import { times, random } from "lodash-es";
 const expect = chai.expect;
+import dotenv from "dotenv";
+dotenv.config();
+
 process.on("unhandledRejection", function (reason: any, p: any) {
   console.warn("Possibly Unhandled Rejection at: Promise ", p, " reason: ", reason);
 });

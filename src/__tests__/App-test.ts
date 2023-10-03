@@ -1,6 +1,8 @@
 import App from "../App.js";
 import * as chai from "chai";
 import chaiAsPromised from "chai-as-promised";
+import dotenv from "dotenv";
+dotenv.config();
 chai.use(chaiAsPromised);
 const expect = chai.expect;
 process.on("unhandledRejection", function (reason: any, p: any) {
