@@ -10,7 +10,6 @@ import sparqljs from "sparqljs";
 import { stringify as stringifyQueryObj } from "query-string";
 import AsyncIteratorHelperWithToFile from "./utils/AsyncIteratorHelperWithToFile.js";
 import { VariableConfig } from "@triply/utils/Models.js";
-import { map } from "lodash-es";
 
 export type Binding = { [key: string]: string };
 export type VariableValues = { [variable: string]: string | undefined };
