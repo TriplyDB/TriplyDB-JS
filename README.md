@@ -14,7 +14,7 @@ See [here](https://triply.cc/docs/triplydb-js) for the TriplyDB JavaScript clien
 
 ### Setting up test environment
 
-To run the tests you need to set the API server URL and a access token in your `./envrc-private` variable first: `UNITTEST_TOKEN_READ`, `UNITTEST_TOKEN_WRITE`, `UNITTEST_TOKEN_ACCOUNT` and `UNITTEST_API_URL`.
+To run the tests you need to set the API server URL and a access token in your `./.env` variable first: `UNITTEST_TOKEN_READ`, `UNITTEST_TOKEN_WRITE`, `UNITTEST_TOKEN_ACCOUNT` and `UNITTEST_API_URL`.
 
 Recommendations for these tokens:
 

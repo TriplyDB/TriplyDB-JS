@@ -13,6 +13,8 @@ import Service from "../Service.js";
 import stream from "stream";
 import path from "path";
 import fs from "fs-extra";
+import dotenv from "dotenv";
+dotenv.config();
 const expect = chai.expect;
 process.on("unhandledRejection", function (reason: any, p: any) {
   console.warn("Possibly Unhandled Rejection at: Promise ", p, " reason: ", reason);

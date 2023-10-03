@@ -5,6 +5,8 @@ import * as chai from "chai";
 import { Account } from "../Account.js";
 import Dataset from "../Dataset.js";
 import chaiAsPromised from "chai-as-promised";
+import dotenv from "dotenv";
+dotenv.config();
 chai.use(chaiAsPromised);
 const expect = chai.expect;
 import { resetUnittestAccount, CommonUnittestPrefix } from "./utils.js";
