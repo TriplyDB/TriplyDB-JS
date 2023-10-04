@@ -91,6 +91,10 @@ export default class AsyncIteratorHelper<ResultType, OutputClass> implements Asy
     let results: any;
     try {
       results = await parsePage(page.pageInfo.responseText);
+      // if this is a ASK query make sure the results look like a regulair binding result:
+      if (isEqual(results, { head: {}, boolean: true }) || isEqual(results, { head: {}, boolean: true })) {
+        return [{ boolean: results.boolean } as any];
+      }
       return results;
     } catch (e) {
       this._config.potentialFutureError.message =
@@ -118,18 +122,8 @@ export default class AsyncIteratorHelper<ResultType, OutputClass> implements Asy
   }
 
   private async _get(): Promise<ResultType | void> {
-    const requestedPage = await this._requestParsedPage();
-    if (!this._currentPage.length) {
-      // test if we have result of an ASK query and make it into a normal binding response:
-      if (isEqual(requestedPage, { head: {}, boolean: true }) || isEqual(requestedPage, { head: {}, boolean: false })) {
-        this._currentPage = [
-          { boolean: ((requestedPage ?? { boolean: false }) as { boolean: boolean }).boolean },
-        ] as ResultType[];
-      } else {
-        // Reverse and use `.pop`, as `shift` is an O(n) operation.
-        this._currentPage = (requestedPage || []).reverse();
-      }
-    }
+    // Reverse and use `.pop`, as `shift` is an O(n) operation.
+    if (!this._currentPage.length) this._currentPage = ((await this._requestParsedPage()) || []).reverse();
     if (this._currentPage.length) return this._currentPage.pop();
   }
   public async toArray() {
