@@ -577,6 +577,101 @@ export default class Dataset {
     }
     return this._allPrefixes;
   }
+
+  private async apiNDEDatasetRegister(method: "validate" | "submit", next?: (shaclReport: n3.Store) => void) {
+    const info = await this.getInfo();
+    if (info.accessLevel !== "public") {
+      throw getErr(
+        `Only datasets with accesslevel 'public' can be submitted your dataset has accesslevel '${info.accessLevel}'.`
+      );
+    }
+    const { consoleUrl } = await this._app.getInfo();
+    const apiUrl =
+      "https://datasetregister.netwerkdigitaalerfgoed.nl/api/datasets" + (method === "validate" ? "/validate" : "");
+    const datasetURL = `${consoleUrl}/${info.owner.accountName}/${info.name}`;
+    const data = { "@id": datasetURL };
+    const init: RequestInit = {
+      method: method === "submit" ? "POST" : "PUT",
+      headers: {
+        "Content-Type": "application/ld+json",
+        Accept: "text/turtle",
+        Link: '<http://www.w3.org/ns/ldp#RDFSource>; rel="type",<http://www.w3.org/ns/ldp#Resource>; rel="type"',
+      },
+      body: JSON.stringify(data),
+    };
+    await fetch(apiUrl, init).then(async (rs) => {
+      const rs2store = async (): Promise<n3.Store> => {
+        const store = new n3.Store();
+        const parser = new n3.Parser();
+        parser.parse(await rs.text(), (error, quad) => {
+          if (error) {
+            throw getErr(
+              "Failed to load response from NDE Dataset Register API as valid Turtle. Please contact NDE about this issue."
+            );
+          } else if (quad) {
+            store.addQuad(quad);
+          }
+        });
+        return store;
+      };
+      if (!rs.ok) {
+        if (next && rs.status === 400) {
+          next(await rs2store());
+        } else
+          throw getErr(
+            `NDE Dataset Register reported: could not ${method} dataset '${info.displayName}'.\nPlease use the validation tool to see what might be wrong:\nhttps://datasetregister.netwerkdigitaalerfgoed.nl/validate.php?url=${datasetURL}`
+          );
+      } else if (next) {
+        next(await rs2store());
+      }
+    });
+  }
+
+  public nde = {
+    datasetregister: {
+      /**
+       * Register this dataset with the [NDE Dataset register](https://datasetregister.netwerkdigitaalerfgoed.nl/)
+       *
+       * @param next an optional function that is called with the SHACL validation report as argument, if not provided an Error will be thrown when a dataset is not valid
+       * @example
+       * ```ts
+       * App.get(token)
+       *   .getAccount(accountName)
+       *   .then(account => account.getDataset(datasetName))
+       *   .then(dataset => dataset.nde.datasetregister.submit((report) => {
+       *     if (report.size !== 2) {
+       *       console.error('Dataset is not valid.')
+       *     } else {
+       *       console.info('Dataset is valid.')
+       *     }
+       *   }))
+       *   .catch(e => console.error((e as Error).message))
+       * ```
+       */
+      submit: (next?: (shaclReport: n3.Store) => void) => this.apiNDEDatasetRegister("submit", next),
+
+      /**
+       * Validate this dataset against the [NDE Dataset register](https://datasetregister.netwerkdigitaalerfgoed.nl/)
+       *
+       * @param next an optional function that is called with the SHACL validation report as argument, if not provided an Error will be thrown when a dataset is not valid
+       * @example
+       * ```ts
+       * App.get(token)
+       *   .getAccount(accountName)
+       *   .then(account => account.getDataset(datasetName))
+       *   .then(dataset => dataset.nde.datasetregister.validate((report) => {
+       *     if (report.size !== 2) {
+       *       console.error('Dataset is not valid.')
+       *     } else {
+       *       console.info('Dataset is valid.')
+       *     }
+       *   }))
+       *   .catch(e => console.error((e as Error).message))
+       * ```
+       */
+      validate: (next?: (shaclReport: n3.Store) => void) => this.apiNDEDatasetRegister("validate", next),
+    },
+  };
 }
 const datasetsWithOngoingJob: { [dsId: string]: true } = {};
 async function waitForJobToFinish(app: App, jobUrl: string, dsId: string) {
