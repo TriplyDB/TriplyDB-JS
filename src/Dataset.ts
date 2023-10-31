@@ -619,7 +619,7 @@ export default class Dataset {
           next(await rs2store());
         } else
           throw getErr(
-            `NDE Dataset Register reported: could not ${method} dataset '${info.displayName}'.\nPlease use the validation tool to see what might be wrong:\nhttps://datasetregister.netwerkdigitaalerfgoed.nl/validate.php?url=${datasetURL}`
+            `NDE Dataset Register reported: could not ${method} dataset '${info.displayName}'.\nPlease use their validation tool to see what might be wrong:\nhttps://datasetregister.netwerkdigitaalerfgoed.nl/validate.php?url=${datasetURL}`
           );
       } else if (next) {
         next(await rs2store());
