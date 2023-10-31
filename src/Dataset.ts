@@ -23,6 +23,7 @@ import Graph from "./Graph.js";
 import { stringify as stringifyQueryObj } from "query-string";
 import statuses from "http-status-codes";
 import { NamedNode } from "rdf-js";
+import NDEDatasetRegister from "./utils/NDEDatasetRegister.js";
 
 type JobDefaultsConfig = Omit<
   Routes.datasets._account._dataset.jobs.Post["Req"]["Body"],
@@ -577,6 +578,41 @@ export default class Dataset {
     }
     return this._allPrefixes;
   }
+
+  public nde = {
+    datasetregister: {
+      /**
+       * Register this dataset with the [NDE Dataset register](https://datasetregister.netwerkdigitaalerfgoed.nl/)
+       *
+       * @param rejectOnValidationError an optional boolean (default = true) indicating that SHACL validation errors should throw an Error.
+       *                                If false, the function will not throw but return a Stroe containng the SHACL validation report.
+       * @example
+       * ```ts
+       * App.get(token)
+       *   .getAccount(accountName)
+       *   .then(account => account.getDataset(datasetName))
+       *   .then(dataset => dataset.nde.datasetregister.submit())
+       * ```
+       */
+      submit: async (rejectOnValidationError?: boolean) => NDEDatasetRegister(this, "submit", rejectOnValidationError),
+
+      /**
+       * Validate this dataset against the [NDE Dataset register](https://datasetregister.netwerkdigitaalerfgoed.nl/)
+       *
+       * @param rejectOnValidationError an optional boolean (default = true) indicating that SHACL validation errors should throw an Error.
+       *                                If false, the function will not throw but return a Stroe containng the SHACL validation report.
+       * @example
+       * ```ts
+       * App.get(token)
+       *   .getAccount(accountName)
+       *   .then(account => account.getDataset(datasetName))
+       *   .then(dataset => dataset.nde.datasetregister.submit())
+       * ```
+       */
+      validate: async (rejectOnValidationError?: boolean) =>
+        NDEDatasetRegister(this, "validate", rejectOnValidationError),
+    },
+  };
 }
 const datasetsWithOngoingJob: { [dsId: string]: true } = {};
 async function waitForJobToFinish(app: App, jobUrl: string, dsId: string) {
