@@ -1,24 +1,35 @@
 import n3 from "n3";
 import Dataset from "../Dataset.js";
-import { getErr } from "./Error.js";
+import { TriplyDbJsError } from "./Error.js";
 
-const response2store = async (rs: Response): Promise<n3.Store> => {
+const response2quads = async (rs: Response): Promise<n3.Quad[]> => {
   try {
-    return new n3.Store(new n3.Parser().parse(await rs.text()));
+    return new n3.Parser().parse(await rs.text());
   } catch (e) {
-    throw getErr("Failed to parse NDE Dataset Register response as valid RDF. Please contact NDE about this issue.");
+    throw new NDEDatasetRegisterError(
+      "Failed to parse NDE Dataset Register response as valid RDF. Please contact NDE about this issue."
+    );
   }
 };
+
+class NDEDatasetRegisterError extends TriplyDbJsError {
+  public report?: n3.Quad[];
+
+  public constructor(message: string, report?: n3.Quad[]) {
+    super(message);
+    this.report = report;
+  }
+}
 
 export default async function NDEDatasetRegister(
   dataset: Dataset,
   method: "validate" | "submit",
   rejectOnValidationError?: boolean
-): Promise<n3.Store> {
+): Promise<n3.Quad[]> {
   const info = await dataset.getInfo();
   if (info.accessLevel !== "public") {
     return Promise.reject(
-      getErr(
+      new NDEDatasetRegisterError(
         `Only datasets with accesslevel 'public' can be submitted your dataset has accesslevel '${info.accessLevel}'.`
       )
     );
@@ -42,25 +53,28 @@ export default async function NDEDatasetRegister(
   try {
     rs = await fetch(apiUrl, init);
   } catch (e) {
-    throw getErr(`Could not connect to the NDE Dataset Register at ${apiUrl}.`);
+    throw new NDEDatasetRegisterError(`Could not connect to the NDE Dataset Register at ${apiUrl}.`);
   }
 
   if (rs.ok) {
-    return response2store(rs);
+    return response2quads(rs);
   } else if (rs.status === 400) {
     //this is a SHACL validation, we either throw or return the report (Store)
     if (rejectOnValidationError ?? true) {
-      throw getErr(
-        `NDE Dataset Register reported: could not ${method} dataset '${info.displayName}' because of a SHACL validation error.\nPlease use their validation tool to see what might be wrong:\nhttps://datasetregister.netwerkdigitaalerfgoed.nl/validate.php?url=${datasetURL}`
+      throw new NDEDatasetRegisterError(
+        `NDE Dataset Register reported: could not ${method} dataset '${info.displayName}' because of a SHACL validation error.\nPlease use their validation tool to see what might be wrong:\nhttps://datasetregister.netwerkdigitaalerfgoed.nl/validate.php?url=${datasetURL}`,
+        await response2quads(rs)
       );
     } else {
-      return response2store(rs);
+      return response2quads(rs);
     }
   } else if (rs.status === 404) {
-    throw getErr(`NDE Dataset Register reported that the Dataset URL '${datasetURL}' can not be found.`);
+    throw new NDEDatasetRegisterError(
+      `NDE Dataset Register reported that the Dataset URL '${datasetURL}' can not be found.`
+    );
   } else {
     //this not a SHACL validation error, but something else, point the user to their validation tool and throw
-    throw getErr(
+    throw new NDEDatasetRegisterError(
       `Could not ${method} dataset '${info.displayName}'.\nNDE Dataset Register reported: '${rs.statusText}' (code ${rs.status}).\nPlease use their validation tool to see what might be wrong:\nhttps://datasetregister.netwerkdigitaalerfgoed.nl/validate.php?url=${datasetURL}`
     );
   }

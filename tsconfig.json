@@ -10,7 +10,7 @@
     "esModuleInterop": true,
     "noUnusedLocals": true,
     "skipLibCheck": true,
-    "removeComments": true,
+    "removeComments": false,
     "rootDir": "./src",
     "sourceMap": true,
     "listFiles": false,
