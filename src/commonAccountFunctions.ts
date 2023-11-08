@@ -6,7 +6,7 @@ import { Account } from "./Account.js";
 import User from "./User.js";
 import { _get, _post, _patch } from "./RequestHandler.js";
 import Dataset, { Prefixes } from "./Dataset.js";
-import { getErr } from "./utils/Error.js";
+import { getErr, IncompatibleError } from "./utils/Error.js";
 import { AccessLevel, PinnedItemUpdate, SparqlQuery, VariableConfig } from "@triply/utils/Models.js";
 import { omit } from "lodash-es";
 import Service from "./Service.js";
@@ -33,6 +33,9 @@ export async function addQuery<T extends Account>(this: T, name: string, opts: A
 export async function addQuery<T extends Account>(this: T, name: string, opts: AddQueryService): Promise<Query>;
 export async function addQuery<T extends Account>(this: T, name: string, opts: AddQueryDataset | AddQueryService) {
   const app = (this as User)["_app"];
+  if (!(await app.isCompatible("23.09.0"))) {
+    throw new IncompatibleError("This function is now supported by TriplyDB API version 23.09.0 or greater");
+  }
   const accountName = (await this.getInfo()).accountName;
   let dataset: string | undefined;
   let service: string | undefined;
@@ -41,13 +44,21 @@ export async function addQuery<T extends Account>(this: T, name: string, opts: A
   }
   if (opts.service) {
     dataset = (await opts.service.getDataset().getInfo()).id;
-    service = (await opts.service.getInfo()).endpoint;
+    service = (await opts.service.getInfo()).id;
   }
   let query: Models.QueryCreate = {
     name,
     dataset,
     requestConfig: { payload: { query: opts.queryString } },
-    preferredService: service,
+    serviceConfig: service
+      ? {
+          configuredAs: "serviceId",
+          service: service,
+        }
+      : {
+          configuredAs: "serviceType",
+          type: "speedy",
+        },
     accessLevel: opts.accessLevel ? opts.accessLevel : "private",
     renderConfig: {
       output: opts.output ? opts.output : "table",
