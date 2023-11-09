@@ -27,11 +27,10 @@ type AddQueryOptionsBase = {
   displayName?: string;
 };
 
-type SparqlServiceTypes = Omit<Models.QueryServiceType, "elasticSearch">;
 export type AddQueryDataset = AddQueryOptionsBase & {
   dataset: Dataset;
   service?: never;
-  serviceType?: SparqlServiceTypes;
+  serviceType?: Models.SparqlQueryServiceType;
 };
 export type AddQueryService = AddQueryOptionsBase & { service: Service; dataset?: never; serviceType?: never };
 export async function addQuery<T extends Account>(this: T, name: string, opts: AddQueryDataset): Promise<Query>;
@@ -45,7 +44,7 @@ export async function addQuery<T extends Account>(this: T, name: string, opts: A
   }
   const accountName = (await this.getInfo()).accountName;
   let dataset: string | undefined;
-  let serviceType: SparqlServiceTypes | undefined;
+  let serviceType: Models.SparqlQueryServiceType | undefined;
   let service: string | undefined;
   if (opts.dataset) {
     dataset = (await opts.dataset.getInfo()).id;
@@ -66,7 +65,7 @@ export async function addQuery<T extends Account>(this: T, name: string, opts: A
         }
       : {
           configuredAs: "serviceType",
-          type: serviceType ? (serviceType as Models.QueryServiceType) : "speedy",
+          type: serviceType || "speedy",
         },
     accessLevel: opts.accessLevel ? opts.accessLevel : "private",
     renderConfig: {

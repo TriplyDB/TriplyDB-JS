@@ -428,7 +428,7 @@ __metadata:
     "@rollup/plugin-sucrase": ^5.0.1
     "@rollup/plugin-typescript": ^11.1.0
     "@triply/tus-js-client": 2.3.0
-    "@triply/utils": ^3.0.0
+    "@triply/utils": ^3.1.1
     "@types/chai": ^4.3.1
     "@types/chai-as-promised": ^7.1.5
     "@types/debug": ^4.1.7
@@ -498,9 +498,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@triply/utils@npm:^3.0.0":
-  version: 3.0.0
-  resolution: "@triply/utils@npm:3.0.0"
+"@triply/utils@npm:^3.1.1":
+  version: 3.1.1
+  resolution: "@triply/utils@npm:3.1.1"
   dependencies:
     "@elastic/elasticsearch": ^8.9.0
     "@types/jsonld": ^1.5.8
@@ -527,7 +527,7 @@ __metadata:
     ensureCalver: ./lib/bin/ensureCalver.js
     isCleanBranch: ./lib/bin/isCleanBranch.js
     versionToBranch: ./lib/bin/versionToBranch.js
-  checksum: 7f4833d6d7c88d19e4a780522a8612bf1d08b1a0c4be9f9551062d6d12b52bb6f3f3299cce577d7e5b83c97daa4807d43dffc67a72fbfa21f4315304a9060790
+  checksum: 5ebb92948b479fc9aa641a8daa5ee4081247521a544c2a1241115a2e706110836edc7f50a13c4c57b49e45d975f45be3935d8740f289b031a9a9ec19c5fc1ac2
   languageName: node
   linkType: hard
 
