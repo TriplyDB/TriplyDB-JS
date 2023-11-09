@@ -27,20 +27,29 @@ type AddQueryOptionsBase = {
   displayName?: string;
 };
 
-export type AddQueryDataset = AddQueryOptionsBase & { dataset: Dataset; service?: never };
+type SparqlServiceTypes = Omit<Models.QueryServiceType, "elasticsearch">;
+export type AddQueryDataset = AddQueryOptionsBase & {
+  dataset: Dataset;
+  service?: never;
+  serviceType?: SparqlServiceTypes;
+};
 export type AddQueryService = AddQueryOptionsBase & { service: Service; dataset?: never };
 export async function addQuery<T extends Account>(this: T, name: string, opts: AddQueryDataset): Promise<Query>;
 export async function addQuery<T extends Account>(this: T, name: string, opts: AddQueryService): Promise<Query>;
 export async function addQuery<T extends Account>(this: T, name: string, opts: AddQueryDataset | AddQueryService) {
   const app = (this as User)["_app"];
   if (!(await app.isCompatible("23.09.0"))) {
-    throw new IncompatibleError("This function is now supported by TriplyDB API version 23.09.0 or greater");
+    throw new IncompatibleError(
+      "This function has changed and is now supported by TriplyDB API version 23.09.0 or greater"
+    );
   }
   const accountName = (await this.getInfo()).accountName;
   let dataset: string | undefined;
+  let serviceType: SparqlServiceTypes | undefined;
   let service: string | undefined;
   if (opts.dataset) {
     dataset = (await opts.dataset.getInfo()).id;
+    serviceType = await opts.serviceType;
   }
   if (opts.service) {
     dataset = (await opts.service.getDataset().getInfo()).id;
@@ -57,7 +66,7 @@ export async function addQuery<T extends Account>(this: T, name: string, opts: A
         }
       : {
           configuredAs: "serviceType",
-          type: "speedy",
+          type: serviceType ? (serviceType as Models.QueryServiceType) : "speedy",
         },
     accessLevel: opts.accessLevel ? opts.accessLevel : "private",
     renderConfig: {

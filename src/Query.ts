@@ -129,7 +129,9 @@ export default class Query {
   }
   public async update(config: Models.QueryMetaUpdate) {
     if (!(await this._app.isCompatible("23.09.0"))) {
-      throw new IncompatibleError("This function is now supported by TriplyDB API version 23.09.0 or greater");
+      throw new IncompatibleError(
+        "This function has changed and is now supported by TriplyDB API version 23.09.0 or greater"
+      );
     }
     const updateData = { ...config };
     if (!updateData.dataset) {
