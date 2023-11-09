@@ -27,13 +27,13 @@ type AddQueryOptionsBase = {
   displayName?: string;
 };
 
-type SparqlServiceTypes = Omit<Models.QueryServiceType, "elasticsearch">;
+type SparqlServiceTypes = Omit<Models.QueryServiceType, "elasticSearch">;
 export type AddQueryDataset = AddQueryOptionsBase & {
   dataset: Dataset;
   service?: never;
   serviceType?: SparqlServiceTypes;
 };
-export type AddQueryService = AddQueryOptionsBase & { service: Service; dataset?: never };
+export type AddQueryService = AddQueryOptionsBase & { service: Service; dataset?: never; serviceType?: never };
 export async function addQuery<T extends Account>(this: T, name: string, opts: AddQueryDataset): Promise<Query>;
 export async function addQuery<T extends Account>(this: T, name: string, opts: AddQueryService): Promise<Query>;
 export async function addQuery<T extends Account>(this: T, name: string, opts: AddQueryDataset | AddQueryService) {
