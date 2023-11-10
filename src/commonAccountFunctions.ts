@@ -44,11 +44,9 @@ export async function addQuery<T extends Account>(this: T, name: string, opts: A
   }
   const accountName = (await this.getInfo()).accountName;
   let dataset: string | undefined;
-  let serviceType: Models.SparqlQueryServiceType | undefined;
   let service: string | undefined;
   if (opts.dataset) {
     dataset = (await opts.dataset.getInfo()).id;
-    serviceType = await opts.serviceType;
   }
   if (opts.service) {
     dataset = (await opts.service.getDataset().getInfo()).id;
@@ -65,7 +63,7 @@ export async function addQuery<T extends Account>(this: T, name: string, opts: A
         }
       : {
           configuredAs: "serviceType",
-          type: serviceType || "speedy",
+          type: opts.serviceType || "speedy",
         },
     accessLevel: opts.accessLevel ? opts.accessLevel : "private",
     renderConfig: {
