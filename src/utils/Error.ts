@@ -1,7 +1,7 @@
 import { CachedResult } from "./cache.js";
 import { Response } from "cross-fetch";
 
-const tokenRegex = /[a-z0-9\-\_\.]{280,}/gi;
+const tokenRegex = /[a-z0-9\-\_\.]{270,}/gi;
 
 type Context = { [key: string]: any };
 export class IncompatibleError extends Error {}

@@ -3,7 +3,7 @@ import { parseAndInjectVariablesIntoQuery, validate } from "@triply/utils/sparql
 import App from "./App.js";
 import { _get, _patch, _delete, _post } from "./RequestHandler.js";
 import { Account } from "./Account.js";
-import { getErr } from "./utils/Error.js";
+import { getErr, IncompatibleError } from "./utils/Error.js";
 import { Cache } from "./utils/cache.js";
 import * as n3 from "n3";
 import sparqljs from "sparqljs";
@@ -128,6 +128,11 @@ export default class Query {
     return this;
   }
   public async update(config: Models.QueryMetaUpdate) {
+    if (!(await this._app.isCompatible("23.09.0"))) {
+      throw new IncompatibleError(
+        "This function has been updated and is now supported by TriplyDB API version 23.09.0 or greater"
+      );
+    }
     const updateData = { ...config };
     if (!updateData.dataset) {
       updateData.dataset = this._info.dataset?.id;
