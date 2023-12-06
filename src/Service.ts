@@ -19,7 +19,7 @@ type ServiceAdminInfo = {
   foundInDocker?: boolean;
   foundInMongo?: boolean;
 };
-type ServiceInfo = Omit<Models.ServiceMetadata, keyof ServiceAdminInfo>;
+export type ServiceInfo = Omit<Models.ServiceMetadata, keyof ServiceAdminInfo>;
 
 export default class Service {
   private _app: App;
