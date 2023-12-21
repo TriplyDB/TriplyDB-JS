@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { program } from "commander";
+import { Option, program } from "commander";
 import colors from "colors";
 import App from "../App.js";
 import Dataset from "../Dataset.js";
@@ -35,18 +35,39 @@ const command = program
     "Use HTTP proxy for all requests (default: $HTTPS_PROXY)",
     defaultHttpsProxy || undefined
   )
-  .option("-p, --append", "Optional: Append the graphs. (default: false)")
+  // deprecated
+  .addOption(new Option("-p, --append").hideHelp())
+  .option("--default-graph-name <graph>", "Default graph, used when e.g. ntriples are uploaded")
+  .addOption(
+    new Option("--mode <mode>", "Defines how to resolve issues when graph name already exists")
+      .choices(["overwrite", "rename", "merge"])
+      .default("rename")
+  )
   .action(async () => {
     const files = command.args;
-    function sanityCheckError(msg: string) {
+    function sanityCheckError(msg: string): never {
       console.error(colors.red(msg));
       command.outputHelp();
       process.exit(1);
     }
-    const options = command.opts();
+    const options = command.opts<{
+      token?: string;
+      dataset?: string;
+      url?: string;
+      httpProxy?: string;
+      httpsProxy?: string;
+      account?: string;
+      /**@deprecated */
+      append?: boolean;
+      defaultGraphName?: string;
+      mode: "rename" | "overwrite" | "merge";
+    }>();
     if (!options.token) sanityCheckError("Missing token as argument");
     if (!options.dataset) sanityCheckError("Missing dataset as argument");
     if (!files.length) sanityCheckError("No files given to upload for");
+    if (options.append) {
+      console.warn("Ignoring the 'append' option as it is deprecated. Use the --mode option instead.");
+    }
     const account = await App.get({
       url: options.url,
       token: options.token,
@@ -64,11 +85,12 @@ const command = program
       dataset = await account.addDataset(options.dataset, { accessLevel: "public" });
     }
 
-    //Clear all linked data in this dataset
-    if (!options.append) await dataset.clear("graphs");
-
     console.info(`Uploading ${files.length} files`);
-    await dataset.importFromFiles(files);
+    await dataset.importFromFiles(files, {
+      defaultGraphName: options.defaultGraphName,
+      overwriteAll: options.mode === "overwrite",
+      mergeGraphs: options.mode === "merge",
+    });
 
     console.info("Done");
   });
