@@ -10,7 +10,7 @@
     "build:watch": "rm -rf ./lib && tsc -p tsconfig-build.json --watch --preserveWatchOutput",
     "dev": "rm -rf ./lib && tsc -p tsconfig-build.json --watch --preserveWatchOutput",
     "test": "bash -c \"mocha $(find ./lib -name '*-test.js' | xargs) --timeout 120000 --require source-map-support/register\"",
-    "package": "rollup -c && pkg ./lib/triplydb.cjs",
+    "package": "rollup -c && pkg ./lib/triplydb.cjs -t  \"node18-linux-x64,node18-macos-x64,node18-win-x64\"",
     "preversion": "isCleanBranch",
     "postversion": "versionToBranch",
     "prepublishOnly": "if [ -z \"${CI}\" ]; then echo Publishing is not allowed. Only the CI may publish; exit 1; fi",
