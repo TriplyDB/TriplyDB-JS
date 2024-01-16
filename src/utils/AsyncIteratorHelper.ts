@@ -121,7 +121,7 @@ export default class AsyncIteratorHelper<ResultType, OutputClass> implements Asy
     }
   }
 
-  private async _get(): Promise<ResultType | void> {
+  private async _get(): Promise<ResultType | undefined> {
     // Reverse and use `.pop`, as `shift` is an O(n) operation.
     if (!this._currentPage.length) this._currentPage = ((await this._requestParsedPage()) || []).reverse();
     if (this._currentPage.length) return this._currentPage.pop();
@@ -136,7 +136,12 @@ export default class AsyncIteratorHelper<ResultType, OutputClass> implements Asy
   public [Symbol.asyncIterator]() {
     return {
       next: async () => {
-        const info = await this._get();
+        let info = await this._get();
+        // We may want to continue getting the next pages, even when there aren't results
+        // This is useful for construct queries, where intermediate pages may return 0 results
+        while (!info && this["_next"] !== null) {
+          info = await this._get();
+        }
         if (info) {
           return {
             done: false,
