@@ -9,7 +9,6 @@ import Dataset, { Prefixes } from "./Dataset.js";
 import { getErr, IncompatibleError } from "./utils/Error.js";
 import { AccessLevel, PinnedItemUpdate, SparqlQuery, VariableConfig } from "@triply/utils/Models.js";
 import { omit } from "lodash-es";
-import Service from "./Service.js";
 
 /* This file contains functions that are shared by the Org and User classes.
 Since the classes are implementing an interface rather than extending a class,
@@ -17,7 +16,7 @@ Since the classes are implementing an interface rather than extending a class,
 As a workaround for this, we use as-casting to User within the functions.
 This should not influence the interfaces of the functions.
 */
-type AddQueryOptionsBase = {
+export interface AddQueryOptions {
   queryString: SparqlQuery["query"];
   /**   * By Default "table", other options may include: "response", "geo", "gallery", "markup", etc   */
   output?: string;
@@ -25,17 +24,11 @@ type AddQueryOptionsBase = {
   variables?: Array<VariableConfig>;
   description?: string;
   displayName?: string;
-};
-
-export type AddQueryDataset = AddQueryOptionsBase & {
   dataset: Dataset;
-  service?: never;
-  serviceType?: Models.SparqlQueryServiceType;
-};
-export type AddQueryService = AddQueryOptionsBase & { service: Service; dataset?: never; serviceType?: never };
-export async function addQuery<T extends Account>(this: T, name: string, opts: AddQueryDataset): Promise<Query>;
-export async function addQuery<T extends Account>(this: T, name: string, opts: AddQueryService): Promise<Query>;
-export async function addQuery<T extends Account>(this: T, name: string, opts: AddQueryDataset | AddQueryService) {
+  serviceType: Models.SparqlQueryServiceType;
+}
+
+export async function addQuery<T extends Account>(this: T, name: string, opts: AddQueryOptions) {
   const app = (this as User)["_app"];
   if (!(await app.isCompatible("23.09.0"))) {
     throw new IncompatibleError(
@@ -43,28 +36,16 @@ export async function addQuery<T extends Account>(this: T, name: string, opts: A
     );
   }
   const accountName = (await this.getInfo()).accountName;
-  let dataset: string | undefined;
-  let service: string | undefined;
-  if (opts.dataset) {
-    dataset = (await opts.dataset.getInfo()).id;
-  }
-  if (opts.service) {
-    dataset = (await opts.service.getDataset().getInfo()).id;
-    service = (await opts.service.getInfo()).id;
-  }
+  let datasetId = (await opts.dataset.getInfo()).id;
+
   let query: Models.QueryCreate = {
     name,
-    dataset,
+    dataset: datasetId,
     requestConfig: { payload: { query: opts.queryString } },
-    serviceConfig: service
-      ? {
-          configuredAs: "serviceId",
-          service: service,
-        }
-      : {
-          configuredAs: "serviceType",
-          type: opts.serviceType || "speedy",
-        },
+    serviceConfig: {
+      configuredAs: "serviceType",
+      type: opts.serviceType,
+    },
     accessLevel: opts.accessLevel ? opts.accessLevel : "private",
     renderConfig: {
       output: opts.output ? opts.output : "table",

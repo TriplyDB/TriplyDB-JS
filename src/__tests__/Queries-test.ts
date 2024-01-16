@@ -56,6 +56,7 @@ describe("Queries", function () {
       queryString: "select ?s?p?o where {?s?p?o}",
       output: "geo",
       dataset: testDs,
+      serviceType: "speedy",
     });
     expect(await query.getInfo().then((q) => q.accessLevel)).to.equal("private");
     await query.update({ accessLevel: "internal" });
@@ -74,6 +75,7 @@ describe("Queries", function () {
       dataset: testDs,
       description,
       displayName,
+      serviceType: "speedy",
       variables: [{ name: "s", termType: "Literal", language: "nl" }],
     });
     const queryInfo = await query.getInfo();
@@ -89,9 +91,11 @@ describe("Queries", function () {
     expect((await testService.getInfo()).status).to.equal("running");
     const query = await user.addQuery(`${CommonUnittestPrefix}-test-query-service`, {
       accessLevel: "private",
-      service: testService,
+      dataset: testDs,
       queryString: "select ?s?p?o where {?s?p?o}",
+      serviceType: "virtuoso",
     });
+    // should automatically use virtuoso instead of speedy
     const queryServiceEndpoint = (await query.getInfo()).service;
     const testServiceEndpoint = (await testService.getInfo()).endpoint;
     expect(queryServiceEndpoint).to.equal(testServiceEndpoint);
@@ -105,6 +109,7 @@ describe("Queries", function () {
       accessLevel: "private",
       dataset: testDs,
       queryString: "select ?s?p?o where {?s?p?o}",
+      serviceType: "virtuoso",
     });
     expect((await query.getInfo(true)).numberOfVersions).to.equal(1);
     // Version 2
@@ -170,6 +175,7 @@ describe("Queries", function () {
           output: "table",
           variables: [{ name: "s", termType: "NamedNode" }],
           dataset,
+          serviceType: "speedy",
         });
       });
       describe("Fetching query string", function () {
@@ -236,6 +242,7 @@ WHERE {
           output: "table",
           variables: [{ name: "s", termType: "NamedNode" }],
           dataset,
+          serviceType: "speedy",
         });
       });
 
@@ -328,6 +335,7 @@ WHERE {
         accessLevel: "private",
         output: "table",
         dataset,
+        serviceType: "speedy",
       });
 
       const firstResults = await query1
@@ -341,6 +349,7 @@ WHERE {
         accessLevel: "private",
         output: "table",
         dataset,
+        serviceType: "speedy",
       });
       const secondResults = await query2
         .results({}, { cache: fileCache({ cacheDir: tmpDir, compression: "gz" }) })

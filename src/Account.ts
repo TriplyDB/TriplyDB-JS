@@ -9,7 +9,7 @@ import Query from "./Query.js";
 import Story from "./Story.js";
 import { getErr } from "./utils/Error.js";
 import { NewDataset } from "@triply/utils/Models.js";
-import { AddQueryDataset, AddQueryService, NewStory } from "./commonAccountFunctions.js";
+import { AddQueryOptions, NewStory } from "./commonAccountFunctions.js";
 export interface AccountBase {
   getInfo(): Promise<Models.Account>;
   getDataset(name: string): Promise<Dataset>;
@@ -21,7 +21,7 @@ export interface AccountBase {
   setAvatar(pathOrBuffer: string | Buffer): Promise<void>;
   getQuery(name: string): Promise<Query>;
   getQueries(): AsyncIteratorHelper<Models.Query, Query>;
-  addQuery(name: string, opts: AddQueryDataset | AddQueryService): Promise<Query>;
+  addQuery(name: string, opts: AddQueryOptions): Promise<Query>;
   getStory(name: string): Promise<Story>;
   getStories(): AsyncIteratorHelper<Models.Story, Story>;
   addStory(name: string, args?: Omit<Models.StoryCreate, "name">): Promise<Story>;
