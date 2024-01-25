@@ -10,7 +10,7 @@ export function wait(ms: number) {
 }
 
 /**
- * Attempt to set a stick session cookie in the given headers object. If this
+ * Attempt to set a sticky session cookie in the given headers object. If this
  * somehow fails, the headers aren't changed and this function exits silently.
  */
 export async function setStickySessionCookie(headers: { [name: string]: string }, apiUrl: string): Promise<void> {
