@@ -1,9 +1,9 @@
 import { Models, Routes } from "@triply/utils";
 import App from "./App.js";
 import fs from "fs-extra";
-import { wait } from "./utils/index.js";
-import debug from "debug";
+import { formatUploadProgress, setStickySessionCookie, wait } from "./utils/index.js";
 import Service from "./Service.js";
+import debug from "debug";
 const log = debug("triply:triplydb-js:upload");
 import * as tus from "@triply/tus-js-client";
 import md5 from "md5";
@@ -693,21 +693,27 @@ export class JobUpload {
       fileSize = fileOrPath.size;
       fileName = fileOrPath.name;
     }
+    // we want to try to get a sticky session cookie for TUS uploads
+    const headers: { [name: string]: string } = { Authorization: "Bearer " + this._config.app["_config"].token };
+    await setStickySessionCookie(headers, this._config.app["_config"].url);
+
+    let previousChunkCompleted = Date.now();
     return new Promise<void>((resolve, reject) => {
       const upload = new tus.Upload(rs, {
         endpoint: this.jobUrl + "/add",
         metadata: {
           filename: fileName,
         },
-        headers: {
-          Authorization: "Bearer " + this._config.app["_config"].token,
-        },
+        headers,
         mapUrl: this.urlMapper,
         chunkSize: 5 * 1024 * 1024,
         uploadSize: fileSize,
         retryDelays: [2000, 5000, 10000, 40000, 50000],
         onError: reject,
-        onProgress: function (_bytesUploaded: number, _bytesTotal: number) {},
+        onChunkComplete: function (...stats) {
+          log(formatUploadProgress(Date.now() - previousChunkCompleted, ...stats));
+          previousChunkCompleted = Date.now();
+        },
         onSuccess: function () {
           log("finished file " + fileOrPath);
           resolve();

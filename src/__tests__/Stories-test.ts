@@ -1,6 +1,4 @@
 import App from "../App.js";
-import { Account } from "../Account.js";
-import Dataset from "../Dataset.js";
 import fs from "fs-extra";
 import * as chai from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -14,28 +12,15 @@ process.on("unhandledRejection", function (reason: any, p: any) {
   console.warn("Possibly Unhandled Rejection at: Promise ", p, " reason: ", reason);
 });
 const tmpDir = "./src/__tests__/tmp";
-const datasetsToClean: Dataset[] = [];
-let testDsIndex = 0;
-const getNewTestDs = async (account: Account, accessLevel: "public" | "private") => {
-  const ds = await account.addDataset(
-    // keep the name short to avoid hitting the 40-character limit
-    `${CommonUnittestPrefix}-${testDsIndex++}`,
-    { accessLevel: accessLevel }
-  );
-  datasetsToClean.push(ds);
-  return ds;
-};
 
 describe("Stories", function () {
   let app: App;
   let user: User;
-  let testDs: Dataset;
   let paragraph: string;
   before(async function () {
     app = App.get({ token: process.env.UNITTEST_TOKEN_ACCOUNT });
     user = await app.getUser();
     await resetUnittestAccount(user);
-    testDs = await getNewTestDs(user, "private");
     await fs.mkdirp(tmpDir);
     paragraph = "Here's a little story I'd like to tell...";
   });

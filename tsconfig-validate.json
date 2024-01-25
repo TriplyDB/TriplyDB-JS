@@ -1,7 +1,6 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "noUnusedLocals": false,
     "noEmit": true
   },
   "compileOnSave": false

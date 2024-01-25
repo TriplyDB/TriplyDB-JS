@@ -7,8 +7,10 @@ import pumpify from "pumpify";
 import fetch from "cross-fetch";
 import { getErr } from "./utils/Error.js";
 import fs from "fs-extra";
-
 import { omit, last } from "lodash-es";
+import { formatUploadProgress, setStickySessionCookie } from "./utils/index.js";
+import debug from "debug";
+const log = debug("triply:triplydb-js:asset-upload");
 
 export default class Asset {
   private _info: Models.Asset;
@@ -182,16 +184,25 @@ export default class Asset {
     if (opts.assetName) metadata.filename = opts.assetName;
     if (opts.versionOf) metadata.versionOf = opts.versionOf;
     const info = await opts.dataset.getInfo();
+
+    // we want to try to get a sticky session cookie for TUS uploads
+    const headers: { [name: string]: string } = { Authorization: "Bearer " + opts.dataset["_app"]["_config"].token };
+    await setStickySessionCookie(headers, opts.dataset["_app"]["_config"].url);
+
+    let previousChunkCompleted = Date.now();
     return new Promise<Models.Asset>((resolve, reject) => {
       const upload = new tus.Upload(rs, {
         endpoint: `${opts.dataset["_app"]["_config"].url}/datasets/${info.owner.accountName}/${info.name}/assets/add`,
         metadata,
-        headers: { Authorization: "Bearer " + opts.dataset["_app"]["_config"].token },
+        headers,
         chunkSize: 5 * 1024 * 1024,
         retryDelays: [2000, 3000, 5000, 10000, 20000],
         uploadSize: fileSize,
         onError: reject,
-        onProgress: (_bytesUploaded: number, _bytesTotal: number) => {},
+        onChunkComplete: function (...stats) {
+          log(formatUploadProgress(Date.now() - previousChunkCompleted, ...stats));
+          previousChunkCompleted = Date.now();
+        },
         onSuccess: (stringifiedJson: string) => {
           if (stringifiedJson === "") return reject(getErr("No response or upload already finished"));
           try {
