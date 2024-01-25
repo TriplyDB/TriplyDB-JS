@@ -45,6 +45,11 @@ describe("Assets", function () {
     const newAsset = await testDs.uploadAsset("./README.md", this.test?.title);
     expect(newAsset.getInfo().fileSize).to.equal((await fs.stat("./README.md")).size);
   });
+  it.skip("Adding a large asset", async function () {
+    const filename = "PATH TO A 250MB FILE";
+    const newAsset = await testDs.uploadAsset(filename, this.test?.title);
+    expect(newAsset.getInfo().fileSize).to.equal((await fs.stat(filename)).size);
+  });
   it("Adding an asset for which the name already exists", async function () {
     await testDs.uploadAsset("./README.md", this.test?.title);
     return expect(testDs.uploadAsset(otherfile, this.test?.title)).eventually.rejectedWith(

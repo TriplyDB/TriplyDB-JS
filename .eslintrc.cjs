@@ -9,7 +9,7 @@ module.exports = {
   parserOptions: {
     ecmaVersion: 2018, // Allows for the parsing of modern ECMAScript features
     sourceType: "module", // Allows for the use of imports,
-    project: expensive ? "./tsconfig-build.json" : undefined,
+    project: expensive ? "./tsconfig.json" : undefined,
     tsconfigRootDir: expensive ? "." : undefined,
   },
   plugins: ["@typescript-eslint", "jest", "lodash"],

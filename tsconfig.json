@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "es2020",
     "lib": ["es2020", "esnext"],
-    "module": "es2020",
+    "module": "Node16",
     "moduleResolution": "node16",
     "declaration": true,
     "declarationMap": true,
@@ -16,7 +16,10 @@
     "listFiles": false,
     "outDir": "./lib",
     "experimentalDecorators": true,
-    "types": ["mocha"]
+    "types": ["mocha"],
+    "noImplicitAny": false,
+    "noImplicitThis": false,
+    "noUnusedParameters": false,
   },
   "compileOnSave": true,
   "include": [".eslintrc.js","src/**/**/*.ts"],

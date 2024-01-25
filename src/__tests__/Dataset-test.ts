@@ -177,6 +177,12 @@ describe("Dataset", function () {
       const info = testDs["_lastJob"]?.info();
       expect(info?.files).to.have.lengthOf(2);
     });
+
+    it.skip("Large Upload", async function () {
+      const filename = "PATH TO A 250MB FILE";
+      await testDs.importFromFiles([filename]);
+    });
+
     it("Run job", async function () {
       expect(testDs["_lastJob"]?.info()?.status).to.equal("finished");
     });
