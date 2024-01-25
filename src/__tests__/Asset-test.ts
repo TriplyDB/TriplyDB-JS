@@ -45,7 +45,7 @@ describe("Assets", function () {
     const newAsset = await testDs.uploadAsset("./README.md", this.test?.title);
     expect(newAsset.getInfo().fileSize).to.equal((await fs.stat("./README.md")).size);
   });
-  it("Adding a large asset", async function () {
+  it.skip("Adding a large asset", async function () {
     const filename = "PATH TO A 250MB FILE";
     const newAsset = await testDs.uploadAsset(filename, this.test?.title);
     expect(newAsset.getInfo().fileSize).to.equal((await fs.stat(filename)).size);
