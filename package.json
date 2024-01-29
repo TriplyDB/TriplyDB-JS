@@ -3,7 +3,12 @@
   "version": "7.0.1",
   "author": "Triply <info@triply.cc>",
   "license": "MIT",
-  "repository": "github:TriplyDB/TriplyDB-JS",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TriplyDB/TriplyDB-JS.git"
+  },
+  "bugs": "https://github.com/TriplyDB/TriplyDB-JS/issues",
+  "homepage": "https://github.com/TriplyDB/TriplyDB-JS",
   "bin": "./lib/bin/triplydb.js",
   "scripts": {
     "build": "rm -rf ./lib  && tsc -p tsconfig.json && chmod +x ./lib/bin/*",
