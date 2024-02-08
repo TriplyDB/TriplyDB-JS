@@ -428,7 +428,7 @@ __metadata:
     "@rollup/plugin-sucrase": ^5.0.1
     "@rollup/plugin-typescript": ^11.1.0
     "@triply/tus-js-client": 2.3.0
-    "@triply/utils": ^3.1.1
+    "@triply/utils": 3.1.1
     "@types/chai": ^4.3.1
     "@types/chai-as-promised": ^7.1.5
     "@types/debug": ^4.1.7
@@ -498,7 +498,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@triply/utils@npm:^3.1.1":
+"@triply/utils@npm:3.1.1":
   version: 3.1.1
   resolution: "@triply/utils@npm:3.1.1"
   dependencies:
