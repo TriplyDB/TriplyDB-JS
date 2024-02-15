@@ -13,7 +13,10 @@ let defaultHttpProxy = process.env["HTTP_PROXY"];
 
 const command = program
   .createCommand("create-query-job")
-  .description("Creates a query job from an existing saved query and monitors it")
+  .summary("Creates a query job")
+  .description(
+    "Creates a query job from an existing saved query to execute on provided source dataset. The job will then overwite the target dataset with the results. Make sure that the account used for the query job has access to the saved query, source dataset & the target dataset."
+  )
   .option("-t, --token <token>", "TriplyDB access token (default: $TRIPLYDB_TOKEN)", defaultTriplyDBToken || undefined)
   .option(
     "-a, --account <account>",

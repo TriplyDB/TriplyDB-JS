@@ -64,19 +64,19 @@ export default class QueryJob {
         path: path,
         expectedResponseBody: "json",
       });
+      let progress;
+      if (!!queryJob.progress && queryJob.progress !== -1) progress = `${(queryJob.progress * 100).toFixed(0)}%`;
 
       switch (true) {
         case queryJob.status === "error":
           throw getErr(queryJob.errorMessage || "Query job failed with an error");
         case queryJob.status === "finished":
-          if (!!queryJob.progress && queryJob.progress !== -1)
-            console.info(`Query job progress... ${queryJob.progress * 100}%`);
+          if (progress) console.info(`Query job progress... ${progress}`);
 
           console.info(`Query job is finished`);
           return queryJob;
         default:
-          if (!!queryJob.progress && queryJob.progress !== -1)
-            console.info(`Query job progress... ${queryJob.progress * 100}%`);
+          if (progress) console.info(`Query job progress... ${progress}`);
       }
       await wait(waitFor);
       if (waitFor < 300000) waitFor = waitFor * 2; //max 5 mins
