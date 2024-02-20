@@ -20,7 +20,7 @@ const command = program
   .option("-t, --token <token>", "TriplyDB access token (default: $TRIPLYDB_TOKEN)", defaultTriplyDBToken || undefined)
   .option(
     "-a, --account <account>",
-    "Source account used to create the query job. (default: the account that owns the token, or $TRIPLYDB_ACCOUNT)",
+    "Account where query job is created and stored. (default: the account that owns the token, or $TRIPLYDB_ACCOUNT)",
     defaultTriplyDBAccount
   )
   .option("-u, --url <url>", "Optional: Url of the triply API. (default: the API where the token was created)", String)
@@ -34,10 +34,19 @@ const command = program
     "Use HTTP proxy for all requests (default: $HTTPS_PROXY)",
     defaultHttpsProxy || undefined
   )
-  .requiredOption("-q, --query <query>", "Name of the saved query used to created query job")
+  .requiredOption(
+    "-q, --query <query>",
+    "Name of the saved query used to created query job, in the form of <account>/<queryname>"
+  )
   .option("-v, --version <version>", "Version of the saved query used to created query job")
-  .requiredOption("-s, --source-dataset <sourceDataset>", "Source dataset on which the query job runs on")
-  .requiredOption("-t, --target-dataset <targetDataset>", "Target dataset to which the query job writes to")
+  .requiredOption(
+    "-s, --source-dataset <sourceDataset>",
+    "Source dataset where the query job runs on, in the form of <account>/<dataset>"
+  )
+  .requiredOption(
+    "-t, --target-dataset <targetDataset>",
+    "Target dataset the query job writes to, in the form of <account>/dataset>"
+  )
 
   .action(async () => {
     function sanityCheckError(msg: string) {
@@ -45,12 +54,28 @@ const command = program
       command.outputHelp();
       process.exit(1);
     }
-    const options = command.opts();
+    const options = command.opts<{
+      token: string;
+      account: string;
+      query: string;
+      version?: string;
+      sourceDataset: string;
+      targetDataset: string;
+      url?: string;
+      httpProxy?: string;
+      httpsProxy?: string;
+    }>();
     if (!options.token) sanityCheckError("Missing token as an argument");
     if (!options.account) sanityCheckError("Missing account as an argument");
-    if (!options.query) sanityCheckError("Missing query name as an argument");
-    if (!options.sourceDataset) sanityCheckError("Missing source dataset as an argument");
-    if (!options.targetDataset) sanityCheckError("Missing target dataset as an argument");
+    const [queryAccountName, queryName] = options.query.split("/");
+    if (!queryAccountName) sanityCheckError("Missing query account name");
+    if (!queryName) sanityCheckError("Missing query name");
+    const [sourceDatasetAccountName, sourceDatasetName] = options.sourceDataset.split("/");
+    if (!sourceDatasetAccountName) sanityCheckError("Missing source dataset account name");
+    if (!sourceDatasetName) sanityCheckError("Missing source dataset name");
+    const [targetDatasetAccountName, targetDatasetName] = options.targetDataset.split("/");
+    if (!targetDatasetAccountName) sanityCheckError("Missing target dataset account name");
+    if (!targetDatasetName) sanityCheckError("Missing target dataset name");
 
     const app = App.get({
       url: options.url,
@@ -61,13 +86,16 @@ const command = program
     const account = await app.getUser(options.account);
     // check whether account name exists
     await account.getInfo();
-    const queryId = (await (await account.getQuery(options.query)).getInfo()).id;
-    const sourceDatasetId = (await (await account.getDataset(options.sourceDataset)).getInfo()).id;
-    const targetDatasetId = (await (await account.getDataset(options.targetDataset)).getInfo()).id;
+    const queryAccount = await app.getUser(queryAccountName);
+    const queryId = (await (await queryAccount.getQuery(queryName)).getInfo()).id;
+    const sourceDatasetAccount = await app.getUser(sourceDatasetAccountName);
+    const sourceDatasetId = (await (await sourceDatasetAccount.getDataset(sourceDatasetName)).getInfo()).id;
+    const targetDatasetAccount = await app.getUser(targetDatasetAccountName);
+    const targetDatasetId = (await (await targetDatasetAccount.getDataset(targetDatasetName)).getInfo()).id;
 
     const payload: QueryJobCreate = {
       queryId: queryId,
-      queryVersion: options.version || undefined,
+      queryVersion: options.version !== undefined ? +options.version : undefined,
       sourceDatasetId: sourceDatasetId,
       targetDatasetId: targetDatasetId,
     };
