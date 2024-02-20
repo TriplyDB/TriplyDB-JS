@@ -45,7 +45,7 @@ const command = program
   )
   .requiredOption(
     "-t, --target-dataset <targetDataset>",
-    "Target dataset the query job writes to, in the form of <account>/dataset>"
+    "Target dataset the query job writes to, in the form of <account>/dataset>. Dataset is created when it doesn't exist"
   )
 
   .action(async () => {
@@ -91,7 +91,9 @@ const command = program
     const sourceDatasetAccount = await app.getUser(sourceDatasetAccountName);
     const sourceDatasetId = (await (await sourceDatasetAccount.getDataset(sourceDatasetName)).getInfo()).id;
     const targetDatasetAccount = await app.getUser(targetDatasetAccountName);
-    const targetDatasetId = (await (await targetDatasetAccount.getDataset(targetDatasetName)).getInfo()).id;
+    const targetDatasetId = (
+      await (await targetDatasetAccount.ensureDataset(targetDatasetName, { accessLevel: "private" })).getInfo()
+    ).id;
 
     const payload: QueryJobCreate = {
       queryId: queryId,
