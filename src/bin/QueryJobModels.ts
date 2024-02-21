@@ -8,6 +8,7 @@ export type QueryJobCreate = {
   queryVersion?: number;
   sourceDatasetId: string;
   targetDatasetId: string;
+  targetGraphName?: string;
 };
 
 export type QueryJobStatus = "pending" | "running" | "resultsReady" | "servingResults" | "finished" | "error";

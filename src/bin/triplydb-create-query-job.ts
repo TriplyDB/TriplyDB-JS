@@ -47,6 +47,7 @@ const command = program
     "-t, --target-dataset <targetDataset>",
     "Target dataset the query job writes to, in the form of <account>/dataset>. Dataset is created when it doesn't exist"
   )
+  .option("-g, --target-graph-name <graph-name>", "Target graph name to store the results in")
 
   .action(async () => {
     function sanityCheckError(msg: string) {
@@ -56,17 +57,17 @@ const command = program
     }
     const options = command.opts<{
       token: string;
-      account: string;
+      account?: string;
       query: string;
       version?: string;
       sourceDataset: string;
       targetDataset: string;
+      targetGraphName?: string;
       url?: string;
       httpProxy?: string;
       httpsProxy?: string;
     }>();
     if (!options.token) sanityCheckError("Missing token as an argument");
-    if (!options.account) sanityCheckError("Missing account as an argument");
     const [queryAccountName, queryName] = options.query.split("/");
     if (!queryAccountName) sanityCheckError("Missing query account name");
     if (!queryName) sanityCheckError("Missing query name");
@@ -86,11 +87,11 @@ const command = program
     const account = await app.getUser(options.account);
     // check whether account name exists
     await account.getInfo();
-    const queryAccount = await app.getUser(queryAccountName);
+    const queryAccount = await app.getAccount(queryAccountName);
     const queryId = (await (await queryAccount.getQuery(queryName)).getInfo()).id;
-    const sourceDatasetAccount = await app.getUser(sourceDatasetAccountName);
+    const sourceDatasetAccount = await app.getAccount(sourceDatasetAccountName);
     const sourceDatasetId = (await (await sourceDatasetAccount.getDataset(sourceDatasetName)).getInfo()).id;
-    const targetDatasetAccount = await app.getUser(targetDatasetAccountName);
+    const targetDatasetAccount = await app.getAccount(targetDatasetAccountName);
     const targetDatasetId = (
       await (await targetDatasetAccount.ensureDataset(targetDatasetName, { accessLevel: "private" })).getInfo()
     ).id;
@@ -100,6 +101,7 @@ const command = program
       queryVersion: options.version !== undefined ? +options.version : undefined,
       sourceDatasetId: sourceDatasetId,
       targetDatasetId: targetDatasetId,
+      targetGraphName: options.targetGraphName,
     };
 
     const queryJob: QueryJob = new QueryJob(app, account);
