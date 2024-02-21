@@ -92,9 +92,7 @@ const command = program
     const sourceDatasetAccount = await app.getAccount(sourceDatasetAccountName);
     const sourceDatasetId = (await (await sourceDatasetAccount.getDataset(sourceDatasetName)).getInfo()).id;
     const targetDatasetAccount = await app.getAccount(targetDatasetAccountName);
-    const targetDatasetId = (
-      await (await targetDatasetAccount.ensureDataset(targetDatasetName, { accessLevel: "private" })).getInfo()
-    ).id;
+    const targetDatasetId = (await (await targetDatasetAccount.ensureDataset(targetDatasetName)).getInfo()).id;
 
     const payload: QueryJobCreate = {
       queryId: queryId,
