@@ -106,7 +106,8 @@ const command = program
     try {
       await queryJob.createQueryJob(payload);
     } catch (e) {
-      console.info(e);
+      console.error(e);
+      process.exit(1);
     }
   });
 
