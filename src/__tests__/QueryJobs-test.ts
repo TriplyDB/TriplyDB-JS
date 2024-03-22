@@ -5,13 +5,15 @@ import fs from "fs-extra";
 import * as chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
-const expect = chai.expect;
 import { resetUnittestAccount, CommonUnittestPrefix } from "./utils.js";
 import User from "../User.js";
 import Query from "../Query.js";
 
 import dotenv from "dotenv";
 import QueryJob from "../bin/QueryJob.js";
+import { _get } from "../RequestHandler.js";
+import { getErr } from "../utils/Error.js";
+import { Routes_queryJobs } from "../bin/QueryJobModels.js";
 dotenv.config();
 
 process.on("unhandledRejection", function (reason: any, p: any) {
@@ -32,7 +34,8 @@ describe("Query Jobs", function () {
   let app: App;
   let user: User;
   let testDs: Dataset;
-  let testQuery: Query;
+  let testQuery1: Query;
+  let testQuery2: Query;
   let testQueryJob: QueryJob;
   before(async function () {
     app = App.get({ token: process.env.UNITTEST_TOKEN_ACCOUNT });
@@ -41,9 +44,16 @@ describe("Query Jobs", function () {
     testDs = await getNewTestDs(user, "private");
     await fs.mkdirp(tmpDir);
     await testDs.importFromFiles(["./src/__tests__/__data__/small.nq"]);
-    testQuery = await user.addQuery(`${CommonUnittestPrefix}-test-query`, {
+    testQuery1 = await user.addQuery(`${CommonUnittestPrefix}-test-query1`, {
       accessLevel: "private",
-      queryString: "construct WHERE { ?x ?y ?z } limit 1",
+      queryString: "construct WHERE { <a:a> ?b ?c }",
+      output: "table",
+      dataset: testDs,
+      serviceType: "speedy",
+    });
+    testQuery2 = await user.addQuery(`${CommonUnittestPrefix}-test-query2`, {
+      accessLevel: "private",
+      queryString: "construct WHERE { <x:x> ?y ?z }",
       output: "table",
       dataset: testDs,
       serviceType: "speedy",
@@ -53,21 +63,50 @@ describe("Query Jobs", function () {
   after(async function () {
     await resetUnittestAccount(user);
   });
+  // Skipping this test case for now due to account permissions need to exec query job operations
   it("Should create a query job and wait till it is finished", async function () {
-    // Skipping this test case for now due to account permissions need to exec query job operations
+    const query1 = await testQuery1.getInfo();
+    const query2 = await testQuery2.getInfo();
+    const testDsInfo = await testDs.getInfo();
+    const pipelineId = await testQueryJob.createQueryJobPipeline(
+      {
+        queries: [
+          {
+            queryId: query1.id,
+            queryVersion: query1.version,
+          },
+          {
+            queryId: query2.id,
+            queryVersion: query2.version,
+          },
+        ],
+        sourceDatasetId: testDsInfo.id,
+        targetDatasetId: testDsInfo.id,
+      },
+      [
+        {
+          queryAccountName: query1.owner.accountName,
+          queryName: query1.name,
+        },
+        {
+          queryAccountName: query2.owner.accountName,
+          queryName: query2.name,
+        },
+      ]
+    );
 
-    const createdQb = await testQueryJob.createQueryJob({
-      queryId: (await testQuery.getInfo()).id,
-      queryVersion: (await testQuery.getInfo()).version,
-      sourceDatasetId: (await testDs.getInfo()).id,
-      targetDatasetId: (await testDs.getInfo()).id,
+    const accountName = query1.owner.accountName;
+    const pathChunks: string[] = ["queryJobs", accountName, "pipeline", pipelineId];
+    const path = "/" + pathChunks.join("/");
+
+    const pipeline = await _get<Routes_queryJobs._account.pipeline._pipeline.Get>({
+      errorWithCleanerStack: getErr(`Failed to get pipeline status`),
+      app: app,
+      path: path,
+      expectedResponseBody: "json",
     });
-    expect(createdQb.queryName).to.equal((await testQuery.getInfo()).name);
-    expect(createdQb.sourceDatasetName).to.equal((await testDs.getInfo()).name);
-    expect(createdQb.targetDatasetName).to.equal((await testDs.getInfo()).name);
-    expect(createdQb.status).to.equal("finished");
-    after(function () {
-      void testQueryJob.deleteQueryJob(createdQb.id);
-    });
+
+    chai.expect(pipeline.pipelineStatus).to.equal("finished");
+    chai.expect(pipeline.progress).to.equal(1);
   });
 });

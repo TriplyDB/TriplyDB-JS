@@ -3,19 +3,21 @@ type Empty = {
   [key: string | number | symbol]: never;
 };
 
-export type QueryJobCreate = {
-  queryId: string;
-  queryVersion?: number;
-  sourceDatasetId: string;
-  targetDatasetId: string;
-  targetGraphName?: string;
-};
-
-export type QueryJobStatus = "pending" | "running" | "resultsReady" | "servingResults" | "finished" | "error";
-export type QueryJobs = Array<QueryJobModel>;
-export type QueryJobModel = {
+export type QueryJobStatus =
+  | "pending"
+  | "running"
+  | "resultsReady"
+  | "servingResults"
+  | "finished"
+  | "error"
+  | "cancelled";
+export type PipelineStatus = "pending" | "running" | "importing" | "finished" | "error" | "cancelled";
+export type QueryJobs = Array<QueryJob>;
+export type QueryJob = {
   id: string;
   status: QueryJobStatus;
+  pipelineId: string;
+  pipelineStatus: PipelineStatus;
   ownerName: string;
   queryName: string;
   queryOwner: string;
@@ -31,11 +33,28 @@ export type QueryJobModel = {
   createdBy: string;
   progress: number;
   errorMessage?: string;
+  processingTimeMs?: number;
+  numberOfStatements?: number;
+};
+
+export type QueryJobPipeline = {
+  pipelineId: string;
+  progress: number;
+  pipelineStatus: PipelineStatus;
+  pipelineError?: any;
+  queries: Array<Pick<QueryJob, "ownerName" | "queryName" | "status" | "progress">>;
+};
+
+export type QueryJobPipelineCreate = {
+  queries: Array<{ queryId: string; queryVersion?: number }>;
+  sourceDatasetId: string;
+  targetDatasetId: string;
+  targetGraphName?: string;
 };
 
 export namespace Routes_queryJobs {
   export namespace _account {
-    interface Params {
+    export interface Params {
       account: string;
     }
     export interface Get {
@@ -48,21 +67,41 @@ export namespace Routes_queryJobs {
         Body: QueryJobs;
       };
     }
-    export interface Post {
-      Req: {
-        Query: Empty;
-        Params: Params;
-        Body: QueryJobCreate;
-      };
-      Res: {
-        Body: any;
-      };
+
+    export namespace pipeline {
+      export interface Post {
+        Req: {
+          Query: Empty;
+          Params: Params;
+          Body: QueryJobPipelineCreate;
+        };
+        Res: {
+          Body: QueryJob;
+        };
+      }
+      export namespace _pipeline {
+        export interface Params extends Routes_queryJobs._account.Params {
+          pipeline: string;
+        }
+        export interface Get {
+          Req: {
+            Query: Empty;
+            Params: Params;
+            Body: Empty;
+          };
+          Res: {
+            Body: QueryJobPipeline;
+          };
+        }
+      }
     }
+
     export namespace _queryJob {
-      interface Params {
+      export interface Params {
         account: string;
         queryJob: string;
       }
+
       export interface Get {
         Req: {
           Query: Empty;
@@ -70,18 +109,20 @@ export namespace Routes_queryJobs {
           Body: Empty;
         };
         Res: {
-          Body: QueryJobModel;
+          Body: QueryJob;
         };
       }
-      export interface Delete {
-        Req: {
-          Query: Empty;
-          Params: Params;
-          Body: Empty;
-        };
-        Res: {
-          Body: Empty;
-        };
+      export namespace cancel {
+        export interface Post {
+          Req: {
+            Query: Empty;
+            Params: Params;
+            Body: Empty;
+          };
+          Res: {
+            Body: Empty;
+          };
+        }
       }
     }
   }

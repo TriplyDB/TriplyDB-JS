@@ -3,8 +3,8 @@
 import { program } from "commander";
 import colors from "colors";
 import App from "../App.js";
-import QueryJob from "./QueryJob.js";
-import { QueryJobCreate } from "./QueryJobModels.js";
+import QueryJob, { QueryNames } from "./QueryJob.js";
+import { QueryJobPipelineCreate as QueryJobPipelineCreate } from "./QueryJobModels.js";
 
 let defaultTriplyDBToken = process.env["TRIPLYDB_TOKEN"];
 let defaultTriplyDBAccount = process.env["TRIPLYDB_ACCOUNT"];
@@ -35,10 +35,9 @@ const command = program
     defaultHttpsProxy || undefined
   )
   .requiredOption(
-    "-q, --query <query>",
-    "Name of the saved query used to created query job, in the form of <account>/<queryname>"
+    "-q, --query <query...>",
+    "One or more saved queries create the query job pipeline with, in the form of <account>/<queryname>"
   )
-  .option("-v, --version <version>", "Version of the saved query used to created query job")
   .requiredOption(
     "-s, --source-dataset <sourceDataset>",
     "Source dataset where the query job runs on, in the form of <account>/<dataset>"
@@ -58,7 +57,7 @@ const command = program
     const options = command.opts<{
       token: string;
       account?: string;
-      query: string;
+      query: string[];
       version?: string;
       sourceDataset: string;
       targetDataset: string;
@@ -68,9 +67,14 @@ const command = program
       httpsProxy?: string;
     }>();
     if (!options.token) sanityCheckError("Missing token as an argument");
-    const [queryAccountName, queryName] = options.query.split("/");
-    if (!queryAccountName) sanityCheckError("Missing query account name");
-    if (!queryName) sanityCheckError("Missing query name");
+    if (!options.query) sanityCheckError("Missing query as an argument");
+    const queryNames: QueryNames = [];
+    for (const query of options.query) {
+      const [queryAccountName, queryName] = query.split("/");
+      if (!queryAccountName) sanityCheckError(`Missing query account name for query "${query}"`);
+      if (!queryName) sanityCheckError(`Missing query name for query "${query}"`);
+      queryNames.push({ queryAccountName, queryName });
+    }
     const [sourceDatasetAccountName, sourceDatasetName] = options.sourceDataset.split("/");
     if (!sourceDatasetAccountName) sanityCheckError("Missing source dataset account name");
     if (!sourceDatasetName) sanityCheckError("Missing source dataset name");
@@ -87,16 +91,19 @@ const command = program
     const account = await app.getUser(options.account);
     // check whether account name exists
     await account.getInfo();
-    const queryAccount = await app.getAccount(queryAccountName);
-    const queryId = (await (await queryAccount.getQuery(queryName)).getInfo()).id;
+    const queries: { queryId: string }[] = [];
+    for (const query of queryNames) {
+      const queryAccount = await app.getAccount(query.queryAccountName);
+      const queryId = (await (await queryAccount.getQuery(query.queryName)).getInfo()).id;
+      queries.push({ queryId });
+    }
     const sourceDatasetAccount = await app.getAccount(sourceDatasetAccountName);
     const sourceDatasetId = (await (await sourceDatasetAccount.getDataset(sourceDatasetName)).getInfo()).id;
     const targetDatasetAccount = await app.getAccount(targetDatasetAccountName);
     const targetDatasetId = (await (await targetDatasetAccount.ensureDataset(targetDatasetName)).getInfo()).id;
 
-    const payload: QueryJobCreate = {
-      queryId: queryId,
-      queryVersion: options.version !== undefined ? +options.version : undefined,
+    const payload: QueryJobPipelineCreate = {
+      queries: queries,
       sourceDatasetId: sourceDatasetId,
       targetDatasetId: targetDatasetId,
       targetGraphName: options.targetGraphName,
@@ -104,7 +111,7 @@ const command = program
 
     const queryJob: QueryJob = new QueryJob(app, account);
     try {
-      await queryJob.createQueryJob(payload);
+      await queryJob.createQueryJobPipeline(payload, queryNames);
     } catch (e) {
       console.error(e);
       process.exit(1);
