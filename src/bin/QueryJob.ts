@@ -99,6 +99,9 @@ export default class QueryJob {
         );
         console.info(`[${time()}]   - Pending: ${pipelineProgress.pending.length}`);
         console.info(`[${time()}]   - Finished: ${pipelineProgress.finished.length}`);
+        if (pipeline.pipelineStatus === "importing") {
+          console.info(`[${time()}] All query jobs completed. Generating final graph.`);
+        }
         lastPipelineProgress = pipelineProgress;
       }
 

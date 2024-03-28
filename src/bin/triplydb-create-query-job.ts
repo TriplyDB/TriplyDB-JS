@@ -17,7 +17,7 @@ const command = program
   .description(
     "Creates a query job from an existing saved query to execute on provided source dataset. The job will then overwite the target dataset with the results. Make sure that the account used for the query job has access to the saved query, source dataset & the target dataset."
   )
-  .option("-t, --token <token>", "TriplyDB access token (default: $TRIPLYDB_TOKEN)", defaultTriplyDBToken || undefined)
+  .option("-t, --token <token>", "TriplyDB access token (default: $TRIPLYDB_TOKEN)")
   .option(
     "-a, --account <account>",
     "Account where query job is created and stored. (default: the account that owns the token, or $TRIPLYDB_ACCOUNT)",
@@ -43,7 +43,7 @@ const command = program
     "Source dataset where the query job runs on, in the form of <account>/<dataset>"
   )
   .requiredOption(
-    "-t, --target-dataset <targetDataset>",
+    "-d, --target-dataset <targetDataset>",
     "Target dataset the query job writes to, in the form of <account>/dataset>. Dataset is created when it doesn't exist"
   )
   .option("-g, --target-graph-name <graph-name>", "Target graph name to store the results in")
@@ -66,7 +66,6 @@ const command = program
       httpProxy?: string;
       httpsProxy?: string;
     }>();
-    if (!options.token) sanityCheckError("Missing token as an argument");
     if (!options.query) sanityCheckError("Missing query as an argument");
     const queryNames: QueryNames = [];
     for (const query of options.query) {
@@ -84,7 +83,7 @@ const command = program
 
     const app = App.get({
       url: options.url,
-      token: options.token,
+      token: options.token ?? defaultTriplyDBToken,
       httpProxy: options.httpProxy,
       httpsProxy: options.httpsProxy,
     });
