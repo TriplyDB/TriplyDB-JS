@@ -103,6 +103,7 @@ export default class Query {
         },
         ldFrame: args.ldFrame,
       };
+      renderConfig = undefined;
     }
 
     if (args.variables) {
