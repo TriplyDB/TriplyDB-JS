@@ -125,20 +125,45 @@ describe("Queries", function () {
       variables: [{ name: "version4", termType: "NamedNode" }],
     });
     expect((await query.getInfo(true)).numberOfVersions).to.equal(4);
+    // Version 5 (Ld frame)
+    const frame = {
+      "@context": {
+        objectProperty: "https://trip.ly/p",
+      },
+      objectProperty: {},
+    };
+    await query.addVersion({
+      queryString: "select ?s?p?o where {?s?p?o}",
+      variables: [{ name: "version5", termType: "NamedNode" }],
+      ldFrame: frame,
+    });
+    expect((await query.getInfo(true)).numberOfVersions).to.equal(5);
 
     // Check contents
     // Version 2 will have V1 queryString
     expect(await (await query.useVersion(2)).getString()).to.equal("SELECT ?s ?p ?o WHERE { ?s ?p ?o. }");
     // Version 3 will have V2 output & variables
-    expect(await (await query.useVersion(3)).getString()).to.equal("SELECT ?a ?b ?c WHERE { ?a ?b ?c. }");
-    const version3Variable = (await (await query.useVersion(3)).getInfo()).variables;
+    const queryVersion3 = await query.useVersion(3);
+    const queryVersion3Info = await queryVersion3.getInfo();
+    expect(await queryVersion3.getString()).to.equal("SELECT ?a ?b ?c WHERE { ?a ?b ?c. }");
+    const version3Variable = queryVersion3Info.variables;
     expect(version3Variable?.map((v) => v.name))
       .to.be.an("array")
       .that.includes("version2");
-    expect((await (await query.useVersion(3)).getInfo()).renderConfig?.output).to.equal("network");
+    expect(queryVersion3Info.renderConfig?.output).to.equal("network");
     // Version 4 will be completely different
-    expect(await (await query.useVersion(4)).getString()).to.equal("SELECT ?s ?p ?o WHERE { ?s ?p ?o. }");
-    expect((await (await query.useVersion(4)).getInfo()).renderConfig?.output).to.equal("markup");
+
+    const queryVersion4 = await query.useVersion(4);
+    expect(await queryVersion4.getString()).to.equal("SELECT ?s ?p ?o WHERE { ?s ?p ?o. }");
+    expect((await queryVersion4.getInfo()).renderConfig?.output).to.equal("markup");
+
+    //Version 5 will be a ldFrame with no render config
+    const queryVersion5 = await query.useVersion(5);
+    const queryVersion5String = await queryVersion5.getString();
+    expect(queryVersion5String).to.equal("SELECT ?s ?p ?o WHERE { ?s ?p ?o. }");
+    const queryVersion5Info = await queryVersion5.getInfo();
+    expect(queryVersion5Info.renderConfig?.output).to.equal(undefined);
+    expect(JSON.stringify(queryVersion5Info.requestConfig?.ldFrame)).to.equal(JSON.stringify(frame));
   });
 
   // these tests are slow (~2 min combined)

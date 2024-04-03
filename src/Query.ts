@@ -14,20 +14,22 @@ import { VariableConfig } from "@triply/utils/Models.js";
 export type Binding = { [key: string]: string };
 export type VariableValues = { [variable: string]: string | undefined };
 
-type AddVersion =
-  | {
-      queryString?: string;
-      /**   * By Default "table", other options may include: "response", "geo", "gallery", "markup", etc   */
-      output?: string;
-      variables?: VariableConfig[];
-      ldFrame: never;
-    }
-  | {
-      queryString?: string;
-      output: never;
-      ldFrame: object;
-      variables?: VariableConfig[];
-    };
+interface AddVersionBase {
+  queryString?: string;
+  variables?: VariableConfig[];
+}
+
+interface AddVersionLDFrame extends AddVersionBase {
+  output?: string;
+  ldFrame?: never;
+}
+
+interface AddVersionVisualization extends AddVersionBase {
+  output?: never;
+  ldFrame?: object;
+}
+
+type AddVersion = AddVersionVisualization | AddVersionLDFrame;
 export default class Query {
   private _app: App;
   private _info: Models.Query;
