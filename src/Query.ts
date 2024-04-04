@@ -243,22 +243,17 @@ export default class Query {
     Duplicate makes a copy of an existing query under a different name
     Params: 
       name (required): The new query name of the duplicated query.
-      opts (optional): {
-        metadataToReplace (optional) : A set of new metadata values to be inserted into the duplicated query (Description, displayName, etc..)
-        version (optional) : The version of the original query to duplicate from (default will be the latest version if not provided)
-      }
+      metadataToReplace (optional) : A set of new metadata values to be inserted into the duplicated query (Description, displayName, etc..)     
     Returns: New duplicated Query
   */
 
-  public async duplicate(name: string, opts: { metadataToReplace?: DuplicateOptions; version?: number }) {
+  public async duplicate(name: string, metadataToReplace?: DuplicateOptions) {
     const app = this._app;
     if (!(await app.isCompatible("23.09.0"))) {
       throw new IncompatibleError(
         "This function has been updated and is now supported by TriplyDB API version 23.09.0 or greater"
       );
     }
-    const { metadataToReplace, version } = opts;
-    await this.useVersion(version || "latest");
 
     const account = await app.getAccount();
     const accountInfo = await account.getInfo();

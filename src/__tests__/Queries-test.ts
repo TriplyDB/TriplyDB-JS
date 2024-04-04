@@ -174,16 +174,14 @@ describe("Queries", function () {
 
     it("Duplicate Query (specific version) with non-mandatory metadata added", async function () {
       const duplicateQueryName = `${CommonUnittestPrefix}-duplicate-2`;
-      const duplicateQuery = await query.duplicate(
-        duplicateQueryName,
-        {
-          displayName: "testDuplicateDisplayName",
-          description: "testDuplicateDescription",
-          accessLevel: "public",
-          dataset: testDs,
-        },
-        2
-      );
+      const duplicateQuery = await (
+        await query.useVersion(2)
+      ).duplicate(duplicateQueryName, {
+        displayName: "testDuplicateDisplayName",
+        description: "testDuplicateDescription",
+        accessLevel: "public",
+        dataset: testDs,
+      });
       const duplicateQueryInfo = await duplicateQuery.getInfo();
       expect(duplicateQueryInfo.name).equal(duplicateQueryName);
       expect(duplicateQueryInfo.displayName).equal("testDuplicateDisplayName");
