@@ -14,12 +14,22 @@ import { VariableConfig } from "@triply/utils/Models.js";
 export type Binding = { [key: string]: string };
 export type VariableValues = { [variable: string]: string | undefined };
 
-type AddVersion = {
+interface AddVersionBase {
   queryString?: string;
-  /**   * By Default "table", other options may include: "response", "geo", "gallery", "markup", etc   */
-  output?: string;
   variables?: VariableConfig[];
-};
+}
+
+interface AddVersionLDFrame extends AddVersionBase {
+  output?: string;
+  ldFrame?: never;
+}
+
+interface AddVersionVisualization extends AddVersionBase {
+  output?: never;
+  ldFrame?: object;
+}
+
+type AddVersion = AddVersionVisualization | AddVersionLDFrame;
 export default class Query {
   private _app: App;
   private _info: Models.Query;
@@ -77,9 +87,6 @@ export default class Query {
         },
       };
     }
-    if (args.output) {
-      renderConfig = { output: args.output };
-    }
     if (args.queryString) {
       requestConfig = {
         payload: {
@@ -87,6 +94,20 @@ export default class Query {
         },
       };
     }
+    if (args.output) {
+      renderConfig = { output: args.output };
+    } else if (args.ldFrame) {
+      requestConfig = {
+        ...requestConfig,
+        // Adding header to be consistent with console code
+        headers: {
+          Accept: "application/ld+json;profile=http://www.w3.org/ns/json-ld#framed",
+        },
+        ldFrame: args.ldFrame,
+      };
+      renderConfig = undefined;
+    }
+
     if (args.variables) {
       variables = args.variables;
     }
