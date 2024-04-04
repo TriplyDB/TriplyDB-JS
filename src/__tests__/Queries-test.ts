@@ -141,6 +141,64 @@ describe("Queries", function () {
     expect((await (await query.useVersion(4)).getInfo()).renderConfig?.output).to.equal("markup");
   });
 
+  it("Duplicate Queries", async function () {
+    const query = await user.addQuery(`${CommonUnittestPrefix}-to-duplicate`, {
+      accessLevel: "private",
+      dataset: testDs,
+      queryString: "select ?s?p?o where {?s?p?o}",
+      serviceType: "virtuoso",
+      description: "testDescription",
+      displayName: "testDisplayName",
+    });
+
+    await query.addVersion({ output: "network", variables: [{ name: "version2", termType: "NamedNode" }] });
+    await query.addVersion({ output: "markup", variables: [{ name: "version3", termType: "NamedNode" }] });
+
+    const queryInfo = await query.getInfo();
+    it("Duplicate Query (latest version) with no non-mandatory metadata added", async function () {
+      const duplicateQueryName = `${CommonUnittestPrefix}-duplicate-1`;
+      const duplicateQuery = await query.duplicate(duplicateQueryName);
+      const duplicateQueryInfo = await duplicateQuery.getInfo();
+      expect(duplicateQueryInfo.name).equal(duplicateQueryName);
+      expect(duplicateQueryInfo.displayName).equal(queryInfo.displayName);
+      expect(duplicateQueryInfo.description).equal(queryInfo.description);
+      expect(duplicateQueryInfo.accessLevel).equal(queryInfo.accessLevel);
+      expect(duplicateQueryInfo.dataset?.id).equal(queryInfo.dataset?.id);
+      expect(JSON.stringify(duplicateQueryInfo.serviceConfig)).equal(JSON.stringify(queryInfo.serviceConfig));
+      expect(JSON.stringify(duplicateQueryInfo.requestConfig)).equal(JSON.stringify(queryInfo.requestConfig));
+      expect(JSON.stringify(duplicateQueryInfo.renderConfig?.output)).equal("markup");
+      expect(JSON.stringify(duplicateQueryInfo.variables)).equal(
+        JSON.stringify([{ name: "version3", termType: "NamedNode" }])
+      );
+    });
+
+    it("Duplicate Query (specific version) with non-mandatory metadata added", async function () {
+      const duplicateQueryName = `${CommonUnittestPrefix}-duplicate-2`;
+      const duplicateQuery = await query.duplicate(
+        duplicateQueryName,
+        {
+          displayName: "testDuplicateDisplayName",
+          description: "testDuplicateDescription",
+          accessLevel: "public",
+          dataset: testDs,
+        },
+        2
+      );
+      const duplicateQueryInfo = await duplicateQuery.getInfo();
+      expect(duplicateQueryInfo.name).equal(duplicateQueryName);
+      expect(duplicateQueryInfo.displayName).equal("testDuplicateDisplayName");
+      expect(duplicateQueryInfo.description).equal("testDuplicateDescription");
+      expect(duplicateQueryInfo.accessLevel).equal("public");
+      expect(duplicateQueryInfo.dataset?.id).equal(queryInfo.dataset?.id);
+      expect(JSON.stringify(duplicateQueryInfo.serviceConfig)).equal(JSON.stringify(queryInfo.serviceConfig));
+      expect(JSON.stringify(queryInfo.requestConfig)).equal(JSON.stringify(duplicateQueryInfo.requestConfig));
+      expect(JSON.stringify(duplicateQueryInfo.renderConfig?.output)).equal("network");
+      expect(JSON.stringify(duplicateQueryInfo.variables)).equal(
+        JSON.stringify([{ name: "version2", termType: "NamedNode" }])
+      );
+    });
+  });
+
   // these tests are slow (~2 min combined)
   describe("Query results", function () {
     const DATA_SIZE = 10100; // enough for >1 page

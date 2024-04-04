@@ -10,6 +10,7 @@ import sparqljs from "sparqljs";
 import { stringify as stringifyQueryObj } from "query-string";
 import AsyncIteratorHelperWithToFile from "./utils/AsyncIteratorHelperWithToFile.js";
 import { VariableConfig } from "@triply/utils/Models.js";
+import { AddQueryOptions } from "./commonAccountFunctions.js";
 
 export type Binding = { [key: string]: string };
 export type VariableValues = { [variable: string]: string | undefined };
@@ -20,6 +21,8 @@ type AddVersion = {
   output?: string;
   variables?: VariableConfig[];
 };
+
+type DuplicateOptions = Partial<AddQueryOptions>;
 export default class Query {
   private _app: App;
   private _info: Models.Query;
@@ -234,5 +237,54 @@ export default class Query {
         return getAsyncIteratorHelperWithToFile<Binding, Binding>((result) => Promise.resolve(result));
       },
     };
+  }
+
+  public async duplicate(name: string, metadataToReplace?: DuplicateOptions, version?: number) {
+    const app = this._app;
+    if (!(await app.isCompatible("23.09.0"))) {
+      throw new IncompatibleError(
+        "This function has been updated and is now supported by TriplyDB API version 23.09.0 or greater"
+      );
+    }
+    await this.useVersion(version || "latest");
+
+    const account = await app.getAccount();
+    const accountInfo = await account.getInfo();
+    const queryToCopy = await this.getInfo();
+    const newQuery: Models.QueryCreate = {
+      name: name,
+      displayName: metadataToReplace?.displayName || queryToCopy.displayName,
+      description: metadataToReplace?.description || queryToCopy.description,
+      accessLevel: metadataToReplace?.accessLevel || queryToCopy.accessLevel,
+      dataset:
+        metadataToReplace && metadataToReplace.dataset
+          ? (await metadataToReplace.dataset.getInfo()).id
+          : queryToCopy.dataset?.id,
+      requestConfig:
+        metadataToReplace && metadataToReplace.queryString
+          ? { payload: { query: metadataToReplace.queryString } }
+          : queryToCopy.requestConfig,
+      renderConfig: metadataToReplace?.output ? { output: metadataToReplace.output } : queryToCopy.renderConfig,
+      variables: metadataToReplace?.variables || queryToCopy.variables,
+      serviceConfig:
+        metadataToReplace && metadataToReplace.serviceType
+          ? { configuredAs: "serviceType", type: metadataToReplace.serviceType }
+          : queryToCopy.serviceConfig.configuredAs === "serviceType"
+          ? queryToCopy.serviceConfig
+          : undefined,
+    };
+
+    return new Query(
+      app,
+      await _post<Routes.queries._account.Post>({
+        app: app,
+        path: "/queries/" + accountInfo.accountName,
+        data: newQuery,
+        errorWithCleanerStack: getErr(
+          `Failed to make a copy of ${queryToCopy.name} to account ${accountInfo.accountName}.`
+        ),
+      }),
+      account
+    );
   }
 }
