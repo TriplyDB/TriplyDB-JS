@@ -273,7 +273,7 @@ export default class Query {
     const app = this._app;
     if (!(await app.isCompatible("23.09.0"))) {
       throw new IncompatibleError(
-        "This function has been updated and is now supported by TriplyDB API version 23.09.0 or greater"
+        "This function is supported by TriplyDB API version 23.09.0 or greater"
       );
     }
 
