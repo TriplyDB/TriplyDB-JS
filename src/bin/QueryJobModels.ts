@@ -46,7 +46,7 @@ export type QueryJobPipeline = {
 };
 
 export type QueryJobPipelineCreate = {
-  queries: Array<{ queryId: string; queryVersion?: number }>;
+  queries: Array<{ queryId: string; queryVersion?: number; priority?: number }>;
   sourceDatasetId: string;
   targetDatasetId: string;
   targetGraphName?: string;
