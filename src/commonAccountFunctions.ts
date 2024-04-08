@@ -31,6 +31,7 @@ export interface AddQueryOptions {
 export async function addQuery<T extends Account>(this: T, name: string, opts: AddQueryOptions) {
   const app = (this as User)["_app"];
   if (!(await app.isCompatible("23.09.0"))) {
+    // Service Config V2 changes
     throw new IncompatibleError(
       "This function has been updated and is now supported by TriplyDB API version 23.09.0 or greater"
     );
