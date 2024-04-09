@@ -75,17 +75,21 @@ const command = program
     if (!options.token) sanityCheckError("Missing token as an argument");
     if (!options.query && !options.queryWithPriority) sanityCheckError("Missing query as an argument");
     const queryInfo: QueryInformation[] = [];
-    for (const query of options.query) {
-      const [queryAccountName, queryName] = query.split("/");
-      if (!queryAccountName) sanityCheckError(`Missing query account name for query "${query}"`);
-      if (!queryName) sanityCheckError(`Missing query name for query "${query}"`);
-      queryInfo.push({ queryAccountName, queryName });
+    if (options.query) {
+      for (const query of options.query) {
+        const [queryAccountName, queryName] = query.split("/");
+        if (!queryAccountName) sanityCheckError(`Missing query account name for query "${query}"`);
+        if (!queryName) sanityCheckError(`Missing query name for query "${query}"`);
+        queryInfo.push({ queryAccountName, queryName });
+      }
     }
-    for (const query of options.queryWithPriority) {
-      const [queryAccountName, queryName] = query.split("/");
-      if (!queryAccountName) sanityCheckError(`Missing query account name for query "${query}"`);
-      if (!queryName) sanityCheckError(`Missing query name for query "${query}"`);
-      queryInfo.push({ queryAccountName, queryName, priority: 1 });
+    if (options.queryWithPriority) {
+      for (const query of options.queryWithPriority) {
+        const [queryAccountName, queryName] = query.split("/");
+        if (!queryAccountName) sanityCheckError(`Missing query account name for query "${query}"`);
+        if (!queryName) sanityCheckError(`Missing query name for query "${query}"`);
+        queryInfo.push({ queryAccountName, queryName, priority: 1 });
+      }
     }
     const [sourceDatasetAccountName, sourceDatasetName] = options.sourceDataset.split("/");
     if (!sourceDatasetAccountName) sanityCheckError("Missing source dataset account name");
@@ -113,14 +117,12 @@ const command = program
     const sourceDatasetId = (await (await sourceDatasetAccount.getDataset(sourceDatasetName)).getInfo()).id;
     const targetDatasetAccount = await app.getAccount(targetDatasetAccountName);
     const targetDatasetId = (await (await targetDatasetAccount.ensureDataset(targetDatasetName)).getInfo()).id;
-
     const payload: QueryJobPipelineCreate = {
       queries: queries,
       sourceDatasetId: sourceDatasetId,
       targetDatasetId: targetDatasetId,
       targetGraphName: options.targetGraphName,
     };
-
     const queryJob: QueryJob = new QueryJob(app, account);
     try {
       await queryJob.createQueryJobPipeline(payload, queryInfo);
