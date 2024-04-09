@@ -61,8 +61,8 @@ const command = program
     const options = command.opts<{
       token: string;
       account?: string;
-      query: string[];
-      queryWithPriority: string[];
+      query?: string[];
+      queryWithPriority?: string[];
       version?: string;
       sourceDataset: string;
       targetDataset: string;
