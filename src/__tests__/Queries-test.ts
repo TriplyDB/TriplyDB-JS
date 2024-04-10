@@ -182,7 +182,7 @@ describe("Queries", function () {
     const queryInfo = await query.getInfo();
     it("Duplicate Query (latest version) with no non-mandatory metadata added", async function () {
       const duplicateQueryName = `${CommonUnittestPrefix}-duplicate-1`;
-      const duplicateQuery = await query.duplicate(duplicateQueryName);
+      const duplicateQuery = await query.copy(duplicateQueryName);
       const duplicateQueryInfo = await duplicateQuery.getInfo();
       expect(duplicateQueryInfo.name).equal(duplicateQueryName);
       expect(duplicateQueryInfo.displayName).equal(queryInfo.displayName);
@@ -201,7 +201,7 @@ describe("Queries", function () {
       const duplicateQueryName = `${CommonUnittestPrefix}-duplicate-2`;
       const duplicateQuery = await (
         await query.useVersion(2)
-      ).duplicate(duplicateQueryName, {
+      ).copy(duplicateQueryName, undefined, {
         displayName: "testDuplicateDisplayName",
         description: "testDuplicateDescription",
         accessLevel: "public",

@@ -18,7 +18,7 @@ export type VariableValues = { [variable: string]: string | undefined };
 interface AddVersionBase {
   queryString?: string;
   variables?: VariableConfig[];
-};
+}
 
 interface AddVersionLDFrame extends AddVersionBase {
   output?: string;
@@ -262,26 +262,25 @@ export default class Query {
   }
 
   /* 
-    Duplicate makes a copy of an existing query under a different name
+    Copy makes a copy of the query
     Params: 
-      name (required): The new query name of the duplicated query.
+      queryName (optional): New query name for the copied query (will default to the original query's name).
+      accountName (optional): Account to save the query under (will default to token account used)
       metadataToReplace (optional) : A set of new metadata values to be inserted into the duplicated query (Description, displayName, etc..)     
-    Returns: New duplicated Query
+    Returns: Newly copied query
   */
 
-  public async duplicate(name: string, metadataToReplace?: DuplicateOptions) {
+  public async copy(queryName?: string, accountName?: string, metadataToReplace?: DuplicateOptions) {
     const app = this._app;
     if (!(await app.isCompatible("23.09.0"))) {
-      throw new IncompatibleError(
-        "This function is supported by TriplyDB API version 23.09.0 or greater"
-      );
+      throw new IncompatibleError("This function is supported by TriplyDB API version 23.09.0 or greater");
     }
 
-    const account = await app.getAccount();
-    const accountInfo = await account.getInfo();
     const queryToCopy = await this.getInfo();
+    const account = await app.getAccount(accountName);
+    const accName = (await account.getInfo()).accountName;
     const newQuery: Models.QueryCreate = {
-      name: name,
+      name: queryName || queryToCopy.name,
       displayName: metadataToReplace?.displayName || queryToCopy.displayName,
       description: metadataToReplace?.description || queryToCopy.description,
       accessLevel: metadataToReplace?.accessLevel || queryToCopy.accessLevel,
@@ -307,11 +306,9 @@ export default class Query {
       app,
       await _post<Routes.queries._account.Post>({
         app: app,
-        path: "/queries/" + accountInfo.accountName,
+        path: "/queries/" + accName,
         data: newQuery,
-        errorWithCleanerStack: getErr(
-          `Failed to make a copy of ${queryToCopy.name} to account ${accountInfo.accountName}.`
-        ),
+        errorWithCleanerStack: getErr(`Failed to make a copy of ${queryToCopy.name} to account ${accName}.`),
       }),
       account
     );
