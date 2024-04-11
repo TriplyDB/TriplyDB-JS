@@ -3,7 +3,7 @@
 import { program } from "commander";
 import colors from "colors";
 import App from "../App.js";
-import QueryJob, { QueryNames } from "./QueryJob.js";
+import QueryJob, { QueryInformation } from "./QueryJob.js";
 import { QueryJobPipelineCreate as QueryJobPipelineCreate } from "./QueryJobModels.js";
 
 let defaultTriplyDBToken = process.env["TRIPLYDB_TOKEN"];
@@ -34,9 +34,13 @@ const command = program
     "Use HTTP proxy for all requests (default: $HTTPS_PROXY)",
     defaultHttpsProxy || undefined
   )
-  .requiredOption(
+  .option(
     "-q, --query <query...>",
     "One or more saved queries create the query job pipeline with, in the form of <account>/<queryname>"
+  )
+  .option(
+    "--query-with-priority <query...>",
+    "One or more saved queries to be executed with priority in the query job pipeline, in the form of <account>/<queryname>"
   )
   .requiredOption(
     "-s, --source-dataset <sourceDataset>",
@@ -57,7 +61,8 @@ const command = program
     const options = command.opts<{
       token: string;
       account?: string;
-      query: string[];
+      query?: string[];
+      queryWithPriority?: string[];
       version?: string;
       sourceDataset: string;
       targetDataset: string;
@@ -66,13 +71,25 @@ const command = program
       httpProxy?: string;
       httpsProxy?: string;
     }>();
-    if (!options.query) sanityCheckError("Missing query as an argument");
-    const queryNames: QueryNames = [];
-    for (const query of options.query) {
-      const [queryAccountName, queryName] = query.split("/");
-      if (!queryAccountName) sanityCheckError(`Missing query account name for query "${query}"`);
-      if (!queryName) sanityCheckError(`Missing query name for query "${query}"`);
-      queryNames.push({ queryAccountName, queryName });
+
+    if (!options.token) sanityCheckError("Missing token as an argument");
+    if (!options.query && !options.queryWithPriority) sanityCheckError("Missing query as an argument");
+    const queryInfo: QueryInformation[] = [];
+    if (options.query) {
+      for (const query of options.query) {
+        const [queryAccountName, queryName] = query.split("/");
+        if (!queryAccountName) sanityCheckError(`Missing query account name for query "${query}"`);
+        if (!queryName) sanityCheckError(`Missing query name for query "${query}"`);
+        queryInfo.push({ queryAccountName, queryName });
+      }
+    }
+    if (options.queryWithPriority) {
+      for (const query of options.queryWithPriority) {
+        const [queryAccountName, queryName] = query.split("/");
+        if (!queryAccountName) sanityCheckError(`Missing query account name for query "${query}"`);
+        if (!queryName) sanityCheckError(`Missing query name for query "${query}"`);
+        queryInfo.push({ queryAccountName, queryName, priority: 1 });
+      }
     }
     const [sourceDatasetAccountName, sourceDatasetName] = options.sourceDataset.split("/");
     if (!sourceDatasetAccountName) sanityCheckError("Missing source dataset account name");
@@ -90,27 +107,25 @@ const command = program
     const account = await app.getUser(options.account);
     // check whether account name exists
     await account.getInfo();
-    const queries: { queryId: string }[] = [];
-    for (const query of queryNames) {
+    const queries: { queryId: string; priority?: number }[] = [];
+    for (const query of queryInfo) {
       const queryAccount = await app.getAccount(query.queryAccountName);
       const queryId = (await (await queryAccount.getQuery(query.queryName)).getInfo()).id;
-      queries.push({ queryId });
+      queries.push({ queryId, priority: query.priority });
     }
     const sourceDatasetAccount = await app.getAccount(sourceDatasetAccountName);
     const sourceDatasetId = (await (await sourceDatasetAccount.getDataset(sourceDatasetName)).getInfo()).id;
     const targetDatasetAccount = await app.getAccount(targetDatasetAccountName);
     const targetDatasetId = (await (await targetDatasetAccount.ensureDataset(targetDatasetName)).getInfo()).id;
-
     const payload: QueryJobPipelineCreate = {
       queries: queries,
       sourceDatasetId: sourceDatasetId,
       targetDatasetId: targetDatasetId,
       targetGraphName: options.targetGraphName,
     };
-
     const queryJob: QueryJob = new QueryJob(app, account);
     try {
-      await queryJob.createQueryJobPipeline(payload, queryNames);
+      await queryJob.createQueryJobPipeline(payload, queryInfo);
     } catch (e) {
       console.error(e);
       process.exit(1);

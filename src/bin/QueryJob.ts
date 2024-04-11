@@ -8,10 +8,14 @@ import { isEqual } from "lodash-es";
 
 const time = () => new Date().toISOString();
 
-export type QueryNames = {
+export type QueryName = {
   queryAccountName: string;
   queryName: string;
-}[];
+};
+
+export interface QueryInformation extends QueryName {
+  priority?: number;
+}
 
 type PipelineProgress = {
   pending: QueryJobStatus[];
@@ -35,7 +39,7 @@ export default class QueryJob {
     this._account = account;
   }
 
-  public async createQueryJobPipeline(args: QueryJobPipelineCreate, queryNames: QueryNames) {
+  public async createQueryJobPipeline(args: QueryJobPipelineCreate, queryInfo: QueryName[]) {
     const accountName = (await this._account.getInfo()).accountName;
     const pathChunks: string[] = ["queryJobs", accountName, "pipeline"];
     const path = "/" + pathChunks.join("/");
@@ -49,7 +53,7 @@ export default class QueryJob {
       expectedResponseBody: "json",
     });
     console.info(`[${time()}] Pipeline created (${createdQueryJob.pipelineId}) for ${args.queries.length} queries:`);
-    for (const queryName of queryNames) {
+    for (const queryName of queryInfo) {
       console.info(`[${time()}]   - ${queryName.queryAccountName}/${queryName.queryName}`);
     }
     await this.waitForPipelineToFinish(createdQueryJob.pipelineId);
