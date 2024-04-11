@@ -47,14 +47,9 @@ export async function addQuery<T extends Account>(this: T, name: string, opts: A
       output: opts.output,
     };
   } else if (opts.ldFrame) {
-    requestConfig = {
-      ...requestConfig,
-      // Adding header to be consistent with console code
-      headers: {
-        Accept: "application/ld+json;profile=http://www.w3.org/ns/json-ld#framed",
-      },
-      ldFrame: opts.ldFrame,
-    };
+    // Adding header to be consistent with console code
+    requestConfig.headers = { Accept: "application/ld+json;profile=http://www.w3.org/ns/json-ld#framed" };
+    requestConfig.ldFrame = opts.ldFrame;
   } else {
     renderConfig = {
       output: "table",
