@@ -40,7 +40,7 @@ const command = program
   )
   .option(
     "--query-with-priority <query...>",
-    "One or more saved queries to be executed with priority create the query job pipeline with, in the form of <account>/<queryname>"
+    "One or more saved queries to be executed with priority in the query job pipeline, in the form of <account>/<queryname>"
   )
   .requiredOption(
     "-s, --source-dataset <sourceDataset>",
