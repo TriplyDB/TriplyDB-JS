@@ -11,6 +11,8 @@ import { stringify as stringifyQueryObj } from "query-string";
 import AsyncIteratorHelperWithToFile from "./utils/AsyncIteratorHelperWithToFile.js";
 import { VariableConfig } from "@triply/utils/Models.js";
 import { AddQueryOptions } from "./commonAccountFunctions.js";
+import User from "./User.js";
+import Org from "./Org.js";
 
 export type Binding = { [key: string]: string };
 export type VariableValues = { [variable: string]: string | undefined };
@@ -265,20 +267,19 @@ export default class Query {
     Copy makes a copy of the query
     Params: 
       queryName (optional): New query name for the copied query (will default to the original query's name).
-      accountName (optional): Account to save the query under (will default to token account used)
+      account (optional): Account to save the query under. A user or an organization. (will default to token account used)
       metadataToReplace (optional) : A set of new metadata values to be inserted into the duplicated query (Description, displayName, etc..)     
     Returns: Newly copied query
   */
 
-  public async copy(queryName?: string, accountName?: string, metadataToReplace?: DuplicateOptions) {
+  public async copy(queryName?: string, account?: User | Org, metadataToReplace?: DuplicateOptions) {
     const app = this._app;
     if (!(await app.isCompatible("23.09.0"))) {
       throw new IncompatibleError("This function is supported by TriplyDB API version 23.09.0 or greater");
     }
-
+    const accountToUse = account || (await app.getAccount());
+    const accountName = (await accountToUse.getInfo()).accountName;
     const queryToCopy = await this.getInfo();
-    const account = await app.getAccount(accountName);
-    const accName = (await account.getInfo()).accountName;
     const newQuery: Models.QueryCreate = {
       name: queryName || queryToCopy.name,
       displayName: metadataToReplace?.displayName || queryToCopy.displayName,
@@ -306,11 +307,11 @@ export default class Query {
       app,
       await _post<Routes.queries._account.Post>({
         app: app,
-        path: "/queries/" + accName,
+        path: "/queries/" + accountName,
         data: newQuery,
-        errorWithCleanerStack: getErr(`Failed to make a copy of ${queryToCopy.name} to account ${accName}.`),
+        errorWithCleanerStack: getErr(`Failed to make a copy of ${queryToCopy.name} to account ${accountName}.`),
       }),
-      account
+      accountToUse
     );
   }
 }
