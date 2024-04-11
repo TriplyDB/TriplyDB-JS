@@ -26,6 +26,7 @@ export interface AddQueryOptions {
   displayName?: string;
   dataset: Dataset;
   serviceType: Models.SparqlQueryServiceType;
+  ldFrame?: object;
 }
 
 export async function addQuery<T extends Account>(this: T, name: string, opts: AddQueryOptions) {
@@ -39,18 +40,37 @@ export async function addQuery<T extends Account>(this: T, name: string, opts: A
   const accountName = (await this.getInfo()).accountName;
   let datasetId = (await opts.dataset.getInfo()).id;
 
+  let renderConfig: Models.QueryRenderConfig | undefined = undefined;
+  let requestConfig: Models.QueryRequestConfig = { payload: { query: opts.queryString } };
+  if (opts.output) {
+    renderConfig = {
+      output: opts.output,
+    };
+  } else if (opts.ldFrame) {
+    requestConfig = {
+      ...requestConfig,
+      // Adding header to be consistent with console code
+      headers: {
+        Accept: "application/ld+json;profile=http://www.w3.org/ns/json-ld#framed",
+      },
+      ldFrame: opts.ldFrame,
+    };
+  } else {
+    renderConfig = {
+      output: "table",
+    };
+  }
+
   let query: Models.QueryCreate = {
     name,
     dataset: datasetId,
-    requestConfig: { payload: { query: opts.queryString } },
+    requestConfig: requestConfig,
     serviceConfig: {
       configuredAs: "serviceType",
       type: opts.serviceType,
     },
     accessLevel: opts.accessLevel ? opts.accessLevel : "private",
-    renderConfig: {
-      output: opts.output ? opts.output : "table",
-    },
+    renderConfig: renderConfig,
     variables: opts.variables,
     displayName: opts.displayName,
     description: opts.description,
