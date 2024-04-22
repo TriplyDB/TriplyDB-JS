@@ -16,7 +16,7 @@ export interface ReqOptsObj<E extends RequestTemplate = any> {
   query?: E["Query"];
   data?: E["Body"];
   attach?: { [name: string]: Buffer | string | File };
-  expectedResponseBody?: "empty" | "json" | "buffer"; //defaults to json
+  expectedResponseBody?: "empty" | "json" | "buffer" | "text"; //defaults to json
 }
 export function normalizePath(path = "") {
   return `/${path}`.replace(new RegExp("//", "g"), "/");
@@ -142,8 +142,9 @@ async function handleFetchAsPromise<T extends HttpMethodTemplate>(
     }
   } else if (opts.expectedResponseBody === "buffer") {
     result = await (response as any).buffer();
+  } else if (opts.expectedResponseBody === "text") {
+    result = await response.text()
   }
-
   if (response.status === 404) {
     throw opts.errorWithCleanerStack.addContext(errorContext).setCause(new TriplyDbJsError(`It does not exist`));
   }

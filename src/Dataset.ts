@@ -457,7 +457,7 @@ export default class Dataset {
     return new n3.Parser().parse(buffer.toString());
   }
   public getStatements(payload: { subject?: string; predicate?: string; object?: string; graph?: string }) {
-    return new AsyncIteratorHelper<Models.Statement, Models.Statement>({
+    return new AsyncIteratorHelper<Models.NtriplyStatement, Models.NtriplyStatement>({
       potentialFutureError: getErr(`Failed to get statements`),
       getErrorMessage: async () => `Failed to get statements of dataset ${await this._getDatasetNameWithOwner()}.`,
       app: this._app,

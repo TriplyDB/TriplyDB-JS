@@ -1,5 +1,4 @@
 import { Models, Routes } from "@triply/utils";
-import { parseAndInjectVariablesIntoQuery, validate } from "@triply/utils/sparqlVarUtils.js";
 import App from "./App.js";
 import { _get, _patch, _delete, _post } from "./RequestHandler.js";
 import { Account } from "./Account.js";
@@ -11,6 +10,7 @@ import { stringify as stringifyQueryObj } from "query-string";
 import AsyncIteratorHelperWithToFile from "./utils/AsyncIteratorHelperWithToFile.js";
 import { VariableConfig } from "@triply/utils/Models.js";
 import { AddQueryOptions } from "./commonAccountFunctions.js";
+import { compact, isUndefined, omitBy } from "lodash-es";
 
 export type Binding = { [key: string]: string };
 export type VariableValues = { [variable: string]: string | undefined };
@@ -56,11 +56,14 @@ export default class Query {
       throw getErr("Update-queries are not supported");
     }
   }
-  private async _getPath(opts?: { ignoreVersion?: boolean }) {
+  private async _getPath(opts?: { subPath?:string, ignoreVersion?: boolean }) {
     const accountName = (await this._owner.getInfo()).accountName;
     const pathChunks: string[] = ["queries", accountName, this._info.name];
     if (!opts?.ignoreVersion && typeof this._version === "number") {
       pathChunks.push(String(this._version));
+    }
+    if (opts?.subPath) {
+      pathChunks.push(opts.subPath)
     }
     return "/" + pathChunks.join("/");
   }
@@ -186,11 +189,13 @@ export default class Query {
       throw getErr(`Query ${this._info.name} has no versions.`);
     }
     if (!info.variables) return info.requestConfig.payload.query;
-    validate({ variableDefinitions: info.variables, variableValues: variableValues || {} });
-    return parseAndInjectVariablesIntoQuery(info.requestConfig.payload.query, {
-      variableDefinitions: info.variables,
-      variableValues: variableValues || {},
-    });
+    return  (await _get<Routes.queries._account._query.Get>({
+      errorWithCleanerStack: getErr(`Failed to get query information.`),
+      app: this._app,
+      path: await this._getPath({subPath: 'text'}),
+      expectedResponseBody: 'text',
+      query:omitBy(variableValues, isUndefined) as {[key:string]:string}
+    })) as string;
   }
   public async getApiUrl(subpath?: string) {
     return this._app["getPostProcessedApiUrl"]((await this.getInfo()).link + subpath);
@@ -297,7 +302,7 @@ export default class Query {
       serviceConfig:
         metadataToReplace && metadataToReplace.serviceType
           ? { configuredAs: "serviceType", type: metadataToReplace.serviceType }
-          : queryToCopy.serviceConfig.configuredAs === "serviceType"
+          : (queryToCopy.serviceConfig as any).configuredAs === "serviceType" // Any cast, for backwards compatability
           ? queryToCopy.serviceConfig
           : undefined,
     };

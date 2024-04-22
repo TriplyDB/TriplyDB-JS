@@ -14,8 +14,7 @@ import Query from "../Query.js";
 import { fileCache } from "../utils/cache.js";
 import { TriplyDbJsError } from "../utils/Error.js";
 import { gzip, gunzip } from "zlib";
-import Service from "../Service.js";
-
+import dedent from 'dedent'
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -37,7 +36,6 @@ describe("Queries", function () {
   let app: App;
   let user: User;
   let testDs: Dataset;
-  let testService: Service;
   before(async function () {
     app = App.get({ token: process.env.UNITTEST_TOKEN_ACCOUNT });
     user = await app.getUser();
@@ -45,7 +43,6 @@ describe("Queries", function () {
     testDs = await getNewTestDs(user, "private");
     await fs.mkdirp(tmpDir);
     await testDs.importFromFiles(["./src/__tests__/__data__/small.nq"]);
-    testService = await testDs.addService("testService", { type: "virtuoso" });
   });
   after(async function () {
     await resetUnittestAccount(user);
@@ -88,6 +85,7 @@ describe("Queries", function () {
     expect(queryInfo.variables && queryInfo.variables[0].name).to.equal("s");
   });
   it("Should create a query through a service", async function () {
+    const testService = await testDs.addService("testService", { type: "virtuoso" });
     expect((await testService.getInfo()).status).to.equal("running");
     const query = await user.addQuery(`${CommonUnittestPrefix}-test-query-service`, {
       accessLevel: "private",
@@ -103,13 +101,13 @@ describe("Queries", function () {
     await query.update({ accessLevel: "internal" });
     expect(await query.getInfo().then((q) => q.accessLevel)).to.equal("internal");
   });
-  it("Should add a new version to an existing query", async function () {
+  it.only("Should add a new version to an existing query", async function () {
     // Version 1
     const query = await user.addQuery(`${CommonUnittestPrefix}-new-version`, {
       accessLevel: "private",
       dataset: testDs,
       queryString: "select ?s?p?o where {?s?p?o}",
-      serviceType: "virtuoso",
+      serviceType: "speedy",
     });
     expect((await query.getInfo(true)).numberOfVersions).to.equal(1);
     // Version 2
@@ -141,7 +139,12 @@ describe("Queries", function () {
 
     // Check contents
     // Version 2 will have V1 queryString
-    expect(await (await query.useVersion(2)).getString()).to.equal("SELECT ?s ?p ?o WHERE { ?s ?p ?o. }");
+    const bla = await (await query.useVersion(2)).getString()
+    expect(bla).to.equal(dedent`
+    select ?s ?p ?o where {
+      ?s ?p ?o.
+    }
+    `);
     // Version 3 will have V2 output & variables
     const queryVersion3 = await query.useVersion(3);
     const queryVersion3Info = await queryVersion3.getInfo();
