@@ -1,5 +1,4 @@
 import { Models, Routes } from "@triply/utils";
-import { parseAndInjectVariablesIntoQuery, validate } from "@triply/utils/sparqlVarUtils.js";
 import App from "./App.js";
 import { _get, _patch, _delete, _post } from "./RequestHandler.js";
 import { Account } from "./Account.js";
@@ -7,13 +6,13 @@ import { getErr, IncompatibleError } from "./utils/Error.js";
 import { Cache } from "./utils/cache.js";
 import * as n3 from "n3";
 import sparqljs from "sparqljs";
-import { stringify as stringifyQueryObj } from "query-string";
+import stringifyQueryObj from "query-string";
 import AsyncIteratorHelperWithToFile from "./utils/AsyncIteratorHelperWithToFile.js";
 import { VariableConfig } from "@triply/utils/Models.js";
 import { AddQueryOptions } from "./commonAccountFunctions.js";
 import User from "./User.js";
 import Org from "./Org.js";
-
+import { isUndefined, omitBy } from "lodash-es";
 export type Binding = { [key: string]: string };
 export type VariableValues = { [variable: string]: string | undefined };
 
@@ -58,11 +57,14 @@ export default class Query {
       throw getErr("Update-queries are not supported");
     }
   }
-  private async _getPath(opts?: { ignoreVersion?: boolean }) {
+  private async _getPath(opts?: { ignoreVersion?: boolean; subPath?: string }) {
     const accountName = (await this._owner.getInfo()).accountName;
     const pathChunks: string[] = ["queries", accountName, this._info.name];
     if (!opts?.ignoreVersion && typeof this._version === "number") {
       pathChunks.push(String(this._version));
+    }
+    if (opts?.subPath) {
+      pathChunks.push(opts.subPath);
     }
     return "/" + pathChunks.join("/");
   }
@@ -147,7 +149,7 @@ export default class Query {
       throw getErr(
         `Query ${this._info.name} has ${numVersions} ${
           numVersions > 1 ? "versions" : "version"
-        }. Version ${version} does not exist.`
+        }. Version ${version} does not exist.`,
       );
     }
     this._version = version;
@@ -157,7 +159,7 @@ export default class Query {
   public async update(config: Models.QueryMetaUpdate) {
     if (!(await this._app.isCompatible("23.09.0"))) {
       throw new IncompatibleError(
-        "This function has been updated and is now supported by TriplyDB API version 23.09.0 or greater"
+        "This function has been updated and is now supported by TriplyDB API version 23.09.0 or greater",
       );
     }
     const updateData = { ...config };
@@ -170,7 +172,7 @@ export default class Query {
         app: this._app,
         path: await this._getPath({ ignoreVersion: true }),
         data: updateData,
-      })
+      }),
     );
     return this;
   }
@@ -188,11 +190,14 @@ export default class Query {
       throw getErr(`Query ${this._info.name} has no versions.`);
     }
     if (!info.variables) return info.requestConfig.payload.query;
-    validate({ variableDefinitions: info.variables, variableValues: variableValues || {} });
-    return parseAndInjectVariablesIntoQuery(info.requestConfig.payload.query, {
-      variableDefinitions: info.variables,
-      variableValues: variableValues || {},
-    });
+
+    return (await _get<Routes.queries._account._query.Get>({
+      errorWithCleanerStack: getErr(`Failed to get query information.`),
+      app: this._app,
+      path: await this._getPath({ subPath: "text" }),
+      expectedResponseBody: "text",
+      query: omitBy(variableValues, isUndefined) as { [key: string]: string },
+    })) as string;
   }
   public async getApiUrl(subpath?: string) {
     return this._app["getPostProcessedApiUrl"]((await this.getInfo()).link + subpath);
@@ -203,7 +208,7 @@ export default class Query {
   public results(variables?: VariableValues, opts?: { cache?: Cache }) {
     const queryType = this._getQueryType();
 
-    const variablesInUrlString = stringifyQueryObj({
+    const variablesInUrlString = stringifyQueryObj.stringify({
       page: 1,
       pageSize: 5000,
       ...(variables || {}),
@@ -251,7 +256,7 @@ export default class Query {
           throw getErr(`Bindings are only supported for ASK queries (got ${queryType}).`);
         }
         return getAsyncIteratorHelperWithToFile<{ boolean: boolean }, boolean>((result) =>
-          Promise.resolve(result.boolean)
+          Promise.resolve(result.boolean),
         );
       },
       bindings: () => {
@@ -298,9 +303,10 @@ export default class Query {
       serviceConfig:
         metadataToReplace && metadataToReplace.serviceType
           ? { configuredAs: "serviceType", type: metadataToReplace.serviceType }
-          : queryToCopy.serviceConfig.configuredAs === "serviceType"
-          ? queryToCopy.serviceConfig
-          : undefined,
+          : (("configuredAs" in queryToCopy.serviceConfig) as any) &&
+              (queryToCopy.serviceConfig as any).configuredAs === "serviceType" // Any cast, for backwards compatability
+            ? queryToCopy.serviceConfig
+            : undefined,
     };
 
     return new Query(
@@ -311,7 +317,7 @@ export default class Query {
         data: newQuery,
         errorWithCleanerStack: getErr(`Failed to make a copy of ${queryToCopy.name} to account ${accountName}.`),
       }),
-      accountToUse
+      accountToUse,
     );
   }
 }

@@ -2,8 +2,7 @@ import { Models, Routes } from "@triply/utils";
 import User from "./User.js";
 import { Account, getUserOrOrg } from "./Account.js";
 import Org from "./Org.js";
-import _jwt_decode from "jwt-decode";
-const jwt_decode = _jwt_decode as any as typeof _jwt_decode.default;
+import { jwtDecode } from "jwt-decode";
 import { _get } from "./RequestHandler.js";
 import { getErr } from "./utils/Error.js";
 import AsyncIteratorHelper from "./utils/AsyncIteratorHelper.js";
@@ -46,7 +45,7 @@ export default class App {
     // Extract url from token
     if ((!this._config.url || this._config.url === APP_CONFIG_DEFAULTS.url) && this._config.token) {
       try {
-        const decodedToken: Models.JwtPayload = jwt_decode(this._config.token);
+        const decodedToken: Models.JwtPayload = jwtDecode(this._config.token);
         // Skip old hardcoded issuer
         if (decodedToken && decodedToken.iss && decodedToken.iss !== "triply.cc") this._config.url = decodedToken.iss;
       } catch {
