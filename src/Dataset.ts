@@ -20,7 +20,7 @@ import { _get, _delete, _patch, _post, handleFetchAsStream } from "./RequestHand
 import AsyncIteratorHelper from "./utils/AsyncIteratorHelper.js";
 import Asset from "./Asset.js";
 import Graph from "./Graph.js";
-import { stringify as stringifyQueryObj } from "query-string";
+import stringifyQueryObj from "query-string";
 import statuses from "http-status-codes";
 import { NamedNode } from "rdf-js";
 import NDEDatasetRegister from "./utils/NDEDatasetRegister.js";
@@ -115,7 +115,7 @@ export default class Dataset {
         } else {
           throw getErr(`Unrecognized resource type: ${typeToClear}`);
         }
-      })
+      }),
     );
     await this.getInfo(true);
     return this;
@@ -162,13 +162,13 @@ export default class Dataset {
       this,
       (await _get<Routes.datasets._account._dataset.assets.Get>({
         errorWithCleanerStack: getErr(
-          `Failed to get asset ${assetName} from dataset ${await this._getDatasetNameWithOwner()}.`
+          `Failed to get asset ${assetName} from dataset ${await this._getDatasetNameWithOwner()}.`,
         ),
         app: this._app,
         path: await this._getDatasetPath("/assets"),
         query: { fileName: assetName },
       })) as Models.Asset,
-      versionNumber
+      versionNumber,
     );
   }
   public getAssets() {
@@ -215,7 +215,7 @@ export default class Dataset {
       await this.graphsToStream("compressed", { graph: opts?.graph, extension }),
       // we always download compressed version. Decompress unless the user saves as *.gz
       ...(storeCompressed ? [] : [zlib.createGunzip()]),
-      fs.createWriteStream(destinationPath)
+      fs.createWriteStream(destinationPath),
     );
     await new Promise((resolve, reject) => {
       stream.on("error", reject);
@@ -224,7 +224,7 @@ export default class Dataset {
   }
   public async graphsToStream(
     type: "compressed" | "rdf-js",
-    opts?: { graph?: Graph; extension?: string }
+    opts?: { graph?: Graph; extension?: string },
   ): Promise<stream.Readable> {
     const stream = await handleFetchAsStream("GET", {
       app: this._app,
@@ -232,7 +232,7 @@ export default class Dataset {
       errorWithCleanerStack: getErr(
         opts?.graph
           ? `Failed to download graph ${opts?.graph["_info"].graphName}`
-          : `Failed to download graphs of dataset ${await this._getDatasetNameWithOwner()}.`
+          : `Failed to download graphs of dataset ${await this._getDatasetNameWithOwner()}.`,
       ),
     });
     if (type === "compressed") {
@@ -277,7 +277,7 @@ export default class Dataset {
           } else {
             return graph.value;
           }
-        })
+        }),
       );
       graphs = zipObject(graphNames, graphNames);
     }
@@ -289,7 +289,7 @@ export default class Dataset {
     if (!graphs) {
       // import all the graphs, keeping the original names.
       const graphNames = await Promise.all(
-        (await fromDataset.getGraphs().toArray()).map((g) => g.getInfo().then((g) => g.graphName))
+        (await fromDataset.getGraphs().toArray()).map((g) => g.getInfo().then((g) => g.graphName)),
       );
       graphs = zipObject(graphNames, graphNames);
     }
@@ -305,7 +305,7 @@ export default class Dataset {
     }
     return _patch<Routes.datasets._account._dataset.imports.Patch>({
       errorWithCleanerStack: getErr(
-        `Tried importing from dataset ${await fromDataset._getDatasetNameWithOwner()}. Failed to write the changes to ${await this._getDatasetNameWithOwner()}.`
+        `Tried importing from dataset ${await fromDataset._getDatasetNameWithOwner()}. Failed to write the changes to ${await this._getDatasetNameWithOwner()}.`,
       ),
       app: this._app,
       path: await this._getDatasetPath("/imports"),
@@ -325,19 +325,19 @@ export default class Dataset {
     this._setInfo(
       await _patch<Routes.datasets._account._dataset.Patch>({
         errorWithCleanerStack: getErr(
-          `Failed to update dataset information of ${await this._getDatasetNameWithOwner()}.`
+          `Failed to update dataset information of ${await this._getDatasetNameWithOwner()}.`,
         ),
         app: this._app,
         path: await this._getDatasetPath(),
         data: config,
-      })
+      }),
     );
     return this;
   }
   public async copy(toAccountName: string, newDatasetName?: string) {
     const newDs = await _post<Routes.datasets._account._dataset.copy.Post>({
       errorWithCleanerStack: getErr(
-        `Failed to copy dataset ${await this._getDatasetNameWithOwner()} to ${toAccountName}.`
+        `Failed to copy dataset ${await this._getDatasetNameWithOwner()} to ${toAccountName}.`,
       ),
       app: this._app,
       path: await this._getDatasetPath("/copy"),
@@ -424,7 +424,7 @@ export default class Dataset {
       const ownerName = (await this._owner.getInfo()).accountName;
       let info = await _post<Routes.datasets._account._dataset.jobs.Post>({
         errorWithCleanerStack: getErr(
-          `Failed to delete import from ${urls.length} URLs in dataset ${await this._getDatasetNameWithOwner()}.`
+          `Failed to delete import from ${urls.length} URLs in dataset ${await this._getDatasetNameWithOwner()}.`,
         ),
         app: this._app,
         path: "/datasets/" + ownerName + "/" + this._name + "/jobs",
@@ -457,7 +457,7 @@ export default class Dataset {
     return new n3.Parser().parse(buffer.toString());
   }
   public getStatements(payload: { subject?: string; predicate?: string; object?: string; graph?: string }) {
-    return new AsyncIteratorHelper<Models.Statement, Models.Statement>({
+    return new AsyncIteratorHelper<Models.NtriplyStatement, Models.NtriplyStatement>({
       potentialFutureError: getErr(`Failed to get statements`),
       getErrorMessage: async () => `Failed to get statements of dataset ${await this._getDatasetNameWithOwner()}.`,
       app: this._app,
@@ -466,7 +466,7 @@ export default class Dataset {
         this._app["_config"].url +
         (await this._getDatasetPath("/statements")) +
         "?" +
-        stringifyQueryObj({ limit: 50, ...pick(payload, "subject", "predicate", "object", "graph") }),
+        stringifyQueryObj.stringify({ limit: 50, ...pick(payload, "subject", "predicate", "object", "graph") }),
     });
   }
   public async uploadAsset(fileOrPath: string | File, assetName?: string): Promise<Asset> {
@@ -490,7 +490,7 @@ export default class Dataset {
     }
     if (assetAlreadyExists) {
       throw new TriplyDbJsError(
-        `Tried to add asset '${assetName}' to dataset ${await this._getDatasetNameWithOwner()}, but an asset with that name already exists.`
+        `Tried to add asset '${assetName}' to dataset ${await this._getDatasetNameWithOwner()}, but an asset with that name already exists.`,
       ).setStatusCode(statuses.CONFLICT);
     }
     return new Asset(this, await Asset["uploadAsset"]({ fileOrPath, assetName, dataset: this }));
@@ -520,7 +520,7 @@ export default class Dataset {
     const asPairs = toPairs(newPrefixes);
     await _patch<Routes.prefixes.Patch>({
       errorWithCleanerStack: getErr(
-        `Failed to add ${size(newPrefixes)} prefixes to dataset ${await this._getDatasetNameWithOwner()}.`
+        `Failed to add ${size(newPrefixes)} prefixes to dataset ${await this._getDatasetNameWithOwner()}.`,
       ),
       app: this._app,
       path: await this._getDatasetPath("/prefixes"),
@@ -548,7 +548,7 @@ export default class Dataset {
       prefixLabels.map(async (p) =>
         _delete<Routes.prefixes._prefix.Delete>({
           errorWithCleanerStack: getErr(
-            `Failed to delete prefix ${p} from dataset ${await this._getDatasetNameWithOwner()}.`
+            `Failed to delete prefix ${p} from dataset ${await this._getDatasetNameWithOwner()}.`,
           ),
           app: this._app,
           path: dsPath + "/prefixes/" + p,
@@ -559,8 +559,8 @@ export default class Dataset {
             return;
           }
           throw e;
-        })
-      )
+        }),
+      ),
     );
     return this.getPrefixes(true);
   }
@@ -743,7 +743,7 @@ export class JobUpload {
     if (!this.jobUrl) throw getErr("Cannot refresh uninstantiated job");
     this._info = await _get<Routes.datasets._account._dataset.jobs._jobId.Get>({
       errorWithCleanerStack: getErr(
-        `Failed to get job information for dataset ${this._config.datasetNameWithOwner}.`
+        `Failed to get job information for dataset ${this._config.datasetNameWithOwner}.`,
       ).addContext({
         jobUrl: this.jobUrl,
       }),

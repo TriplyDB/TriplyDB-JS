@@ -16,7 +16,7 @@ export interface ReqOptsObj<E extends RequestTemplate = any> {
   query?: E["Query"];
   data?: E["Body"];
   attach?: { [name: string]: Buffer | string | File };
-  expectedResponseBody?: "empty" | "json" | "buffer"; //defaults to json
+  expectedResponseBody?: "empty" | "json" | "buffer" | "text"; //defaults to json
 }
 export function normalizePath(path = "") {
   return `/${path}`.replace(new RegExp("//", "g"), "/");
@@ -70,7 +70,7 @@ export function getFetchOpts(requestInit: SimpleRequestInit, opts: { app: App })
 }
 export function requestConfigToFetchConfig(
   method: ReqMethod,
-  config: Pick<ReqOptsObj, "app" | "data" | "attach">
+  config: Pick<ReqOptsObj, "app" | "data" | "attach">,
 ): SimpleRequestInit {
   const reqConfig: SimpleRequestInit = { method };
   const headers: { [key: string]: string } = {};
@@ -93,7 +93,7 @@ export function requestConfigToFetchConfig(
 }
 async function handleFetchAsPromise<T extends HttpMethodTemplate>(
   method: ReqMethod,
-  opts: ReqOptsObj<T["Req"]>
+  opts: ReqOptsObj<T["Req"]>,
 ): Promise<T["Res"]["Body"]> {
   const url = getUrl(opts);
   log(`_${method.toLowerCase()}`, url);
@@ -117,8 +117,8 @@ async function handleFetchAsPromise<T extends HttpMethodTemplate>(
       .addContext(errorContext)
       .setCause(
         new Error(
-          `You tried connecting TriplyDB-js to a TriplyDB front-end. Please use the URL of the API instead: ${consoleOnlyHeader}`
-        )
+          `You tried connecting TriplyDB-js to a TriplyDB front-end. Please use the URL of the API instead: ${consoleOnlyHeader}`,
+        ),
       );
   }
 
@@ -142,6 +142,8 @@ async function handleFetchAsPromise<T extends HttpMethodTemplate>(
     }
   } else if (opts.expectedResponseBody === "buffer") {
     result = await (response as any).buffer();
+  } else if (opts.expectedResponseBody === "text") {
+    result = await response.text();
   }
 
   if (response.status === 404) {
@@ -157,7 +159,7 @@ async function handleFetchAsPromise<T extends HttpMethodTemplate>(
 }
 export async function handleFetchAsStream<T extends HttpMethodTemplate>(
   method: ReqMethod,
-  opts: ReqOptsObj<T["Req"]>
+  opts: ReqOptsObj<T["Req"]>,
 ): Promise<ReadableStream<Uint8Array>> {
   const url = getUrl(opts);
   log(`_${method.toLowerCase()}`, url);
@@ -176,8 +178,8 @@ export async function handleFetchAsStream<T extends HttpMethodTemplate>(
       .addContext(errorContext)
       .setCause(
         new Error(
-          `You tried connecting TriplyDB-js to a TriplyDB front-end. Please use the URL of the API instead: ${consoleOnlyHeader}`
-        )
+          `You tried connecting TriplyDB-js to a TriplyDB front-end. Please use the URL of the API instead: ${consoleOnlyHeader}`,
+        ),
       );
   }
 

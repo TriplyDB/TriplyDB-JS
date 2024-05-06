@@ -15,6 +15,7 @@ import { fileCache } from "../utils/cache.js";
 import { TriplyDbJsError } from "../utils/Error.js";
 import { gzip, gunzip } from "zlib";
 import Service from "../Service.js";
+import dedent from "dedent";
 
 import dotenv from "dotenv";
 dotenv.config();
@@ -28,7 +29,7 @@ const getNewTestDs = async (account: Account, accessLevel: "public" | "private")
   const ds = await account.addDataset(
     // keep the name short to avoid hitting the 40-character limit
     `${CommonUnittestPrefix}-${testDsIndex++}`,
-    { accessLevel: accessLevel }
+    { accessLevel: accessLevel },
   );
   return ds;
 };
@@ -141,11 +142,19 @@ describe("Queries", function () {
 
     // Check contents
     // Version 2 will have V1 queryString
-    expect(await (await query.useVersion(2)).getString()).to.equal("SELECT ?s ?p ?o WHERE { ?s ?p ?o. }");
+
+    const queryVersion2String = await (await query.useVersion(2)).getString();
+
+    expect(queryVersion2String).to.equal(dedent`
+      select ?s ?p ?o where {
+        ?s ?p ?o.
+      }`);
     // Version 3 will have V2 output & variables
     const queryVersion3 = await query.useVersion(3);
     const queryVersion3Info = await queryVersion3.getInfo();
-    expect(await queryVersion3.getString()).to.equal("SELECT ?a ?b ?c WHERE { ?a ?b ?c. }");
+    expect(await queryVersion3.getString()).to.equal(dedent`select ?a ?b ?c where {
+        ?a ?b ?c.
+      }`);
     const version3Variable = queryVersion3Info.variables;
     expect(version3Variable?.map((v) => v.name))
       .to.be.an("array")
@@ -154,13 +163,20 @@ describe("Queries", function () {
     // Version 4 will be completely different
 
     const queryVersion4 = await query.useVersion(4);
-    expect(await queryVersion4.getString()).to.equal("SELECT ?s ?p ?o WHERE { ?s ?p ?o. }");
+    const queryVersion4String = await queryVersion4.getString();
+    expect(queryVersion4String).to.equal(dedent`
+      select ?s ?p ?o where {
+        ?s ?p ?o.
+      }`);
     expect((await queryVersion4.getInfo()).renderConfig?.output).to.equal("markup");
 
     //Version 5 will be a ldFrame with no render config
     const queryVersion5 = await query.useVersion(5);
     const queryVersion5String = await queryVersion5.getString();
-    expect(queryVersion5String).to.equal("SELECT ?s ?p ?o WHERE { ?s ?p ?o. }");
+    expect(queryVersion5String).to.equal(dedent`
+      select ?s ?p ?o where {
+        ?s ?p ?o.
+      }`);
     const queryVersion5Info = await queryVersion5.getInfo();
     expect(queryVersion5Info.renderConfig?.output).to.equal(undefined);
     expect(JSON.stringify(queryVersion5Info.requestConfig?.ldFrame)).to.equal(JSON.stringify(frame));
@@ -193,7 +209,7 @@ describe("Queries", function () {
       expect(JSON.stringify(duplicateQueryInfo.requestConfig)).equal(JSON.stringify(queryInfo.requestConfig));
       expect(JSON.stringify(duplicateQueryInfo.renderConfig?.output)).equal("markup");
       expect(JSON.stringify(duplicateQueryInfo.variables)).equal(
-        JSON.stringify([{ name: "version3", termType: "NamedNode" }])
+        JSON.stringify([{ name: "version3", termType: "NamedNode" }]),
       );
     });
 
@@ -217,7 +233,7 @@ describe("Queries", function () {
       expect(JSON.stringify(queryInfo.requestConfig)).equal(JSON.stringify(duplicateQueryInfo.requestConfig));
       expect(JSON.stringify(duplicateQueryInfo.renderConfig?.output)).equal("network");
       expect(JSON.stringify(duplicateQueryInfo.variables)).equal(
-        JSON.stringify([{ name: "version2", termType: "NamedNode" }])
+        JSON.stringify([{ name: "version2", termType: "NamedNode" }]),
       );
     });
   });
@@ -231,7 +247,7 @@ describe("Queries", function () {
       const dataFile = path.resolve(tmpDir, "query-test-source.ttl");
       await fs.writeFile(
         dataFile,
-        [...Array(DATA_SIZE).keys()].map((i) => `<s:s${i}> <p:p${i}> <o:o${i}>.`).join("\n")
+        [...Array(DATA_SIZE).keys()].map((i) => `<s:s${i}> <p:p${i}> <o:o${i}>.`).join("\n"),
       );
       await dataset.importFromFiles([dataFile]);
       await dataset.addService("sparql");
@@ -262,14 +278,12 @@ describe("Queries", function () {
       describe("Fetching query string", function () {
         it("Should return stringified query", async function () {
           const populatedString = await constructQuery.getString({ s: "http://blaaa" });
-          expect(populatedString.trim()).to.equal(`CONSTRUCT {
-  <http://blaaa> ?p ?o.
-  <http://blaaa> ?p ?newo.
-}
-WHERE {
-  <http://blaaa> ?p ?o.
-  BIND(CONCAT(STR(?o), STR(?o)) AS ?newo)
-}`);
+          expect(populatedString).to.equal(dedent`construct {
+            <http://blaaa> ?p ?o .
+            <http://blaaa> ?p ?newo .}
+            where {
+            <http://blaaa> ?p ?o.
+            bind(concat ( str ( ?o ), str ( ?o ) ) as ?newo)}`);
         });
       });
       it("Should query a saved construct-query (quad iterator)", async function () {
@@ -366,7 +380,7 @@ WHERE {
             gunzip(await fs.readFile(file), (error, result) => {
               if (error) return reject(error);
               resolve(JSON.parse(result.toString("utf-8")));
-            })
+            }),
           );
           data.responseText = "[]";
           await fs.writeFile(
@@ -375,8 +389,8 @@ WHERE {
               gzip(JSON.stringify(data), (error, result) => {
                 if (error) return reject(error);
                 resolve(result);
-              })
-            )
+              }),
+            ),
           );
         }
 
