@@ -12,6 +12,9 @@ import { bootstrap } from "global-agent";
 if (typeof process === "object" && process.title === "node") bootstrap();
 import semver from "semver";
 import { MarkRequired } from "ts-essentials";
+import Dataset from "./Dataset.js";
+import Query from "./Query.js";
+import Story from "./Story.js";
 
 export interface AppConfig {
   /**
@@ -129,6 +132,36 @@ export default class App {
       notExistsErrorMessage: `Failed to fetch organization ${accountName}.`,
     });
     return getOrganization.asOrganization();
+  }
+
+  /**
+   * Get a TriplyDB resource using a string identifier.
+   * Examples:
+   * - To get one of your datasets, run `app.get('dataset/my-dataset-name')`
+   * - To get a dataset of a different account, run `app.get('dataset/other-account/my-dataset-name')`
+   * Apply the same for any string starting with user, account, org, dataset, query or story
+   */
+  public async get(idString: `account`): Promise<Account>;
+  public async get(idString: `user`): Promise<User>;
+  public async get(idString: `account/${string}`): Promise<Account>;
+  public async get(idString: `user/${string}`): Promise<User>;
+  public async get(idString: `org/${string}`): Promise<Org>;
+  public async get(idString: `dataset/${string}`): Promise<Dataset>;
+  public async get(idString: `query/${string}`): Promise<Query>;
+  public async get(idString: `story/${string}`): Promise<Story>;
+  public async get(idString: string) {
+    const fragments = idString.split("/");
+    if (fragments[0] === "account") return this.getAccount(fragments[1]);
+    if (fragments[0] === "user") return this.getUser(fragments[1]);
+    if (fragments[0] === "org") return this.getOrganization(fragments[1]);
+    if (fragments.length > 3) throw new Error("Unrecognized identifier " + idString);
+    // Check whether the account is mentioned explicitly
+    const account = await this.getAccount(fragments.length > 2 ? fragments[1] : undefined);
+    const resourceIdentifier = fragments[fragments.length - 1];
+    if (resourceIdentifier === "dataset") return account.getDataset(resourceIdentifier);
+    if (resourceIdentifier === "query") return account.getQuery(resourceIdentifier);
+    if (resourceIdentifier === "story") return account.getStory(resourceIdentifier);
+    throw new Error("Unrecognized identifier " + idString);
   }
   public async isCompatible(minimumVersion: string) {
     const apiInfo = await this.getInfo();
