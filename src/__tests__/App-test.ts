@@ -15,9 +15,9 @@ describe("App", function () {
       return expect(
         App.get({
           url: "https://google.com",
-        }).getInfo()
+        }).getInfo(),
       ).to.eventually.rejectedWith(
-        "Failed to fetch API information of https://google.com. (Expected a JSON response, but got text/html"
+        "Failed to fetch API information of https://google.com. (Expected a JSON response, but got text/html",
       );
     });
     it("Should not break when the API url contains a trailing slash", async function () {
@@ -26,27 +26,27 @@ describe("App", function () {
           await App.get({
             url: "https://api.nightly.triplydb.com/",
           }).getInfo()
-        ).apiUrl
+        ).apiUrl,
       ).to.equal("https://api.nightly.triplydb.com");
     });
     it("Should throw error on domain that doesnt exist", async function () {
       return expect(
         App.get({
           url: "https://googlsdfsdfsdfe.com",
-        }).getInfo()
+        }).getInfo(),
       ).to.eventually.rejectedWith(
-        "Failed to fetch API information of https://googlsdfsdfsdfe.com. (request to https://googlsdfsdfsdfe.com/info failed"
+        "Failed to fetch API information of https://googlsdfsdfsdfe.com. (request to https://googlsdfsdfsdfe.com/info failed",
       );
     });
     it("Should extract api location from token", async function () {
       const app = App.get(process.env.UNITTEST_TOKEN_ACCOUNT);
-      expect(app["_config"].url).not.be.undefined;
-      expect(app["_config"].url).not.be.empty;
+      expect(app.url).not.be.undefined;
+      expect(app.url).not.be.empty;
     });
     it("Should extract api location from token with empty string url", async function () {
       const app = App.get({ url: "", token: process.env.UNITTEST_TOKEN_ACCOUNT });
-      expect(app["_config"].url).not.be.undefined;
-      expect(app["_config"].url).not.be.empty;
+      expect(app.url).not.be.undefined;
+      expect(app.url).not.be.empty;
     });
     it("Should throw on malformed jwt token", async function () {
       expect(() => App.get("InvalidToken")).to.throw("Invalid token");
@@ -71,10 +71,10 @@ describe("App", function () {
 
     expect(
       app["getPostProcessedApiUrl"](
-        "https://somethingelse.com/somepath/run.nt?somearg=https%3A%2F%2Fwww%2Frijksbegrotingsstructuur%2FBC6BA34-2018-27938&pageSize=5000"
-      )
+        "https://somethingelse.com/somepath/run.nt?somearg=https%3A%2F%2Fwww%2Frijksbegrotingsstructuur%2FBC6BA34-2018-27938&pageSize=5000",
+      ),
     ).to.equal(
-      "http://something.com:5000/somepath/run.nt?somearg=https%3A%2F%2Fwww%2Frijksbegrotingsstructuur%2FBC6BA34-2018-27938&pageSize=5000"
+      "http://something.com:5000/somepath/run.nt?somearg=https%3A%2F%2Fwww%2Frijksbegrotingsstructuur%2FBC6BA34-2018-27938&pageSize=5000",
     );
   });
 });

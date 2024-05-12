@@ -14,30 +14,33 @@ const log = debug("triply:triplydb-js:asset-upload");
 
 export default class Asset {
   private _info: Models.Asset;
-  private _app: App;
-  private _dataset: Dataset;
+  public app: App;
+  public dataset: Dataset;
   private _deleted = false;
   private _selectedVersion?: number;
   public readonly type = "Asset";
   constructor(dataset: Dataset, info: Models.Asset, selectedVersion?: number) {
     this._info = info;
-    this._dataset = dataset;
-    this._app = dataset["app"];
+    this.dataset = dataset;
+    this.app = dataset.app;
     if (selectedVersion !== undefined) {
       this.selectVersion(selectedVersion);
     }
   }
 
+  public get api() {
+    if (this._deleted) throw getErr("This asset does not exist.");
+    const path = `${this.dataset.api.path}/assets/${this._info.identifier}`;
+    return {
+      url: this.app.url + path,
+      path,
+    };
+  }
+
   private async _getUrl(versionInfo?: Models.AssetVersion) {
     if (this._deleted) throw getErr("This asset does not exist.");
-    const urlparts = [
-      this._app["_config"].url,
-      await this._dataset["_getDatasetPath"](),
-      "/assets",
-      `/${this._info.identifier}`,
-    ];
-    if (versionInfo) urlparts.push(`/${versionInfo.id}`);
-    return urlparts.join("");
+    if (versionInfo) return `${this.api.url}/${versionInfo.id}`;
+    return this.api.url;
   }
 
   public async toFile(destinationPath: string, versionNumber?: number) {
@@ -52,7 +55,7 @@ export default class Asset {
         {
           method: "get",
         },
-        { app: this._app },
+        { app: this.app },
       ),
     );
     const stream = new pumpify(res.body as any, fs.createWriteStream(destinationPath));
@@ -71,7 +74,7 @@ export default class Asset {
         {
           method: "get",
         },
-        { app: this._app },
+        { app: this.app },
       ),
     );
     return res.body as any as NodeJS.WriteStream;
@@ -98,12 +101,12 @@ export default class Asset {
   private async refreshInfo() {
     this._info = (await _get<Routes.datasets._account._dataset.assets.Get>({
       errorWithCleanerStack: getErr(
-        `Failed to get refresh info for asset '${this._info.assetName}' from dataset ${await this._dataset[
+        `Failed to get refresh info for asset '${this._info.assetName}' from dataset ${this.dataset[
           "_getDatasetNameWithOwner"
         ]()}.`,
       ),
-      app: this._app,
-      path: await this._dataset["_getDatasetPath"]("/assets"),
+      app: this.app,
+      path: this.dataset.api.path + "/assets",
       query: { fileName: this._info.assetName },
     })) as Models.Asset;
     return this;
@@ -123,7 +126,7 @@ export default class Asset {
     await Asset.uploadAsset({
       fileOrPath,
       assetName: this._info.assetName,
-      dataset: this._dataset,
+      dataset: this.dataset,
       versionOf: this._info.identifier,
     });
     await this.refreshInfo();
@@ -132,12 +135,11 @@ export default class Asset {
   public async delete(versionNumber?: number) {
     if (this._deleted) throw getErr("This asset does not exist.");
     if (versionNumber === undefined) versionNumber = this._selectedVersion;
-    const dsInfo = await this._dataset.getInfo();
     await _delete<Routes.datasets._account._dataset.assets._assetId.Delete>({
-      app: this._app,
+      app: this.app,
       url: await this._getUrl(versionNumber === undefined ? undefined : this.getVersionInfo(versionNumber)),
       errorWithCleanerStack: getErr(
-        `Failed to delete asset ${this._info.assetName} in dataset ${dsInfo.owner.accountName}/${dsInfo.name}.`,
+        `Failed to delete asset ${this._info.assetName} in dataset ${this.dataset.owner.slug}/${this.dataset.slug}.`,
       ),
       expectedResponseBody: "empty",
     });
@@ -183,16 +185,15 @@ export default class Asset {
     } = {};
     if (opts.assetName) metadata.filename = opts.assetName;
     if (opts.versionOf) metadata.versionOf = opts.versionOf;
-    const info = await opts.dataset.getInfo();
 
     // we want to try to get a sticky session cookie for TUS uploads
-    const headers: { [name: string]: string } = { Authorization: "Bearer " + opts.dataset["app"]["_config"].token };
-    await setStickySessionCookie(headers, opts.dataset["app"]["_config"].url);
+    const headers: { [name: string]: string } = { Authorization: "Bearer " + opts.dataset.app["_config"].token };
+    await setStickySessionCookie(headers, opts.dataset.app.url);
 
     let previousChunkCompleted = Date.now();
     return new Promise<Models.Asset>((resolve, reject) => {
       const upload = new tus.Upload(rs, {
-        endpoint: `${opts.dataset["app"]["_config"].url}/datasets/${info.owner.accountName}/${info.name}/assets/add`,
+        endpoint: `${opts.dataset.api.url}/assets/add`,
         metadata,
         headers,
         chunkSize: 5 * 1024 * 1024,

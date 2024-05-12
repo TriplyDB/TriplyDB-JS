@@ -26,7 +26,7 @@ export default class Service {
   private _info?: ServiceInfo;
   private _graphs?: Models.ServiceGraphInfo[];
   public dataset: Dataset;
-  private _name: string;
+  public slug: string;
   private _type: Models.ServiceType;
   private _config?: Models.ServiceConfig;
   public readonly type = "Service";
@@ -39,7 +39,7 @@ export default class Service {
     config?: Models.ServiceConfig;
   }) {
     this.app = conf.app;
-    this._name = conf.name;
+    this.slug = conf.name;
     this.dataset = conf.dataset;
     this._type = conf.type;
     this._config = conf.config;
@@ -49,12 +49,20 @@ export default class Service {
     if (!refresh && this._info) return this._info;
     this._info = await _get<Routes.datasets._account._dataset.services._serviceName.Get>({
       errorWithCleanerStack: getErr(
-        `Failed to get information of service '${this._name}' in dataset '${(await this.dataset.getInfo()).name}'.`,
+        `Failed to get information of service '${this.slug}' in dataset '${this.dataset.slug}'.`,
       ),
       app: this.app,
-      path: await this._getServicePath(),
+      path: this.api.path,
     });
     return this._info;
+  }
+
+  public get api() {
+    const path = `${this.dataset.api.path}/services/${this.slug}`;
+    return {
+      url: this.app.url + path,
+      path,
+    };
   }
 
   public async isUpToDate(): Promise<boolean> {
@@ -64,27 +72,23 @@ export default class Service {
 
   public async rename(newName: string): Promise<Service> {
     await _patch<Routes.datasets._account._dataset.services._serviceName.Patch>({
-      errorWithCleanerStack: getErr(
-        `Failed to rename service ${this._name} of dataset ${(await this.dataset.getInfo()).name}.`,
-      ),
+      errorWithCleanerStack: getErr(`Failed to rename service ${this.slug} of dataset ${this.dataset.slug}.`),
       app: this.app,
-      path: await this._getServicePath(),
+      path: this.api.path,
       data: {
         name: newName,
       },
     });
-    this._name = newName;
+    this.slug = newName;
     return this;
   }
 
   public async getGraphs(refresh = false): Promise<Models.ServiceGraphInfo[]> {
     if (!this._graphs || refresh) {
       this._graphs = await _get<Routes.datasets._account._dataset.services._serviceName.graphs.Get>({
-        errorWithCleanerStack: getErr(
-          `Failed to get graphs of service ${this._name} of dataset ${(await this.dataset.getInfo()).name}.`,
-        ),
+        errorWithCleanerStack: getErr(`Failed to get graphs of service ${this.slug} of dataset ${this.dataset.slug}.`),
         app: this.app,
-        path: `${await this._getServicePath()}/graphs`,
+        path: `${this.api.path}/graphs`,
       });
     }
     return this._graphs;
@@ -92,11 +96,9 @@ export default class Service {
 
   public async delete() {
     this._info = await _delete<Routes.datasets._account._dataset.services._serviceName.Delete>({
-      errorWithCleanerStack: getErr(
-        `Failed to delete service ${this._name} of dataset ${(await this.dataset.getInfo()).name}.`,
-      ),
+      errorWithCleanerStack: getErr(`Failed to delete service ${this.slug} of dataset ${this.dataset.slug}.`),
       app: this.app,
-      path: await this._getServicePath(),
+      path: this.api.path,
       expectedResponseBody: "empty",
     });
   }
@@ -104,13 +106,11 @@ export default class Service {
   public async create(): Promise<Service> {
     try {
       await _post({
-        errorWithCleanerStack: getErr(
-          `Failed to create service '${this._name}' in dataset '${(await this.dataset.getInfo()).name}'.`,
-        ),
+        errorWithCleanerStack: getErr(`Failed to create service '${this.slug}' in dataset '${this.dataset.slug}'.`),
         app: this.app,
-        path: `${await this.dataset["_getDatasetPath"]()}/services`,
+        path: `${this.dataset.api.path}/services`,
         data: {
-          name: this._name,
+          name: this.slug,
           type: this._type,
           config: this._config,
         },
@@ -147,15 +147,11 @@ export default class Service {
           if (info.error?.message.includes("Failed to get information for service") && failedServiceErrorCount++ < 3) {
             // This should be momentary. Let's retry a few times and give up if we still get this error.
           } else {
-            throw getErr(
-              `Failed to start service ${this._name} of dataset ${(await this.dataset.getInfo()).name}: ${
-                info.error.message
-              }`,
-            );
+            throw getErr(`Failed to start service ${this.slug} of dataset ${this.dataset.slug}: ${info.error.message}`);
           }
         } else if (!["starting", "updating"].includes(info.status)) {
           throw getErr(
-            `Failed to start service ${this._name} of dataset ${
+            `Failed to start service ${this.slug} of dataset ${
               (await this.dataset.getInfo(true)).name
             } as it is being stopped or removed.`,
           );
@@ -169,18 +165,12 @@ export default class Service {
 
   public async update() {
     await _post({
-      errorWithCleanerStack: getErr(
-        `Failed to update service ${this._name} of dataset ${(await this.dataset.getInfo()).name}.`,
-      ),
+      errorWithCleanerStack: getErr(`Failed to update service ${this.slug} of dataset ${this.dataset.slug}.`),
       app: this.app,
-      path: await this._getServicePath(),
+      path: this.api.path,
       data: { sync: true },
     });
     await this.waitUntilRunning();
-  }
-
-  private async _getServicePath() {
-    return `${await this.dataset["_getDatasetPath"]()}/services/${this._name}`;
   }
 
   public getDataset(): Dataset {

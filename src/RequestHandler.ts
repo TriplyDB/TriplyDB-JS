@@ -30,7 +30,7 @@ export function getUrl(opts: Pick<ReqOptsObj, "url" | "path" | "app" | "query">)
       // There is a bug in triplydb-js: we should use `url:` instead of `path:` for these cases
       throw new Error(`Expected a path, but got URL ${opts.path} instead`);
     }
-    const apiUrl = opts.app["_config"].url;
+    const apiUrl = opts.app.url;
     if (!apiUrl) throw new Error("Expected a url or path to be set");
     url = new URL(apiUrl + normalizePath(opts?.path));
   }

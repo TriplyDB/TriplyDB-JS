@@ -10,49 +10,52 @@ import { getErr } from "./utils/Error.js";
 export default class Graph {
   private _info: Models.Graph;
   public app: App;
-  private _dataset: Dataset;
+  public dataset: Dataset;
   public readonly type = "Graph";
 
   constructor(dataset: Dataset, info: Models.Graph) {
-    this.app = dataset["app"];
+    this.app = dataset.app;
     this._info = info;
-    this._dataset = dataset;
+    this.dataset = dataset;
   }
 
   public async toFile(destinationPath: string, opts?: { compressed?: boolean }) {
-    return this._dataset.graphsToFile(destinationPath, { ...opts, graph: this });
+    return this.dataset.graphsToFile(destinationPath, { ...opts, graph: this });
   }
   public async toStore(): Promise<n3.Store> {
-    return this._dataset.graphsToStore(this);
+    return this.dataset.graphsToStore(this);
   }
   public async toStream(type: "compressed" | "rdf-js"): Promise<stream.Readable> {
-    return this._dataset.graphsToStream(type, { graph: this });
+    return this.dataset.graphsToStream(type, { graph: this });
   }
 
   public async getInfo(refresh = false) {
     if (refresh)
       this._info = await _get<Routes.datasets._account._dataset.graphs._graphId.Get>({
         errorWithCleanerStack: getErr(
-          `Failed to get graph information for dataset ${await this._dataset["_getDatasetNameWithOwner"]()}.`,
+          `Failed to get graph information for dataset ${this.dataset["_getDatasetNameWithOwner"]()}.`,
         ),
         app: this.app,
-        path: await this._getPath(),
+        path: this.api.path,
       });
     return this._info;
   }
-
-  private async _getPath() {
-    return (await this._dataset["_getDatasetPath"]()) + "/graphs/" + this._info.id;
+  public get api() {
+    const path = this.dataset.api.path + "/graphs/" + this._info.id;
+    return {
+      url: this.app.url + path,
+      path,
+    };
   }
 
   public async delete() {
     const info = await this.getInfo();
     await _delete<Routes.datasets._account._dataset.graphs._graphId.Delete>({
       errorWithCleanerStack: getErr(
-        `Failed to delete graph '${info.graphName}' from ${await this._dataset["_getDatasetNameWithOwner"]()}.`,
+        `Failed to delete graph '${info.graphName}' from ${this.dataset["_getDatasetNameWithOwner"]()}.`,
       ),
       app: this.app,
-      path: await this._getPath(),
+      path: this.api.path,
       expectedResponseBody: "empty",
     });
   }
@@ -62,12 +65,12 @@ export default class Graph {
     const info = await this.getInfo();
     this._info = await _patch<Routes.datasets._account._dataset.graphs._graphId.Patch>({
       errorWithCleanerStack: getErr(
-        `Failed to rename graph ${info.graphName} to ${newGraphName} for dataset ${await this._dataset[
+        `Failed to rename graph ${info.graphName} to ${newGraphName} for dataset ${this.dataset[
           "_getDatasetNameWithOwner"
         ]()}.`,
       ),
       app: this.app,
-      path: await this._getPath(),
+      path: this.api.path,
       data: <Routes.datasets._account._dataset.graphs._graphId.Patch["Req"]["Body"]>{ graphName: newGraphName },
     });
     return this;

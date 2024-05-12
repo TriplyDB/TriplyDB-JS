@@ -31,7 +31,7 @@ const getNewTestDs = async (account: Account, accessLevel: "public" | "private")
   const ds = await account.addDataset(
     // keep the name short to avoid hitting the 40-character limit
     `${CommonUnittestPrefix}-${testDsIndex++}`,
-    { accessLevel: accessLevel }
+    { accessLevel: accessLevel },
   );
   datasetsToClean.push(ds);
   return ds;
@@ -50,7 +50,6 @@ describe("Dataset", function () {
 
     await resetUnittestAccount(user);
   });
-  // See issue https:/......
   it("Race condition when removing datasets", async function () {
     await resetUnittestAccount(user);
     const testDs = await getNewTestDs(user, "private");
@@ -280,7 +279,7 @@ describe("Dataset", function () {
         term,
         term,
         DataFactory.literal("true", DataFactory.namedNode("http://www.w3.org/2001/XMLSchema#boolean")),
-        term
+        term,
       );
       await testDs.importFromStore(store);
       const dsInfo = await testDs.getInfo();
@@ -320,7 +319,7 @@ describe("Dataset", function () {
         Promise.all([
           ds.importFromUrls(["https://api.triplydb.com/datasets/vocabulary/music-keys/download"]),
           ds.importFromFiles([getDataDir("test103.nq")]),
-        ])
+        ]),
       ).to.eventually.rejectedWith("There is already an ongoing job for this dataset. Await that one first.");
     });
     it("Should not block two consequtive jobs for the same dataset", async function () {
@@ -482,9 +481,9 @@ describe("Dataset", function () {
         await expect(
           new Promise(async (resolve, reject) =>
             zlib.gunzip(await fs.readFile(gzipped), (e, result) =>
-              e ? reject(e) : resolve(JSON.parse(result.toString("utf-8")))
-            )
-          )
+              e ? reject(e) : resolve(JSON.parse(result.toString("utf-8"))),
+            ),
+          ),
         ).to.eventually.deep.equal(JSON.parse(await fs.readFile(gunzipped, "utf-8")));
 
         break; // only test one graph

@@ -69,7 +69,9 @@ export default class App {
     }
     if (this._config.url.endsWith("/")) this._config.url = this._config.url.slice(0, -1);
   }
-
+  public get url() {
+    return this._config.url;
+  }
   public getConfig() {
     return this._config;
   }
@@ -85,15 +87,15 @@ export default class App {
   }
 
   public async getAccount(accountName?: string) {
+    const info = await this.getInfo();
+    let errMsg = `Failed to get account information of ${accountName}.`;
     if (!accountName) {
-      //no account name passed, this must be a user as we'll be using the token
-      //to fetch the account info
-      return new User(this);
+      errMsg = `Failed to fetch the current user, because no API token is configured. If you want to fetch the current user, you must create an API token on <${info.consoleUrl}/me/-/settings/tokens>.`;
     }
     return getUserOrOrg({
       accountName: accountName,
       app: this,
-      notExistsErrorMessage: `Failed to fetch account ${accountName}.`,
+      notExistsErrorMessage: errMsg,
     });
   }
   public getAccounts() {
@@ -101,7 +103,7 @@ export default class App {
       potentialFutureError: getErr(`Failed to get accounts`),
       getErrorMessage: async () => `Failed to get all accounts.`,
       app: this,
-      getUrl: async () => this["_config"].url + `/accounts`,
+      getUrl: async () => this.url + `/accounts`,
       mapResult: async (account) => {
         // We're explicitly not passing the account object to the _info parameter as it's not the verbose version.
         // On the TDB API, /accounts currently only returns simple information.
@@ -114,13 +116,15 @@ export default class App {
     });
   }
   public async getUser(accountName?: string) {
+    const info = await this.getInfo();
+    let errMsg = `Failed to get user information of ${accountName}.`;
     if (!accountName) {
-      return new User(this);
+      errMsg = `Failed to fetch the current user, because no API token is configured. If you want to fetch the current user, you must create an API token on <${info.consoleUrl}/me/-/settings/tokens>.`;
     }
     const getUser = await getUserOrOrg({
       accountName: accountName,
       app: this,
-      notExistsErrorMessage: `Failed to fetch user ${accountName}.`,
+      notExistsErrorMessage: errMsg,
     });
 
     return getUser.asUser();
@@ -184,17 +188,14 @@ export default class App {
   // @ts-ignore Used other deps, but dont want to bloat the app js api
   private getPostProcessedApiUrl(urlFromApi: string) {
     const parsedApiUrl = new URL(urlFromApi);
-    if (this._config.url) {
-      // Only modify when we explicitly pass a different URL as argument.
-      // Assuming that the URL from the `/info` API route is already always the same as all other URLs used in
-      // e.g. link headers that we get from that same API
-      const parsedConfigUrl = new URL(this._config.url);
-      // see https://nodejs.org/docs/latest-v14.x/api/url.html#url_url_strings_and_url_objects
-      parsedApiUrl.host = parsedConfigUrl.host; // e.g. `triplydb.com:5000`
-      parsedApiUrl.protocol = parsedConfigUrl.protocol; // e.g. `http`
-      return parsedApiUrl.toString();
-    }
-    return urlFromApi;
+    // Only modify when we explicitly pass a different URL as argument.
+    // Assuming that the URL from the `/info` API route is already always the same as all other URLs used in
+    // e.g. link headers that we get from that same API
+    const parsedConfigUrl = new URL(this._config.url);
+    // see https://nodejs.org/docs/latest-v14.x/api/url.html#url_url_strings_and_url_objects
+    parsedApiUrl.host = parsedConfigUrl.host; // e.g. `triplydb.com:5000`
+    parsedApiUrl.protocol = parsedConfigUrl.protocol; // e.g. `http`
+    return parsedApiUrl.toString();
   }
 
   /**

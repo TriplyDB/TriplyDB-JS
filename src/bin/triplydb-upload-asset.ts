@@ -15,13 +15,13 @@ const command = program
   .option(
     "-d, --dataset <dataset>",
     "Dataset to upload file(s) to (default: $TRIPLYDB_DATASET)",
-    defaultTriplyDBDataset || undefined
+    defaultTriplyDBDataset || undefined,
   )
   .option("-t, --token <token>", "TriplyDB access token (default: $TRIPLYDB_TOKEN)", defaultTriplyDBToken || undefined)
   .option(
     "-a, --account <account>",
     "Optional: Account to upload file(s) for. (default: the account that owns the token, or $TRIPLYDB_ACCOUNT)",
-    defaultTriplyDBAccount
+    defaultTriplyDBAccount,
   )
   .option("-u, --url <url>", "Optional: Url of the triply API. (default: the API where the token was created)", String)
   .option("--http-proxy <proxy>", "TriplyDB access token (default: $HTTP_PROXY)", defaultHttpProxy || undefined)
@@ -29,7 +29,7 @@ const command = program
   .option(
     "--overwrite",
     "Overwrite the asset if it already exists. By default, this script will add a new version if an asset already exists",
-    false
+    false,
   )
   .action(async () => {
     function sanityCheckError(msg: string) {
@@ -57,7 +57,7 @@ const command = program
     try {
       dataset = await account.getDataset(options.dataset);
     } catch {
-      console.info(`> Creating dataset ${options.dataset} in account ${(await account.getInfo()).accountName}`);
+      console.info(`> Creating dataset ${options.dataset} in account ${account.slug}`);
       dataset = await account.addDataset(options.dataset, { accessLevel: "public" });
     }
 
@@ -81,7 +81,7 @@ const command = program
     console.info(
       `> Finished uploading ${files.length} ${files.length > 2 ? "files" : "file"} to dataset ${
         options.dataset
-      } in account ${(await account.getInfo()).accountName}`
+      } in account ${account.slug}`,
     );
   });
 

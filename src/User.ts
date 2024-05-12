@@ -27,13 +27,17 @@ type NewOrganization = Omit<Models.AccountUpdate, "pinnedDatasets" | "accountNam
 export default class User implements AccountBase {
   public app: App;
   private _info?: Models.User;
-  private _name?: string;
+  public slug: string;
   public readonly type = "User";
-  //leave accountname empty to get account belonging to token
-  public constructor(app: App, accountName?: string, info?: Models.User) {
+
+  public constructor(app: App, infoOrAccountName: Models.User | string) {
     this.app = app;
-    this._name = accountName;
-    this._info = info;
+    if (typeof infoOrAccountName === "string") {
+      this.slug = infoOrAccountName;
+    } else {
+      this._info = infoOrAccountName;
+      this.slug = infoOrAccountName.accountName;
+    }
   }
   public getDataset = getDataset;
   public getDatasets = getDatasets;
@@ -50,10 +54,16 @@ export default class User implements AccountBase {
   public pinItems = pinItems;
   public ensureDataset = ensureDataset;
   public ensureStory = ensureStory;
-
+  public get api() {
+    const path = `/accounts/${this.slug}`;
+    return {
+      url: this.app.url + path,
+      path,
+    };
+  }
   private _setInfo(info: Models.User) {
     this._info = info;
-    this._name = info.accountName;
+    this.slug = info.accountName;
   }
 
   public async asUser(): Promise<User> {
@@ -68,17 +78,10 @@ export default class User implements AccountBase {
   }
   public async getInfo(refresh = false) {
     if (refresh || !this._info) {
-      let errMsg: string;
-      if (this._name) {
-        errMsg = `Failed to get user information of ${this._name}.`;
-      } else {
-        const url = this.app["_config"].url.replace("api.", "");
-        errMsg = `Failed to fetch the current user, because no API token is configured. If you want to fetch the current user, you must create an API token on <${url}/me/-/settings/tokens>.`;
-      }
       const info = (await _get<Routes.accounts._account.Get>({
-        errorWithCleanerStack: getErr(errMsg),
+        errorWithCleanerStack: getErr(`Failed to get user information of ${this.slug}.`),
         app: this.app,
-        path: this._name ? "/accounts/" + this._name : "/me",
+        path: this.api.path,
         query: { verbose: "" },
       })) as Models.User;
       this._setInfo(info);
@@ -88,21 +91,19 @@ export default class User implements AccountBase {
 
   public async createOrganization(accountName: string, info?: NewOrganization): Promise<Org> {
     const newOrgJson = await _post<Routes.accounts._account.orgs.Post>({
-      errorWithCleanerStack: getErr(
-        `Failed to create organization ${accountName} and set ${this._name} as it's owner.`,
-      ),
+      errorWithCleanerStack: getErr(`Failed to create organization ${accountName} and set ${this.slug} as it's owner.`),
       app: this.app,
-      path: "/accounts/" + this._name + "/orgs",
+      path: this.api.path + "/orgs",
       data: { accountName, ...info },
     });
-    return new Org(this.app, newOrgJson.accountName, newOrgJson);
+    return new Org(this.app, newOrgJson);
   }
 
   public async getOrganizations() {
     const orgs = await _get<Routes.accounts._account.orgs.Get>({
-      errorWithCleanerStack: getErr(`Failed to get organizations of ${this._name}`),
+      errorWithCleanerStack: getErr(`Failed to get organizations of ${this.slug}`),
       app: this.app,
-      path: "/accounts/" + this._name + "/orgs",
+      path: this.api.path + "/orgs",
     });
     return orgs.map((org) => {
       // We're explicitly not passing the org object to the _info parameter as it's not the verbose version.
@@ -114,9 +115,9 @@ export default class User implements AccountBase {
   private async _getOrganization(name: string) {
     return (
       await _get<Routes.accounts._account.orgs.Get>({
-        errorWithCleanerStack: getErr(`Failed to get organizations of ${this._name}`),
+        errorWithCleanerStack: getErr(`Failed to get organizations of ${this.slug}`),
         app: this.app,
-        path: "/accounts/" + this._name + "/orgs",
+        path: this.api.path + "/orgs",
       })
     )
       .filter((org) => org.accountName === name)
@@ -126,7 +127,7 @@ export default class User implements AccountBase {
   public async getOrganization(name: string) {
     const org = await this._getOrganization(name);
     if (org === undefined) {
-      throw getErr(`Failed to get organization '${name}' of account '${this._name}'`);
+      throw getErr(`Failed to get organization '${name}' of account '${this.slug}'`);
     }
     return new Org(this.app, name);
   }

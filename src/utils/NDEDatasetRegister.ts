@@ -34,7 +34,7 @@ export default async function NDEDatasetRegister(
       ),
     );
   }
-  const { consoleUrl } = await dataset["app"].getInfo();
+  const { consoleUrl } = await dataset.app.getInfo();
   const datasetURL = `${consoleUrl}/${info.owner.accountName}/${info.name}`;
   const apiUrl =
     "https://datasetregister.netwerkdigitaalerfgoed.nl/api/datasets" + (method === "validate" ? "/validate" : "");

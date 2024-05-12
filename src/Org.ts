@@ -27,13 +27,16 @@ export default class Org implements AccountBase {
   public app: App;
   // Info is undefined when we delete the organization or when we are constructing this class from an array of account.
   private _info?: Models.Org;
-  private _name?: string;
+  public slug: string;
   public readonly type = "Org";
-  //leave accountname empty to get account belonging to token
-  public constructor(app: App, accountName: string, info?: Models.Org) {
+  public constructor(app: App, infoOrAccountName: Models.Org | string) {
     this.app = app;
-    this._name = accountName;
-    this._info = info;
+    if (typeof infoOrAccountName === "string") {
+      this.slug = infoOrAccountName;
+    } else {
+      this._info = infoOrAccountName;
+      this.slug = infoOrAccountName.accountName;
+    }
   }
 
   public getDataset = getDataset;
@@ -52,6 +55,13 @@ export default class Org implements AccountBase {
   public ensureDataset = ensureDataset;
   public ensureStory = ensureStory;
 
+  public get api() {
+    const path = `/accounts/${this.slug}`;
+    return {
+      url: this.app.url + path,
+      path,
+    };
+  }
   public async asUser(): Promise<User> {
     const info = await this.getInfo();
     throw getErr(`Failed to fetch user ${info.accountName}. Note that there is an organization with that name.`);
@@ -61,12 +71,12 @@ export default class Org implements AccountBase {
   }
   public async getInfo(refresh = false) {
     if (!refresh && this._info) return this._info;
-    if (!this._name) throw getErr("Missing name for organization");
+    if (!this.slug) throw getErr("Missing name for organization");
     this._setInfo(
       (await _get<Routes.accounts._account.Get>({
-        errorWithCleanerStack: getErr(`Failed to get information of organization ${this._name}.`),
+        errorWithCleanerStack: getErr(`Failed to get information of organization ${this.slug}.`),
         app: this.app,
-        path: "/accounts/" + this._name,
+        path: this.api.path,
         query: { verbose: "" },
       })) as Models.Org,
     );
@@ -74,44 +84,42 @@ export default class Org implements AccountBase {
   }
   private _setInfo(info: Models.Org) {
     this._info = info;
-    this._name = info.accountName;
+    this.slug = info.accountName;
   }
 
   public async getMembers() {
-    const orgName = (await this.getInfo()).accountName;
     return _get<Routes.accounts._account.members.Get>({
-      errorWithCleanerStack: getErr(`Failed to get members of organization ${orgName}.`),
+      errorWithCleanerStack: getErr(`Failed to get members of organization ${this.slug}.`),
       app: this.app,
-      path: `/accounts/${orgName}/members`,
+      path: `${this.api.path}/members`,
     });
   }
   public async addMember(user: User, role: Models.OrgRole = "member") {
-    const orgName = (await this.getInfo()).accountName;
-    const memberName = (await user.getInfo()).accountName;
+    const orgName = this.slug;
+    const memberName = user.slug;
     return _post<Routes.accounts._account.members.Post>({
       errorWithCleanerStack: getErr(`Failed to add ${memberName} as member to organization ${orgName}.`),
       app: this.app,
       data: { accountName: memberName, role },
-      path: `/accounts/${orgName}/members`,
+      path: `${this.api.path}/members`,
     });
   }
   public async removeMember(member: User) {
-    const orgName = (await this.getInfo()).accountName;
-    const memberName = (await member.getInfo()).accountName;
+    const memberName = member.slug;
     await _delete<Routes.accounts._account.members._member.Delete>({
-      errorWithCleanerStack: getErr(`Failed to remove ${memberName} as member of organization ${this._name}.`),
+      errorWithCleanerStack: getErr(`Failed to remove ${memberName} as member of organization ${this.slug}.`),
       app: this.app,
-      path: `/accounts/${orgName}/members/${memberName}`,
+      path: `${this.api.path}/members/${memberName}`,
       expectedResponseBody: "empty",
     });
   }
   public async changeRole(member: User, role: Models.OrgRole) {
-    const orgName = (await this.getInfo()).accountName;
-    const memberName = (await member.getInfo()).accountName;
+    const orgName = this.slug;
+    const memberName = member.slug;
     await _patch<Routes.accounts._account.members._member.Patch>({
       errorWithCleanerStack: getErr(`Failed to change role of ${memberName} to ${role} in organization ${orgName}`),
       app: this.app,
-      path: `/accounts/${orgName}/members/${memberName}`,
+      path: `${this.api.path}/members/${memberName}`,
       data: {
         role: role,
       },
@@ -119,11 +127,11 @@ export default class Org implements AccountBase {
     return this.getMembers();
   }
   public async delete() {
-    const orgName = (await this.getInfo()).accountName;
+    const orgName = this.slug;
     await _delete<Routes.accounts._account.Delete>({
       errorWithCleanerStack: getErr(`Failed to delete organization ${orgName}.`),
       app: this.app,
-      path: `/accounts/${orgName}`,
+      path: this.api.path,
       expectedResponseBody: "empty",
     });
     delete this._info;

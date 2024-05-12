@@ -39,16 +39,18 @@ export default class Query {
   public app: App;
   private _info: Models.Query;
   public owner: Account;
+  public slug: string;
   private _version: number | undefined;
   public readonly type = "Query";
   public constructor(app: App, info: Models.Query, owner: Account) {
     this.app = app;
     this._info = info;
+    this.slug = info.name;
     this.owner = owner;
   }
   private _getQueryType() {
     const queryString = this["_info"].requestConfig?.payload.query;
-    if (!queryString) throw getErr(`Query ${this._info.name} has no versions.`);
+    if (!queryString) throw getErr(`Query ${this.slug} has no versions.`);
     const parser = new sparqljs.Parser();
     const parsed = parser.parse(queryString);
     if (parsed.type === "query") {
@@ -57,20 +59,27 @@ export default class Query {
       throw getErr("Update-queries are not supported");
     }
   }
-  private async _getPath(opts?: { ignoreVersion?: boolean; subPath?: string }) {
-    const accountName = (await this.owner.getInfo()).accountName;
-    const pathChunks: string[] = ["queries", accountName, this._info.name];
+  public get api() {
+    // For consistency with the other `api` getters, we're only returning the 'main' api path
+    // here (without the version number and without postprocessing the link)
+    const path = `/queries/${this.owner.slug}/${this.slug}`;
+    return {
+      url: this.app.url + path,
+      path,
+    };
+  }
+  private async _getPath(opts?: { ignoreVersion?: boolean }) {
+    const accountName = this.owner.slug;
+    const pathChunks: string[] = ["queries", accountName, this.slug];
     if (!opts?.ignoreVersion && typeof this._version === "number") {
       pathChunks.push(String(this._version));
     }
-    if (opts?.subPath) {
-      pathChunks.push(opts.subPath);
-    }
+
     return "/" + pathChunks.join("/");
   }
   private async _getQueryNameWithOwner() {
     const ownerName = (await this.owner.getInfo()).accountName;
-    return `${ownerName}/${this._info.name}`;
+    return `${ownerName}/${this.slug}`;
   }
   public async getInfo(refresh = false): Promise<Models.Query> {
     if (!refresh && this._info) return this._info;
@@ -79,6 +88,7 @@ export default class Query {
       app: this.app,
       path: await this._getPath(),
     })) as Models.Query;
+    this.slug = this.slug;
     return this._info;
   }
 
@@ -128,7 +138,7 @@ export default class Query {
 
     await _post<Routes.queries._account._query.Post>({
       app: this.app,
-      errorWithCleanerStack: getErr(`Failed to add a new version to query '${this["_info"].name}'`),
+      errorWithCleanerStack: getErr(`Failed to add a new version to query '${this.slug}'`),
       data: updateQueryInfo,
       path: await this._getPath(),
     });
@@ -136,18 +146,19 @@ export default class Query {
   }
   private _setInfo(info: Models.Query) {
     this._info = info;
+    this.slug = info.name;
     return this;
   }
   public async useVersion(version: number | "latest") {
     const numVersions = this._info.numberOfVersions;
-    if (!numVersions) throw getErr(`Query ${this._info.name} has no versions.`);
+    if (!numVersions) throw getErr(`Query ${this.slug} has no versions.`);
     if (version === "latest") {
       this._version = undefined;
       return this;
     }
     if (version > numVersions || version < 0) {
       throw getErr(
-        `Query ${this._info.name} has ${numVersions} ${
+        `Query ${this.slug} has ${numVersions} ${
           numVersions > 1 ? "versions" : "version"
         }. Version ${version} does not exist.`,
       );
@@ -168,7 +179,7 @@ export default class Query {
     }
     this._setInfo(
       await _patch<Routes.queries._account._query.Patch>({
-        errorWithCleanerStack: getErr(`Failed to update query information of ${this._info.name}.`),
+        errorWithCleanerStack: getErr(`Failed to update query information of ${this.slug}.`),
         app: this.app,
         path: await this._getPath({ ignoreVersion: true }),
         data: updateData,
@@ -178,7 +189,7 @@ export default class Query {
   }
   public async delete() {
     await _delete<Routes.queries._account._query.Delete>({
-      errorWithCleanerStack: getErr(`Failed to delete query ${this._info.name}.`),
+      errorWithCleanerStack: getErr(`Failed to delete query ${this.slug}.`),
       app: this.app,
       path: await this._getPath({ ignoreVersion: true }),
       expectedResponseBody: "empty",
@@ -187,23 +198,23 @@ export default class Query {
   public async getString(variableValues?: VariableValues) {
     const info = await this.getInfo();
     if (!info.requestConfig?.payload.query) {
-      throw getErr(`Query ${this._info.name} has no versions.`);
+      throw getErr(`Query ${this.slug} has no versions.`);
     }
     if (!info.variables) return info.requestConfig.payload.query;
 
     return (await _get<Routes.queries._account._query.Get>({
       errorWithCleanerStack: getErr(`Failed to get query information.`),
       app: this.app,
-      path: await this._getPath({ subPath: "text" }),
+      path: (await this._getPath()) + "/text",
       expectedResponseBody: "text",
       query: omitBy(variableValues, isUndefined) as { [key: string]: string },
     })) as string;
   }
-  public async getApiUrl(subpath?: string) {
-    return this.app["getPostProcessedApiUrl"]((await this.getInfo()).link + subpath);
+  public async getApiUrl() {
+    return this.app["getPostProcessedApiUrl"]((await this.getInfo()).link);
   }
   public async getRunLink() {
-    return this.getApiUrl("/run");
+    return this.getApiUrl() + "/run";
   }
   public results(variables?: VariableValues, opts?: { cache?: Cache }) {
     const queryType = this._getQueryType();
@@ -229,7 +240,7 @@ export default class Query {
         isBindings: true,
         mapResult,
         getUrl: async (contentType) =>
-          this.app["_config"].url +
+          this.app.url +
           ((await this._getPath()) + `/run${contentType ? "." + contentType : ""}?` + variablesInUrlString),
       });
     };
@@ -243,7 +254,7 @@ export default class Query {
         return new AsyncIteratorHelperWithToFile<n3.Quad, n3.Quad>({
           ...iteratorOptions,
           mapResult: async (result) => result,
-          getUrl: async () => this.app["_config"].url + ((await this._getPath()) + "/run.nt?" + variablesInUrlString),
+          getUrl: async () => this.app.url + ((await this._getPath()) + "/run.nt?" + variablesInUrlString),
           parsePage: async (page: string) => {
             if (page === "OK") return []; // empty page (jena);
             // empty page (virtuoso) is a valid empty turtle doc, no check needed.
@@ -283,7 +294,7 @@ export default class Query {
       throw new IncompatibleError("This function is supported by TriplyDB API version 23.09.0 or greater");
     }
     const accountToUse = account || (await app.getAccount());
-    const accountName = (await accountToUse.getInfo()).accountName;
+    const accountName = accountToUse.slug;
     const queryToCopy = await this.getInfo();
     const newQuery: Models.QueryCreate = {
       name: queryName || queryToCopy.name,

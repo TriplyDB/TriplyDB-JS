@@ -32,20 +32,21 @@ export interface AccountBase {
 }
 export type Account = User | Org;
 export interface AccountType {
-  accountName: string;
+  accountName?: string;
   app: App;
   notExistsErrorMessage: string;
 }
 export async function getUserOrOrg({ accountName, app, notExistsErrorMessage }: AccountType): Promise<User | Org> {
   const info = await _get<Routes.accounts._account.Get>({
     app: app,
-    path: "/accounts/" + accountName,
+    path: accountName ? "/accounts/" + accountName : "/me",
     errorWithCleanerStack: getErr(notExistsErrorMessage),
     query: { verbose: "" }, // Verbose, so that we can see the account's pinned datasets/stories/queries.
   });
+
   if (info.type === "user") {
-    return new User(app, info.accountName, info);
+    return new User(app, info);
   } else {
-    return new Org(app, info.accountName, info);
+    return new Org(app, info);
   }
 }

@@ -24,7 +24,7 @@ describe("User", function () {
     // Expect that there is at least one user on the instance that they're testing.
     const accounts = await app.getAccounts().toArray();
     expect(accounts).to.have.length.greaterThan(0);
-    expect(accounts.map((x) => (x as User)["_name"])).to.contain((await user.getInfo()).accountName);
+    expect(accounts.map((x) => (x as User).slug)).to.contain((await user.getInfo()).accountName);
   });
   it("rename account", async function () {
     const originalName = (await user.getInfo()).accountName;
@@ -36,7 +36,7 @@ describe("User", function () {
   });
   it("ensure that we get an error when the user doesn't exist", async function () {
     await expect(app.getAccount("maocpwnuzrls")).to.eventually.be.rejectedWith(
-      "Failed to fetch account maocpwnuzrls. (It does not exist)"
+      "Failed to get account information of maocpwnuzrls. (It does not exist)",
     );
   });
 
@@ -44,14 +44,14 @@ describe("User", function () {
   describe("Initialization", function () {
     it("Should throw error when user does not exist", async function () {
       return expect(App.get().getUser("Triply_")).to.eventually.rejectedWith(
-        "Failed to fetch user Triply_. (It does not exist)"
+        "Failed to get user information of Triply_. (It does not exist)",
       );
     });
 
     it("Should throw error when casting a user to an organization", async function () {
       const account = await App.get().getUser("wouter-1");
       return expect(account.asOrganization()).to.eventually.rejectedWith(
-        "Unable to cast user wouter-1 to an organization. A user cannot be cast to an organization."
+        "Unable to cast user wouter-1 to an organization. A user cannot be cast to an organization.",
       );
     });
   });
