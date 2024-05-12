@@ -9,12 +9,12 @@ import { getErr } from "./utils/Error.js";
 
 export default class Graph {
   private _info: Models.Graph;
-  private _app: App;
+  public app: App;
   private _dataset: Dataset;
   public readonly type = "Graph";
 
   constructor(dataset: Dataset, info: Models.Graph) {
-    this._app = dataset["_app"];
+    this.app = dataset["app"];
     this._info = info;
     this._dataset = dataset;
   }
@@ -33,9 +33,9 @@ export default class Graph {
     if (refresh)
       this._info = await _get<Routes.datasets._account._dataset.graphs._graphId.Get>({
         errorWithCleanerStack: getErr(
-          `Failed to get graph information for dataset ${await this._dataset["_getDatasetNameWithOwner"]()}.`
+          `Failed to get graph information for dataset ${await this._dataset["_getDatasetNameWithOwner"]()}.`,
         ),
-        app: this._app,
+        app: this.app,
         path: await this._getPath(),
       });
     return this._info;
@@ -49,9 +49,9 @@ export default class Graph {
     const info = await this.getInfo();
     await _delete<Routes.datasets._account._dataset.graphs._graphId.Delete>({
       errorWithCleanerStack: getErr(
-        `Failed to delete graph '${info.graphName}' from ${await this._dataset["_getDatasetNameWithOwner"]()}.`
+        `Failed to delete graph '${info.graphName}' from ${await this._dataset["_getDatasetNameWithOwner"]()}.`,
       ),
-      app: this._app,
+      app: this.app,
       path: await this._getPath(),
       expectedResponseBody: "empty",
     });
@@ -64,9 +64,9 @@ export default class Graph {
       errorWithCleanerStack: getErr(
         `Failed to rename graph ${info.graphName} to ${newGraphName} for dataset ${await this._dataset[
           "_getDatasetNameWithOwner"
-        ]()}.`
+        ]()}.`,
       ),
-      app: this._app,
+      app: this.app,
       path: await this._getPath(),
       data: <Routes.datasets._account._dataset.graphs._graphId.Patch["Req"]["Body"]>{ graphName: newGraphName },
     });

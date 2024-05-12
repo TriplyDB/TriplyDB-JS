@@ -24,14 +24,14 @@ import {
 import { getErr } from "./utils/Error.js";
 
 export default class Org implements AccountBase {
-  private _app: App;
+  public app: App;
   // Info is undefined when we delete the organization or when we are constructing this class from an array of account.
   private _info?: Models.Org;
   private _name?: string;
   public readonly type = "Org";
   //leave accountname empty to get account belonging to token
   public constructor(app: App, accountName: string, info?: Models.Org) {
-    this._app = app;
+    this.app = app;
     this._name = accountName;
     this._info = info;
   }
@@ -65,10 +65,10 @@ export default class Org implements AccountBase {
     this._setInfo(
       (await _get<Routes.accounts._account.Get>({
         errorWithCleanerStack: getErr(`Failed to get information of organization ${this._name}.`),
-        app: this._app,
+        app: this.app,
         path: "/accounts/" + this._name,
         query: { verbose: "" },
-      })) as Models.Org
+      })) as Models.Org,
     );
     return this._info!;
   }
@@ -81,7 +81,7 @@ export default class Org implements AccountBase {
     const orgName = (await this.getInfo()).accountName;
     return _get<Routes.accounts._account.members.Get>({
       errorWithCleanerStack: getErr(`Failed to get members of organization ${orgName}.`),
-      app: this._app,
+      app: this.app,
       path: `/accounts/${orgName}/members`,
     });
   }
@@ -90,7 +90,7 @@ export default class Org implements AccountBase {
     const memberName = (await user.getInfo()).accountName;
     return _post<Routes.accounts._account.members.Post>({
       errorWithCleanerStack: getErr(`Failed to add ${memberName} as member to organization ${orgName}.`),
-      app: this._app,
+      app: this.app,
       data: { accountName: memberName, role },
       path: `/accounts/${orgName}/members`,
     });
@@ -100,7 +100,7 @@ export default class Org implements AccountBase {
     const memberName = (await member.getInfo()).accountName;
     await _delete<Routes.accounts._account.members._member.Delete>({
       errorWithCleanerStack: getErr(`Failed to remove ${memberName} as member of organization ${this._name}.`),
-      app: this._app,
+      app: this.app,
       path: `/accounts/${orgName}/members/${memberName}`,
       expectedResponseBody: "empty",
     });
@@ -110,7 +110,7 @@ export default class Org implements AccountBase {
     const memberName = (await member.getInfo()).accountName;
     await _patch<Routes.accounts._account.members._member.Patch>({
       errorWithCleanerStack: getErr(`Failed to change role of ${memberName} to ${role} in organization ${orgName}`),
-      app: this._app,
+      app: this.app,
       path: `/accounts/${orgName}/members/${memberName}`,
       data: {
         role: role,
@@ -122,7 +122,7 @@ export default class Org implements AccountBase {
     const orgName = (await this.getInfo()).accountName;
     await _delete<Routes.accounts._account.Delete>({
       errorWithCleanerStack: getErr(`Failed to delete organization ${orgName}.`),
-      app: this._app,
+      app: this.app,
       path: `/accounts/${orgName}`,
       expectedResponseBody: "empty",
     });

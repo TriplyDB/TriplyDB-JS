@@ -22,7 +22,7 @@ export default class Asset {
   constructor(dataset: Dataset, info: Models.Asset, selectedVersion?: number) {
     this._info = info;
     this._dataset = dataset;
-    this._app = dataset["_app"];
+    this._app = dataset["app"];
     if (selectedVersion !== undefined) {
       this.selectVersion(selectedVersion);
     }
@@ -44,7 +44,7 @@ export default class Asset {
     if (this._deleted) throw getErr("This asset does not exist.");
     if (versionNumber === undefined) versionNumber = this._selectedVersion;
     const url = await this._getUrl(
-      versionNumber === undefined ? this._getLastVersionInfo() : this.getVersionInfo(versionNumber)
+      versionNumber === undefined ? this._getLastVersionInfo() : this.getVersionInfo(versionNumber),
     );
     const res = await fetch(
       url,
@@ -52,8 +52,8 @@ export default class Asset {
         {
           method: "get",
         },
-        { app: this._app }
-      )
+        { app: this._app },
+      ),
     );
     const stream = new pumpify(res.body as any, fs.createWriteStream(destinationPath));
     await new Promise((resolve, reject) => {
@@ -71,8 +71,8 @@ export default class Asset {
         {
           method: "get",
         },
-        { app: this._app }
-      )
+        { app: this._app },
+      ),
     );
     return res.body as any as NodeJS.WriteStream;
   }
@@ -100,7 +100,7 @@ export default class Asset {
       errorWithCleanerStack: getErr(
         `Failed to get refresh info for asset '${this._info.assetName}' from dataset ${await this._dataset[
           "_getDatasetNameWithOwner"
-        ]()}.`
+        ]()}.`,
       ),
       app: this._app,
       path: await this._dataset["_getDatasetPath"]("/assets"),
@@ -113,7 +113,7 @@ export default class Asset {
       throw getErr(
         `Tried to select version ${versionNumber} but asset '${this.getInfo().assetName}' only has ${
           this.getInfo().versions.length
-        } versions. (version numbering starts at 0) `
+        } versions. (version numbering starts at 0) `,
       );
     this._selectedVersion = versionNumber;
     return this;
@@ -137,7 +137,7 @@ export default class Asset {
       app: this._app,
       url: await this._getUrl(versionNumber === undefined ? undefined : this.getVersionInfo(versionNumber)),
       errorWithCleanerStack: getErr(
-        `Failed to delete asset ${this._info.assetName} in dataset ${dsInfo.owner.accountName}/${dsInfo.name}.`
+        `Failed to delete asset ${this._info.assetName} in dataset ${dsInfo.owner.accountName}/${dsInfo.name}.`,
       ),
       expectedResponseBody: "empty",
     });
@@ -186,13 +186,13 @@ export default class Asset {
     const info = await opts.dataset.getInfo();
 
     // we want to try to get a sticky session cookie for TUS uploads
-    const headers: { [name: string]: string } = { Authorization: "Bearer " + opts.dataset["_app"]["_config"].token };
-    await setStickySessionCookie(headers, opts.dataset["_app"]["_config"].url);
+    const headers: { [name: string]: string } = { Authorization: "Bearer " + opts.dataset["app"]["_config"].token };
+    await setStickySessionCookie(headers, opts.dataset["app"]["_config"].url);
 
     let previousChunkCompleted = Date.now();
     return new Promise<Models.Asset>((resolve, reject) => {
       const upload = new tus.Upload(rs, {
-        endpoint: `${opts.dataset["_app"]["_config"].url}/datasets/${info.owner.accountName}/${info.name}/assets/add`,
+        endpoint: `${opts.dataset["app"]["_config"].url}/datasets/${info.owner.accountName}/${info.name}/assets/add`,
         metadata,
         headers,
         chunkSize: 5 * 1024 * 1024,

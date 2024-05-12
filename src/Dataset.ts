@@ -51,17 +51,17 @@ type NewServiceJena = {
   config?: Models.ServiceConfigJena;
 };
 export default class Dataset {
-  private _app: App;
+  public app: App;
   private _info?: Models.Dataset;
-  private _owner: Account;
+  public owner: Account;
   private _lastJob?: JobUpload;
   private _name: string;
   private _allPrefixes: { [prefixLabel: string]: string } | undefined;
   public readonly type = "Dataset";
   constructor(app: App, owner: Account, datasetName: string, datasetInfo?: Models.Dataset) {
-    this._app = app;
+    this.app = app;
     this._name = datasetName;
-    this._owner = owner;
+    this.owner = owner;
     this._info = datasetInfo;
   }
 
@@ -69,11 +69,11 @@ export default class Dataset {
     return new AsyncIteratorHelper<Models.ServiceMetadata, Service>({
       potentialFutureError: getErr(`Failed to get services`),
       getErrorMessage: async () => `Failed to get services for dataset ${await this._getDatasetNameWithOwner()}.`,
-      app: this._app,
-      getUrl: async () => this._app["_config"].url + (await this._getDatasetPath("/services")),
+      app: this.app,
+      getUrl: async () => this.app["_config"].url + (await this._getDatasetPath("/services")),
       mapResult: async (info: Models.ServiceMetadata) => {
         return new Service({
-          app: this._app,
+          app: this.app,
           dataset: this,
           name: info.name,
           type: info.type,
@@ -86,11 +86,11 @@ export default class Dataset {
   public async getService<T extends Dataset>(this: T, serviceName: string): Promise<Service> {
     const sv2Metadata = await _get<Routes.datasets._account._dataset.services._serviceName.Get>({
       errorWithCleanerStack: getErr(`Failed to get service '${serviceName}' from dataset ${this["_name"]}.`),
-      app: this._app,
+      app: this.app,
       path: `${await this._getDatasetPath("/services/")}${serviceName}`,
     });
     return new Service({
-      app: this._app,
+      app: this.app,
       dataset: this,
       name: sv2Metadata.name,
       type: sv2Metadata.type,
@@ -104,7 +104,7 @@ export default class Dataset {
         if (typeToClear === "graphs") {
           return _delete({
             errorWithCleanerStack: getErr(`Failed to remove all graphs for ${await this._getDatasetNameWithOwner()}.`),
-            app: this._app,
+            app: this.app,
             path: await this._getDatasetPath("/graphs"),
             expectedResponseBody: "empty",
           });
@@ -140,18 +140,18 @@ export default class Dataset {
     return this;
   }
   private async _getDatasetPath(additionalPath?: string) {
-    const ownerName = (await this._owner.getInfo()).accountName;
+    const ownerName = (await this.owner.getInfo()).accountName;
     return "/datasets/" + ownerName + "/" + this._name + (additionalPath || "");
   }
   private async _getDatasetNameWithOwner() {
-    const ownerName = (await this._owner.getInfo()).accountName;
+    const ownerName = (await this.owner.getInfo()).accountName;
     return `${ownerName}/${this._name}`;
   }
   public async getInfo(refresh = false): Promise<Models.Dataset> {
     if (!refresh && this._info) return this._info;
     const info = await _get<Routes.datasets._account._dataset.Get>({
       errorWithCleanerStack: getErr(`Failed to get dataset information for ${await this._getDatasetNameWithOwner()}.`),
-      app: this._app,
+      app: this.app,
       path: await this._getDatasetPath(),
     });
     this._setInfo(info);
@@ -164,7 +164,7 @@ export default class Dataset {
         errorWithCleanerStack: getErr(
           `Failed to get asset ${assetName} from dataset ${await this._getDatasetNameWithOwner()}.`,
         ),
-        app: this._app,
+        app: this.app,
         path: await this._getDatasetPath("/assets"),
         query: { fileName: assetName },
       })) as Models.Asset,
@@ -175,8 +175,8 @@ export default class Dataset {
     return new AsyncIteratorHelper<Models.Asset, Asset>({
       potentialFutureError: getErr(`Failed to get assets`),
       getErrorMessage: async () => `Failed to get assets of dataset ${await this._getDatasetNameWithOwner()}.`,
-      app: this._app,
-      getUrl: async () => this._app["_config"].url + (await this._getDatasetPath("/assets")),
+      app: this.app,
+      getUrl: async () => this.app["_config"].url + (await this._getDatasetPath("/assets")),
       mapResult: async (assetInfo) => new Asset(this, assetInfo),
     });
   }
@@ -184,8 +184,8 @@ export default class Dataset {
     return new AsyncIteratorHelper<Models.Graph, Graph>({
       potentialFutureError: getErr(`Failed to get graphs`),
       getErrorMessage: async () => `Failed to get graphs of dataset ${await this._getDatasetNameWithOwner()}.`,
-      app: this._app,
-      getUrl: async () => this._app["_config"].url + (await this._getDatasetPath("/graphs")),
+      app: this.app,
+      getUrl: async () => this.app["_config"].url + (await this._getDatasetPath("/graphs")),
       mapResult: async (info) => new Graph(this, info),
     });
   }
@@ -227,7 +227,7 @@ export default class Dataset {
     opts?: { graph?: Graph; extension?: string },
   ): Promise<stream.Readable> {
     const stream = await handleFetchAsStream("GET", {
-      app: this._app,
+      app: this.app,
       path: await this._getDownloadPath((opts?.extension ?? ".trig") + ".gz", opts?.graph),
       errorWithCleanerStack: getErr(
         opts?.graph
@@ -283,7 +283,7 @@ export default class Dataset {
     }
 
     const overwrite = !!args?.overwrite;
-    if (overwrite && !(await this._app.isCompatible("2.2.7"))) {
+    if (overwrite && !(await this.app.isCompatible("2.2.7"))) {
       throw new IncompatibleError("Overwriting graphs is only supported by TriplyDB API version 2.2.7 or greater");
     }
     if (!graphs) {
@@ -307,7 +307,7 @@ export default class Dataset {
       errorWithCleanerStack: getErr(
         `Tried importing from dataset ${await fromDataset._getDatasetNameWithOwner()}. Failed to write the changes to ${await this._getDatasetNameWithOwner()}.`,
       ),
-      app: this._app,
+      app: this.app,
       path: await this._getDatasetPath("/imports"),
       data: <Models.UpdateImports>[
         {
@@ -327,7 +327,7 @@ export default class Dataset {
         errorWithCleanerStack: getErr(
           `Failed to update dataset information of ${await this._getDatasetNameWithOwner()}.`,
         ),
-        app: this._app,
+        app: this.app,
         path: await this._getDatasetPath(),
         data: config,
       }),
@@ -339,11 +339,11 @@ export default class Dataset {
       errorWithCleanerStack: getErr(
         `Failed to copy dataset ${await this._getDatasetNameWithOwner()} to ${toAccountName}.`,
       ),
-      app: this._app,
+      app: this.app,
       path: await this._getDatasetPath("/copy"),
       data: { toAccount: toAccountName, name: newDatasetName },
     });
-    const toAccount = await this._app.getAccount(toAccountName);
+    const toAccount = await this.app.getAccount(toAccountName);
     return (await toAccount.getDataset(newDs.name))._setInfo(newDs);
   }
 
@@ -356,7 +356,7 @@ export default class Dataset {
   public async delete() {
     await _delete<Routes.datasets._account._dataset.Delete>({
       errorWithCleanerStack: getErr(`Failed to delete dataset ${await this._getDatasetNameWithOwner()}.`),
-      app: this._app,
+      app: this.app,
       path: await this._getDatasetPath(),
       expectedResponseBody: "empty",
     });
@@ -367,7 +367,7 @@ export default class Dataset {
     const info = await this.getInfo();
     await _post({
       errorWithCleanerStack: getErr(`Failed to set avatar of dataset ${await this._getDatasetNameWithOwner()}.`),
-      app: this._app,
+      app: this.app,
       path: "/imgs/avatars/d/" + info.id,
       attach: { avatar: pathBufferOrFile },
     });
@@ -384,11 +384,11 @@ export default class Dataset {
     this._throwIfJobRunning(dsId);
     try {
       datasetsWithOngoingJob[dsId] = true;
-      if (defaultsConfig?.overwriteAll && !(await this._app.isCompatible("2.2.7"))) {
+      if (defaultsConfig?.overwriteAll && !(await this.app.isCompatible("2.2.7"))) {
         throw new IncompatibleError("Overwriting graphs is only supported by TriplyDB API version 2.2.7 or greater");
       }
       const job = new JobUpload({
-        app: this._app,
+        app: this.app,
         ...defaultsConfig,
         datasetPath: await this._getDatasetPath(),
         datasetNameWithOwner: await this._getDatasetNameWithOwner(),
@@ -418,15 +418,15 @@ export default class Dataset {
     try {
       this._throwIfJobRunning(dsId);
       datasetsWithOngoingJob[dsId] = true;
-      if (defaultConfig?.overwriteAll && !(await this._app.isCompatible("2.2.7"))) {
+      if (defaultConfig?.overwriteAll && !(await this.app.isCompatible("2.2.7"))) {
         throw new IncompatibleError("Overwriting graphs is only supported by TriplyDB API version 2.2.7 or greater");
       }
-      const ownerName = (await this._owner.getInfo()).accountName;
+      const ownerName = (await this.owner.getInfo()).accountName;
       let info = await _post<Routes.datasets._account._dataset.jobs.Post>({
         errorWithCleanerStack: getErr(
           `Failed to delete import from ${urls.length} URLs in dataset ${await this._getDatasetNameWithOwner()}.`,
         ),
-        app: this._app,
+        app: this.app,
         path: "/datasets/" + ownerName + "/" + this._name + "/jobs",
         data: {
           ...defaultConfig,
@@ -435,8 +435,8 @@ export default class Dataset {
         },
       });
 
-      const jobUrl = `${this._app["_config"].url}${await this._getDatasetPath("/jobs/" + info.jobId)}`;
-      info = await waitForJobToFinish(this._app, jobUrl, (await this.getInfo()).id);
+      const jobUrl = `${this.app["_config"].url}${await this._getDatasetPath("/jobs/" + info.jobId)}`;
+      info = await waitForJobToFinish(this.app, jobUrl, (await this.getInfo()).id);
       await this.getInfo(true); //Sync info so the ds metadata is up to date with imported statements
       return this;
     } finally {
@@ -446,7 +446,7 @@ export default class Dataset {
   public async describe(iri: string | NamedNode) {
     const iriString = typeof iri === "string" ? iri : iri.value;
     const buffer: Buffer = await _get({
-      app: this._app,
+      app: this.app,
       path: await this._getDatasetPath("/describe.nt"),
       query: {
         resource: iriString,
@@ -460,10 +460,10 @@ export default class Dataset {
     return new AsyncIteratorHelper<Models.NtriplyStatement, Models.NtriplyStatement>({
       potentialFutureError: getErr(`Failed to get statements`),
       getErrorMessage: async () => `Failed to get statements of dataset ${await this._getDatasetNameWithOwner()}.`,
-      app: this._app,
+      app: this.app,
       mapResult: async (info) => info,
       getUrl: async () =>
-        this._app["_config"].url +
+        this.app["_config"].url +
         (await this._getDatasetPath("/statements")) +
         "?" +
         stringifyQueryObj.stringify({ limit: 50, ...pick(payload, "subject", "predicate", "object", "graph") }),
@@ -498,7 +498,7 @@ export default class Dataset {
 
   public async addService(name: string, opts?: NewService) {
     return new Service({
-      app: this._app,
+      app: this.app,
       dataset: this,
       name,
       type: opts ? opts.type : "virtuoso",
@@ -522,7 +522,7 @@ export default class Dataset {
       errorWithCleanerStack: getErr(
         `Failed to add ${size(newPrefixes)} prefixes to dataset ${await this._getDatasetNameWithOwner()}.`,
       ),
-      app: this._app,
+      app: this.app,
       path: await this._getDatasetPath("/prefixes"),
       data: asPairs.map(([key, value]) => {
         let prefixIri;
@@ -550,7 +550,7 @@ export default class Dataset {
           errorWithCleanerStack: getErr(
             `Failed to delete prefix ${p} from dataset ${await this._getDatasetNameWithOwner()}.`,
           ),
-          app: this._app,
+          app: this.app,
           path: dsPath + "/prefixes/" + p,
           expectedResponseBody: "empty",
         }).catch((e) => {
@@ -571,7 +571,7 @@ export default class Dataset {
     if (refresh || !this._allPrefixes) {
       const prefixes = await _get<Routes.datasets._account._dataset.prefixes.Get>({
         errorWithCleanerStack: getErr(`Failed to get prefixes of dataset ${await this._getDatasetNameWithOwner()}.`),
-        app: this._app,
+        app: this.app,
         path: await this._getDatasetPath("/prefixes"),
       });
       this._allPrefixes = fromPairs(prefixes.map((p) => [p.prefixLabel, p.iri]));

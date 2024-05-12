@@ -36,15 +36,15 @@ type AddVersion = AddVersionVisualization | AddVersionLDFrame;
 type DuplicateOptions = Partial<AddQueryOptions>;
 
 export default class Query {
-  private _app: App;
+  public app: App;
   private _info: Models.Query;
-  private _owner: Account;
+  public owner: Account;
   private _version: number | undefined;
   public readonly type = "Query";
   public constructor(app: App, info: Models.Query, owner: Account) {
-    this._app = app;
+    this.app = app;
     this._info = info;
-    this._owner = owner;
+    this.owner = owner;
   }
   private _getQueryType() {
     const queryString = this["_info"].requestConfig?.payload.query;
@@ -58,7 +58,7 @@ export default class Query {
     }
   }
   private async _getPath(opts?: { ignoreVersion?: boolean; subPath?: string }) {
-    const accountName = (await this._owner.getInfo()).accountName;
+    const accountName = (await this.owner.getInfo()).accountName;
     const pathChunks: string[] = ["queries", accountName, this._info.name];
     if (!opts?.ignoreVersion && typeof this._version === "number") {
       pathChunks.push(String(this._version));
@@ -69,14 +69,14 @@ export default class Query {
     return "/" + pathChunks.join("/");
   }
   private async _getQueryNameWithOwner() {
-    const ownerName = (await this._owner.getInfo()).accountName;
+    const ownerName = (await this.owner.getInfo()).accountName;
     return `${ownerName}/${this._info.name}`;
   }
   public async getInfo(refresh = false): Promise<Models.Query> {
     if (!refresh && this._info) return this._info;
     this._info = (await _get<Routes.queries._account._query.Get>({
       errorWithCleanerStack: getErr(`Failed to get information of query ${await this._getQueryNameWithOwner()}.`),
-      app: this._app,
+      app: this.app,
       path: await this._getPath(),
     })) as Models.Query;
     return this._info;
@@ -127,7 +127,7 @@ export default class Query {
     };
 
     await _post<Routes.queries._account._query.Post>({
-      app: this._app,
+      app: this.app,
       errorWithCleanerStack: getErr(`Failed to add a new version to query '${this["_info"].name}'`),
       data: updateQueryInfo,
       path: await this._getPath(),
@@ -157,7 +157,7 @@ export default class Query {
     return this;
   }
   public async update(config: Models.QueryMetaUpdate) {
-    if (!(await this._app.isCompatible("23.09.0"))) {
+    if (!(await this.app.isCompatible("23.09.0"))) {
       throw new IncompatibleError(
         "This function has been updated and is now supported by TriplyDB API version 23.09.0 or greater",
       );
@@ -169,7 +169,7 @@ export default class Query {
     this._setInfo(
       await _patch<Routes.queries._account._query.Patch>({
         errorWithCleanerStack: getErr(`Failed to update query information of ${this._info.name}.`),
-        app: this._app,
+        app: this.app,
         path: await this._getPath({ ignoreVersion: true }),
         data: updateData,
       }),
@@ -179,7 +179,7 @@ export default class Query {
   public async delete() {
     await _delete<Routes.queries._account._query.Delete>({
       errorWithCleanerStack: getErr(`Failed to delete query ${this._info.name}.`),
-      app: this._app,
+      app: this.app,
       path: await this._getPath({ ignoreVersion: true }),
       expectedResponseBody: "empty",
     });
@@ -193,14 +193,14 @@ export default class Query {
 
     return (await _get<Routes.queries._account._query.Get>({
       errorWithCleanerStack: getErr(`Failed to get query information.`),
-      app: this._app,
+      app: this.app,
       path: await this._getPath({ subPath: "text" }),
       expectedResponseBody: "text",
       query: omitBy(variableValues, isUndefined) as { [key: string]: string },
     })) as string;
   }
   public async getApiUrl(subpath?: string) {
-    return this._app["getPostProcessedApiUrl"]((await this.getInfo()).link + subpath);
+    return this.app["getPostProcessedApiUrl"]((await this.getInfo()).link + subpath);
   }
   public async getRunLink() {
     return this.getApiUrl("/run");
@@ -219,7 +219,7 @@ export default class Query {
     const iteratorOptions = {
       potentialFutureError: getErr(`Failed to run query`),
       getErrorMessage: async () => `Failed to get results for query ${await this.getInfo().then((i) => i.name)}.`,
-      app: this._app,
+      app: this.app,
       cache: opts?.cache,
     };
 
@@ -229,7 +229,7 @@ export default class Query {
         isBindings: true,
         mapResult,
         getUrl: async (contentType) =>
-          this._app["_config"].url +
+          this.app["_config"].url +
           ((await this._getPath()) + `/run${contentType ? "." + contentType : ""}?` + variablesInUrlString),
       });
     };
@@ -243,7 +243,7 @@ export default class Query {
         return new AsyncIteratorHelperWithToFile<n3.Quad, n3.Quad>({
           ...iteratorOptions,
           mapResult: async (result) => result,
-          getUrl: async () => this._app["_config"].url + ((await this._getPath()) + "/run.nt?" + variablesInUrlString),
+          getUrl: async () => this.app["_config"].url + ((await this._getPath()) + "/run.nt?" + variablesInUrlString),
           parsePage: async (page: string) => {
             if (page === "OK") return []; // empty page (jena);
             // empty page (virtuoso) is a valid empty turtle doc, no check needed.
@@ -278,7 +278,7 @@ export default class Query {
   */
 
   public async copy(queryName?: string, account?: User | Org, metadataToReplace?: DuplicateOptions) {
-    const app = this._app;
+    const app = this.app;
     if (!(await app.isCompatible("23.09.0"))) {
       throw new IncompatibleError("This function is supported by TriplyDB API version 23.09.0 or greater");
     }
