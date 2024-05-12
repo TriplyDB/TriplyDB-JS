@@ -151,16 +151,17 @@ export default class App {
   public async get(idString: `story/${string}`): Promise<Story>;
   public async get(idString: string) {
     const fragments = idString.split("/");
-    if (fragments[0] === "account") return this.getAccount(fragments[1]);
-    if (fragments[0] === "user") return this.getUser(fragments[1]);
-    if (fragments[0] === "org") return this.getOrganization(fragments[1]);
+    const type = fragments[0];
+    if (type === "account") return this.getAccount(fragments[1]);
+    if (type === "user") return this.getUser(fragments[1]);
+    if (type === "org") return this.getOrganization(fragments[1]);
     if (fragments.length > 3) throw new Error("Unrecognized identifier " + idString);
     // Check whether the account is mentioned explicitly
     const account = await this.getAccount(fragments.length > 2 ? fragments[1] : undefined);
     const resourceIdentifier = fragments[fragments.length - 1];
-    if (resourceIdentifier === "dataset") return account.getDataset(resourceIdentifier);
-    if (resourceIdentifier === "query") return account.getQuery(resourceIdentifier);
-    if (resourceIdentifier === "story") return account.getStory(resourceIdentifier);
+    if (type === "dataset") return account.getDataset(resourceIdentifier);
+    if (type === "query") return account.getQuery(resourceIdentifier);
+    if (type === "story") return account.getStory(resourceIdentifier);
     throw new Error("Unrecognized identifier " + idString);
   }
   public async isCompatible(minimumVersion: string) {
