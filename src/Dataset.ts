@@ -85,7 +85,7 @@ export default class Dataset {
 
   public async getService<T extends Dataset>(this: T, serviceName: string): Promise<Service> {
     const sv2Metadata = await _get<Routes.datasets._account._dataset.services._serviceName.Get>({
-      errorWithCleanerStack: getErr(`Failed to get service '${serviceName}' from dataset ${this["slug"]}.`),
+      errorWithCleanerStack: getErr(`Failed to get service '${serviceName}' from dataset ${this.slug}.`),
       app: this.app,
       path: `${this.api.path}/services/${serviceName}`,
     });
