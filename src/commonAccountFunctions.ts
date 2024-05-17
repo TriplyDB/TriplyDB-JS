@@ -30,11 +30,11 @@ export interface AddQueryOptions {
 }
 
 export async function addQuery<T extends Account>(this: T, name: string, opts: AddQueryOptions) {
-  const app = (this as User)["_app"];
+  const app = (this as User).app;
   if (!(await app.isCompatible("23.09.0"))) {
     // Service Config V2 changes
     throw new IncompatibleError(
-      "This function has been updated and is now supported by TriplyDB API version 23.09.0 or greater"
+      "This function has been updated and is now supported by TriplyDB API version 23.09.0 or greater",
     );
   }
   const accountName = (await this.getInfo()).accountName;
@@ -78,12 +78,12 @@ export async function addQuery<T extends Account>(this: T, name: string, opts: A
       data: query,
       errorWithCleanerStack: getErr(`Failed to add a query to account ${accountName}.`),
     }),
-    this
+    this,
   );
 }
 export type NewStory = Omit<Models.StoryCreate, "name">;
 export async function addStory<T extends Account>(this: T, name: string, args?: NewStory) {
-  const app = (this as User)["_app"];
+  const app = (this as User).app;
   const accountName = (await this.getInfo()).accountName;
   const story: Models.StoryCreate = { ...args, name };
   if (!story.accessLevel) story.accessLevel = "private";
@@ -95,12 +95,12 @@ export async function addStory<T extends Account>(this: T, name: string, args?: 
       data: story,
       errorWithCleanerStack: getErr(`Failed to add a story to account ${accountName}.`),
     }),
-    this
+    this,
   );
 }
 
 export async function getQuery<T extends Account>(this: T, name: string) {
-  const app = (this as User)["_app"];
+  const app = (this as User).app;
   const accountName = (await this.getInfo()).accountName;
   const query = (await _get<Routes.queries._account._query.Get>({
     app: app,
@@ -111,7 +111,7 @@ export async function getQuery<T extends Account>(this: T, name: string) {
 }
 
 export function getQueries<T extends Account>(this: T): AsyncIteratorHelper<Models.Query, Query> {
-  const app = (this as User)["_app"];
+  const app = (this as User).app;
 
   return new AsyncIteratorHelper<Models.Query, Query>({
     potentialFutureError: getErr(`Failed to get queries`),
@@ -123,7 +123,7 @@ export function getQueries<T extends Account>(this: T): AsyncIteratorHelper<Mode
 }
 
 export async function getStory<T extends Account>(this: T, name: string) {
-  const app = (this as User)["_app"];
+  const app = (this as User).app;
   const accountName = (await this.getInfo()).accountName;
   const story = await _get<Routes.stories._account._story.Get>({
     errorWithCleanerStack: getErr(`Failed to get story ${name} of ${accountName}.`),
@@ -134,7 +134,7 @@ export async function getStory<T extends Account>(this: T, name: string) {
 }
 
 export function getStories<T extends Account>(this: T): AsyncIteratorHelper<Models.Story, Story> {
-  const app = (this as User)["_app"];
+  const app = (this as User).app;
   return new AsyncIteratorHelper<Models.Story, Story>({
     potentialFutureError: getErr(`Failed to get stories`),
     getErrorMessage: async () => `Failed to get stories of ${(await this.getInfo()).accountName}`,
@@ -145,7 +145,7 @@ export function getStories<T extends Account>(this: T): AsyncIteratorHelper<Mode
 }
 
 export async function getDataset<T extends Account>(this: T, ds: string) {
-  const app = (this as User)["_app"];
+  const app = (this as User).app;
   const accountName = (await this.getInfo()).accountName;
   const dsInfo = await _get<Routes.datasets._account._dataset.Get>({
     errorWithCleanerStack: getErr(`Failed to get dataset ${ds} of account ${accountName}.`),
@@ -156,7 +156,7 @@ export async function getDataset<T extends Account>(this: T, ds: string) {
 }
 
 export function getDatasets<T extends Account>(this: T) {
-  const app = (this as User)["_app"];
+  const app = (this as User).app;
   return new AsyncIteratorHelper<Models.Dataset, Dataset>({
     potentialFutureError: getErr(`Failed to get datasets`),
     getErrorMessage: async () => `Failed to get datasets of ${(await this.getInfo()).accountName}`,
@@ -168,7 +168,7 @@ export function getDatasets<T extends Account>(this: T) {
 
 type NewDataset = Omit<Models.NewDataset, "name"> & { prefixes?: Prefixes };
 export async function addDataset<T extends Account>(this: T, name: string, ds?: NewDataset) {
-  const app = (this as User)["_app"];
+  const app = (this as User).app;
   const accountName = (await this.getInfo()).accountName;
   const createdDs = await _post<Routes.datasets._account.Post>({
     errorWithCleanerStack: getErr(`Failed to add dataset ${name} to account ${accountName}.`),
@@ -182,7 +182,7 @@ export async function addDataset<T extends Account>(this: T, name: string, ds?: 
 }
 
 export async function getPinnedItems<T extends Account>(this: T): Promise<Array<Dataset | Story | Query>> {
-  const app = (this as User)["_app"];
+  const app = (this as User).app;
   const info = await this.getInfo();
   if (!info.pinnedItems) return [];
   return info.pinnedItems.map((pinnedItem) => {
@@ -199,7 +199,7 @@ export async function getPinnedItems<T extends Account>(this: T): Promise<Array<
 }
 
 export async function pinItems<T extends Account>(this: T, items: Array<Dataset | Story | Query>) {
-  const app = (this as User)["_app"];
+  const app = (this as User).app;
   const pinnedItems: PinnedItemUpdate[] = await Promise.all(
     items.map(async (item) => {
       let pinnedItemUpdate: PinnedItemUpdate;
@@ -216,7 +216,7 @@ export async function pinItems<T extends Account>(this: T, items: Array<Dataset 
         throw getErr("Unrecognized pinned item " + item);
       }
       return pinnedItemUpdate;
-    })
+    }),
   );
   const accountName = (await this.getInfo()).accountName;
   (this as User)["_setInfo"](
@@ -228,16 +228,16 @@ export async function pinItems<T extends Account>(this: T, items: Array<Dataset 
         pinnedItems: pinnedItems,
       },
       query: { verbose: "" },
-    })) as Models.User
+    })) as Models.User,
   );
   return this;
 }
 
 export async function update<T extends Account>(
   this: T,
-  updateObj: Omit<Models.AccountUpdate, "pinnedDatasets">
+  updateObj: Omit<Models.AccountUpdate, "pinnedDatasets">,
 ): Promise<T> {
-  const app = (this as User)["_app"];
+  const app = (this as User).app;
   const accountName = (await this.getInfo()).accountName;
   (this as User)["_setInfo"](
     await _patch({
@@ -245,13 +245,13 @@ export async function update<T extends Account>(
       app: app,
       path: "/accounts/" + accountName,
       data: updateObj,
-    })
+    }),
   );
   return this;
 }
 
 export async function setAvatar<T extends Account>(this: T, pathBufferOrFile: string | Buffer | File) {
-  const app = (this as User)["_app"];
+  const app = (this as User).app;
   const info = await this.getInfo();
   const accountName = (await this.getInfo()).accountName;
   await _post({
@@ -268,7 +268,7 @@ export async function ensureDataset<T extends Account>(this: T, name: string, ne
     const info = await ds.getInfo();
     if (newDs?.accessLevel && info.accessLevel !== newDs?.accessLevel) {
       throw getErr(
-        `Dataset ${name} already exists with access level ${info.accessLevel}. Cannot ensure it with access level ${newDs?.accessLevel}. Please change the access level to match the dataset, or remove it entirely as a parameter.`
+        `Dataset ${name} already exists with access level ${info.accessLevel}. Cannot ensure it with access level ${newDs?.accessLevel}. Please change the access level to match the dataset, or remove it entirely as a parameter.`,
       );
     }
     return ds;
@@ -310,7 +310,7 @@ export async function ensureStory<T extends Account>(this: T, name: string, newS
     const info = await story.getInfo();
     if (newStory?.accessLevel && info.accessLevel !== newStory?.accessLevel) {
       throw getErr(
-        `Story ${name} already exists with access level ${info.accessLevel}. Cannot ensure it with access level ${newStory?.accessLevel}. Please change the access level to match the story, or remove it entirely as a parameter.`
+        `Story ${name} already exists with access level ${info.accessLevel}. Cannot ensure it with access level ${newStory?.accessLevel}. Please change the access level to match the story, or remove it entirely as a parameter.`,
       );
     }
     return story;
