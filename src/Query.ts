@@ -214,7 +214,7 @@ export default class Query {
     return this.app["getPostProcessedApiUrl"]((await this.getInfo()).link);
   }
   public async getRunLink() {
-    return this.getApiUrl() + "/run";
+    return (await this.getApiUrl()) + "/run";
   }
   public results(variables?: VariableValues, opts?: { cache?: Cache }) {
     const queryType = this._getQueryType();
