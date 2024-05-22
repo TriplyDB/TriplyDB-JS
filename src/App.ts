@@ -145,23 +145,25 @@ export default class App {
    * - To get a dataset of a different account, run `app.get('dataset/other-account/my-dataset-name')`
    * Apply the same for any string starting with user, account, org, dataset, query or story
    */
+  public async get(idString: `account:${string}`): Promise<Account>;
+  public async get(idString: `user:${string}`): Promise<User>;
   public async get(idString: `account`): Promise<Account>;
   public async get(idString: `user`): Promise<User>;
-  public async get(idString: `account/${string}`): Promise<Account>;
-  public async get(idString: `user/${string}`): Promise<User>;
-  public async get(idString: `org/${string}`): Promise<Org>;
-  public async get(idString: `dataset/${string}`): Promise<Dataset>;
-  public async get(idString: `query/${string}`): Promise<Query>;
-  public async get(idString: `story/${string}`): Promise<Story>;
+  public async get(idString: `org:${string}`): Promise<Org>;
+  public async get(idString: `dataset:${string}`): Promise<Dataset>;
+  public async get(idString: `query:${string}`): Promise<Query>;
+  public async get(idString: `story:${string}`): Promise<Story>;
   public async get(idString: string) {
-    const fragments = idString.split("/");
-    const type = fragments[0];
-    if (type === "account") return this.getAccount(fragments[1]);
-    if (type === "user") return this.getUser(fragments[1]);
-    if (type === "org") return this.getOrganization(fragments[1]);
-    if (fragments.length > 3) throw new Error("Unrecognized identifier " + idString);
+    const [type, fragmentsString] = idString.split(":");
+    const fragments = fragmentsString.split("/");
+    if (type === "account") return this.getAccount(fragments[0] || undefined);
+    if (type === "user") return this.getUser(fragments[0] || undefined);
+    if (fragments[0] === "") throw new Error("Unrecognized identifier " + idString);
+    if (type === "org") return this.getOrganization(fragments[0]);
+
+    if (fragments.length > 2) throw new Error("Unrecognized identifier " + idString);
     // Check whether the account is mentioned explicitly
-    const account = await this.getAccount(fragments.length > 2 ? fragments[1] : undefined);
+    const account = await this.getAccount(fragments.length > 1 ? fragments[0] : undefined);
     const resourceIdentifier = fragments[fragments.length - 1];
     if (type === "dataset") return account.getDataset(resourceIdentifier);
     if (type === "query") return account.getQuery(resourceIdentifier);
