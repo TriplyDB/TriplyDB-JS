@@ -172,8 +172,9 @@ export default class Asset {
       if (fs.createReadStream === undefined) {
         throw getErr('"fs" is not loaded in this environment, use a "File" instead');
       }
-      rs = fs.createReadStream(opts.fileOrPath);
+      // This stat method is also a mechanism to ensure the file exists (to avoid the readstream failing)
       fileSize = (await fs.stat(opts.fileOrPath)).size;
+      rs = fs.createReadStream(opts.fileOrPath);
     } else {
       rs = opts.fileOrPath;
       fileSize = opts.fileOrPath.size;
