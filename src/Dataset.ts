@@ -22,7 +22,7 @@ import Asset from "./Asset.js";
 import Graph from "./Graph.js";
 import stringifyQueryObj from "query-string";
 import statuses from "http-status-codes";
-import { NamedNode } from "rdf-js";
+import { NamedNode } from "@rdfjs/types";
 import NDEDatasetRegister from "./utils/NDEDatasetRegister.js";
 
 type JobDefaultsConfig = Omit<
