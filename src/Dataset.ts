@@ -6,7 +6,6 @@ import Service from "./Service.js";
 import debug from "debug";
 const log = debug("triply:triplydb-js:upload");
 import * as tus from "@triply/tus-js-client";
-import md5 from "md5";
 import { tmpdir } from "os";
 import * as stream from "stream";
 import path from "path";
@@ -24,6 +23,8 @@ import stringifyQueryObj from "query-string";
 import statuses from "http-status-codes";
 import { NamedNode } from "@rdfjs/types";
 import NDEDatasetRegister from "./utils/NDEDatasetRegister.js";
+import { randomUUID } from "crypto";
+import { pipeline } from "stream/promises";
 
 type JobDefaultsConfig = Omit<
   Routes.datasets._account._dataset.jobs.Post["Req"]["Body"],
@@ -410,14 +411,12 @@ export default class Dataset {
     }
   }
   public async importFromStore(store: n3.Store, opts?: JobDefaultsConfig): Promise<Dataset> {
-    /**
-     * We're writing the store to disk and then uploading
-     * This can be improved at a later moment in time by uploading from memory using Buffer
-     */
-    const quads = store.getQuads(null, null, null, null);
-    const quadsString = new n3.Writer({ format: "n-quads" }).quadsToString(quads);
-    const tmpFile = path.resolve(tmpdir(), `triplydb-${md5(quadsString)}.nq`);
-    await fs.writeFile(tmpFile, quadsString, "utf-8");
+    const tmpFile = path.resolve(tmpdir(), `triplydb-${randomUUID()}.nq`);
+    await pipeline(
+      stream.Readable.from(store),
+      new n3.StreamWriter({ format: "n-quads" }),
+      fs.createWriteStream(tmpFile, { encoding: "utf-8" }),
+    );
     return this.importFromFiles([tmpFile], opts);
   }
   public async importFromUrls(urls: string[], defaultConfig?: JobDefaultsConfig): Promise<Dataset> {

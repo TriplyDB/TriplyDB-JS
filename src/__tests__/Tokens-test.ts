@@ -1,5 +1,5 @@
 import { Account } from "../Account.js";
-import chai from "chai";
+import * as chai from "chai";
 import Dataset from "../Dataset.js";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
@@ -37,13 +37,13 @@ describe("Tokens", function () {
     it("read-token", async function () {
       await expect(renameFunction(readAccount, accountName)).to.be.rejectedWith(
         TriplyDbJsError,
-        /Failed to update account information of.*\(401: Unauthorized/
+        /Failed to update account information of.*\(401: Unauthorized/,
       );
     });
     it("write-token", async function () {
       await expect(renameFunction(writeAccount, accountName)).to.be.rejectedWith(
         TriplyDbJsError,
-        /Failed to update account information of.*\(401: Unauthorized/
+        /Failed to update account information of.*\(401: Unauthorized/,
       );
     });
     it("account-token", async function () {
@@ -59,7 +59,7 @@ describe("Tokens", function () {
         .then((ds) => ds.delete());
     it("read-token", async function () {
       return expect(createDeleteDsFunction(readAccount)).to.eventually.rejectedWith(
-        `Failed to add dataset ${CommonUnittestPrefix}-test-ds to account ${accountName}. (401: Unauthorized.)`
+        `Failed to add dataset ${CommonUnittestPrefix}-test-ds to account ${accountName}. (401: Unauthorized.)`,
       );
     });
     it("write-token", async function () {
@@ -94,13 +94,13 @@ describe("Tokens", function () {
     it("Directly in the error message", function () {
       expect(getErr(`Something ${readToken} is not allowed`).message).to.equal("Something <token> is not allowed");
       expect(getErr("hallo").setMessage(`Something ${readToken} is not allowed`).message).to.equal(
-        "Something <token> is not allowed"
+        "Something <token> is not allowed",
       );
     });
     it("Should omit if the token is in the cause", function () {
       const innerError = new Error(`Something ${readToken} is not allowed`);
       expect(getErr(`FirstError`).setCause(innerError).message).to.equal(
-        "FirstError (Something <token> is not allowed)"
+        "FirstError (Something <token> is not allowed)",
       );
     });
   });
