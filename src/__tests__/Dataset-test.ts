@@ -379,7 +379,16 @@ describe("Dataset", function () {
     });
 
     it("add an asset", async function () {
+      expect((await testDs.uploadAsset(getDataDir("test102.nt"), "test102.nt"))!.getInfo().versions.length).to.equal(1);
+      let assetCount = 0;
+      for await (let asset of testDs.getAssets()) asset && assetCount++;
+      expect(assetCount).to.equal(1);
+    });
+    it("add an asset with the same name", async function () {
       expect((await testDs.uploadAsset(getDataDir("test102.nt"), "test102.nt")).getInfo().versions.length).to.equal(1);
+      expect((await testDs.uploadAsset(getDataDir("test102.nt"), "test102.nt")).getInfo().versions.length).to.equal(2);
+      expect((await testDs.uploadAsset(getDataDir("test102.nt"), "test102.nt")).getInfo().versions.length).to.equal(3);
+
       let assetCount = 0;
       for await (let asset of testDs.getAssets()) asset && assetCount++;
       expect(assetCount).to.equal(1);
@@ -422,19 +431,6 @@ describe("Dataset", function () {
 
       const originalFileContent = (await fs.readFile(originalFile)).toString();
       expect(originalFileContent).to.equal(content.toString());
-    });
-
-    it("add asset with used name", async function () {
-      // this test fails, but shouldn't.
-      // it leads to assets with the same name for the same ds. This shouldn't happen.
-      // this is a problem with the server, not triplydb-js
-      await testDs.uploadAsset(getDataDir("test102.nt"), "test102.nt");
-      try {
-        await testDs.uploadAsset(getDataDir("test102.nt"), "test102.nt");
-      } catch (e) {
-        return;
-      }
-      throw new Error("should have thrown");
     });
   });
 

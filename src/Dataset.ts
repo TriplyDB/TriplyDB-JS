@@ -20,7 +20,6 @@ import AsyncIteratorHelper from "./utils/AsyncIteratorHelper.js";
 import Asset from "./Asset.js";
 import Graph from "./Graph.js";
 import stringifyQueryObj from "query-string";
-import statuses from "http-status-codes";
 import { NamedNode } from "@rdfjs/types";
 import NDEDatasetRegister from "./utils/NDEDatasetRegister.js";
 import { randomUUID } from "crypto";
@@ -482,10 +481,9 @@ export default class Dataset {
         assetName = fileOrPath.name;
       }
     }
-    let assetAlreadyExists = false;
+    let asset: Asset | undefined;
     try {
-      await this.getAsset(assetName);
-      assetAlreadyExists = true; //if it doesnt exist, it would have thrown
+      asset = await this.getAsset(assetName);
     } catch (e) {
       if (e instanceof TriplyDbJsError && e.statusCode === 404) {
         //this is fine
@@ -493,11 +491,7 @@ export default class Dataset {
         throw e;
       }
     }
-    if (assetAlreadyExists) {
-      throw new TriplyDbJsError(
-        `Tried to add asset '${assetName}' to dataset ${this._getDatasetNameWithOwner()}, but an asset with that name already exists.`,
-      ).setStatusCode(statuses.CONFLICT);
-    }
+    if (asset) return asset.addVersion(fileOrPath);
     return new Asset(this, await Asset["uploadAsset"]({ fileOrPath, assetName, dataset: this }));
   }
 
