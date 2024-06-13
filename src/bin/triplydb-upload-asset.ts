@@ -66,18 +66,10 @@ const command = program
       const filename = file.indexOf("/") === -1 ? file : file.split("/").pop();
       console.info("  - Uploading", filename);
       const assetName = filename || "unknown";
-      const asset = await dataset.getAsset(filename || "unknown").catch(() => undefined);
-      if (asset) {
-        if (options.overwrite) {
-          await asset.delete();
-          // TODO check if this is what we want!
-          await dataset.uploadAsset(file, { mode: "throw-if-exists", assetName });
-        } else {
-          await asset.addVersion(file);
-        }
+      if (options.overwrite) {
+        await dataset.uploadAsset(file, { mode: "replace-if-exists", assetName });
       } else {
-        //TODO check if this is what we want
-        await dataset.uploadAsset(file, { mode: "throw-if-exists", assetName });
+        await dataset.uploadAsset(file, { mode: "append-version", assetName });
       }
     }
     console.info(
