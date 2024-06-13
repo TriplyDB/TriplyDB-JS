@@ -450,7 +450,7 @@ describe("Dataset", function () {
     });
     it("add and remove an asset", async function () {
       const assetsBefore = await testDs.getAssets().toArray();
-      const addedAsset = await testDs.uploadAsset("./package.json", "test");
+      const addedAsset = await testDs.uploadAsset("./package.json", { mode: "throw-if-exists", name: "test" });
       expect(await testDs.getAssets().toArray()).to.have.lengthOf(assetsBefore.length + 1);
       await addedAsset.delete();
       expect(await testDs.getAssets().toArray()).to.have.lengthOf(assetsBefore.length);
@@ -460,7 +460,7 @@ describe("Dataset", function () {
       const originalFile = getDataDir("test102.nt");
 
       const toLocation = getTmpDir("test102.nt");
-      await testDs.uploadAsset(originalFile, "test102.nt");
+      await testDs.uploadAsset(originalFile, { mode: "throw-if-exists", name: "test102.nt" });
       const asset = await testDs.getAsset("test102.nt");
       await asset.toFile(toLocation);
       expect(await fs.pathExists(toLocation)).to.be.true;
@@ -471,7 +471,7 @@ describe("Dataset", function () {
 
     it("stream through an asset", async function () {
       const originalFile = getDataDir("test102.nt");
-      await testDs.uploadAsset(originalFile, "test102.nt");
+      await testDs.uploadAsset(originalFile, { mode: "throw-if-exists", name: "test102.nt" });
       const asset = await testDs.getAsset("test102.nt");
 
       let content = Buffer.from("");
