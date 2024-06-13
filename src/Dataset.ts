@@ -519,7 +519,7 @@ export default class Dataset {
         ).setStatusCode(statuses.CONFLICT);
       await asset.delete();
     }
-    return new Asset(this, await Asset["uploadAsset"]({ fileOrPath, assetName: assetName, dataset: this }));
+    return new Asset(this, await Asset["uploadAsset"]({ fileOrPath, assetName, dataset: this }));
   }
 
   public async addService(name: string, opts?: NewService) {
