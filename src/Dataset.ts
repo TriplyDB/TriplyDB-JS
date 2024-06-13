@@ -24,6 +24,7 @@ import { NamedNode } from "@rdfjs/types";
 import NDEDatasetRegister from "./utils/NDEDatasetRegister.js";
 import { randomUUID } from "crypto";
 import { pipeline } from "stream/promises";
+import statuses from "http-status-codes";
 
 type JobDefaultsConfig = Omit<
   Routes.datasets._account._dataset.jobs.Post["Req"]["Body"],
@@ -50,6 +51,9 @@ type NewServiceJena = {
   type: "jena";
   config?: Models.ServiceConfigJena;
 };
+
+type UploadAssetModes = "throw-if-exists" | "replace-if-exists" | "append-version";
+
 export default class Dataset {
   public app: App;
   private _info?: Models.Dataset;
@@ -225,6 +229,7 @@ export default class Dataset {
       stream.on("finish", resolve);
     });
   }
+
   public async graphsToStream(
     type: "compressed" | "rdf-js",
     opts?: { graph?: Graph; extension?: string },
@@ -473,17 +478,20 @@ export default class Dataset {
         stringifyQueryObj.stringify({ limit: 50, ...pick(payload, "subject", "predicate", "object", "graph") }),
     });
   }
-  public async uploadAsset(fileOrPath: string | File, assetName?: string): Promise<Asset> {
-    if (!assetName) {
+  public async uploadAsset(
+    fileOrPath: string | File,
+    opts: { mode: UploadAssetModes; assetName?: string },
+  ): Promise<Asset> {
+    if (!opts.assetName) {
       if (typeof fileOrPath === "string") {
-        assetName = fileOrPath;
+        opts.assetName = fileOrPath;
       } else {
-        assetName = fileOrPath.name;
+        opts.assetName = fileOrPath.name;
       }
     }
     let asset: Asset | undefined;
     try {
-      asset = await this.getAsset(assetName);
+      asset = await this.getAsset(opts.assetName);
     } catch (e) {
       if (e instanceof TriplyDbJsError && e.statusCode === 404) {
         //this is fine
@@ -491,8 +499,16 @@ export default class Dataset {
         throw e;
       }
     }
-    if (asset) return asset.addVersion(fileOrPath);
-    return new Asset(this, await Asset["uploadAsset"]({ fileOrPath, assetName, dataset: this }));
+
+    if (asset) {
+      if (opts.mode === "append-version") return asset.addVersion(fileOrPath);
+      if (opts.mode === "throw-if-exists")
+        throw new TriplyDbJsError(
+          `Tried to add asset '${opts.assetName}' to dataset ${this._getDatasetNameWithOwner()}, but an asset with that name already exists.`,
+        ).setStatusCode(statuses.CONFLICT);
+      await asset.delete();
+    }
+    return new Asset(this, await Asset["uploadAsset"]({ fileOrPath, assetName: opts.assetName, dataset: this }));
   }
 
   public async addService(name: string, opts?: NewService) {

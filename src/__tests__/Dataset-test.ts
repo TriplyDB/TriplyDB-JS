@@ -14,6 +14,7 @@ import stream from "stream";
 import path from "path";
 import fs from "fs-extra";
 import dotenv from "dotenv";
+import { TriplyDbJsError } from "../utils/Error.js";
 dotenv.config();
 const expect = chai.expect;
 process.on("unhandledRejection", function (reason: any, p: any) {
@@ -340,7 +341,7 @@ describe("Dataset", function () {
       expect((await testDs.getInfo(true)).graphCount).to.equal(0);
     });
     it("Clear assets", async function () {
-      await testDs.uploadAsset(getDataDir("small.nq"), "small.nq");
+      await testDs.uploadAsset(getDataDir("small.nq"), { mode: "throw-if-exists", assetName: "small.nq" });
       expect((await testDs.getInfo(true)).assetCount).to.equal(1);
       await testDs.clear("assets");
       expect((await testDs.getInfo(true)).assetCount).to.equal(0);
@@ -356,7 +357,7 @@ describe("Dataset", function () {
     it("Clear all resources", async function () {
       await Promise.all([
         testDs.importFromFiles([getDataDir("small.nq")]).then(() => testDs.addService("sparql")),
-        testDs.uploadAsset(getDataDir("small.nq"), "small.nq"),
+        testDs.uploadAsset(getDataDir("small.nq"), { mode: "throw-if-exists", assetName: "small.nq" }),
       ]).then(() => testDs.getInfo(true));
       const preClear = await testDs.getInfo();
       expect(preClear.serviceCount).to.equal(1);
@@ -379,23 +380,74 @@ describe("Dataset", function () {
     });
 
     it("add an asset", async function () {
-      expect((await testDs.uploadAsset(getDataDir("test102.nt"), "test102.nt"))!.getInfo().versions.length).to.equal(1);
+      expect(
+        (await testDs.uploadAsset(getDataDir("test102.nt"), {
+          mode: "throw-if-exists",
+          assetName: "test102.nt",
+        }))!.getInfo().versions.length,
+      ).to.equal(1);
       let assetCount = 0;
       for await (let asset of testDs.getAssets()) asset && assetCount++;
       expect(assetCount).to.equal(1);
     });
-    it("add an asset with the same name", async function () {
-      expect((await testDs.uploadAsset(getDataDir("test102.nt"), "test102.nt")).getInfo().versions.length).to.equal(1);
-      expect((await testDs.uploadAsset(getDataDir("test102.nt"), "test102.nt")).getInfo().versions.length).to.equal(2);
-      expect((await testDs.uploadAsset(getDataDir("test102.nt"), "test102.nt")).getInfo().versions.length).to.equal(3);
+    it("mode append-version", async function () {
+      expect(
+        (
+          await testDs.uploadAsset(getDataDir("test102.nt"), { mode: "append-version", assetName: "test102.nt" })
+        ).getInfo().versions.length,
+      ).to.equal(1);
+      expect(
+        (
+          await testDs.uploadAsset(getDataDir("test102.nt"), { mode: "append-version", assetName: "test102.nt" })
+        ).getInfo().versions.length,
+      ).to.equal(2);
+      expect(
+        (
+          await testDs.uploadAsset(getDataDir("test102.nt"), { mode: "append-version", assetName: "test102.nt" })
+        ).getInfo().versions.length,
+      ).to.equal(3);
 
       let assetCount = 0;
       for await (let asset of testDs.getAssets()) asset && assetCount++;
       expect(assetCount).to.equal(1);
     });
+    it("throw-if-exists", async function () {
+      expect(
+        (
+          await testDs.uploadAsset(getDataDir("test102.nt"), { mode: "throw-if-exists", assetName: "test102.nt" })
+        ).getInfo().versions.length,
+      ).to.equal(1);
+      await expect(
+        testDs.uploadAsset(getDataDir("test102.nt"), { mode: "throw-if-exists", assetName: "test102.nt" }),
+      ).to.be.rejectedWith(TriplyDbJsError, "but an asset with that name already exists.");
+    });
+    it("replace-if-exists", async function () {
+      expect(
+        (
+          await testDs.uploadAsset(getDataDir("test102.nt"), { mode: "replace-if-exists", assetName: "test102.nt" })
+        ).getInfo().versions.length,
+      ).to.equal(1);
+      expect(
+        (
+          await testDs.uploadAsset(getDataDir("test102.nt"), { mode: "replace-if-exists", assetName: "test102.nt" })
+        ).getInfo().versions.length,
+      ).to.equal(1);
+      const asset = await testDs.uploadAsset(getDataDir("small.nt"), {
+        mode: "replace-if-exists",
+        assetName: "test102.nt",
+      });
+      expect(asset.getInfo().versions.length).to.equal(1);
+      const originalFile = getDataDir("small.nt");
+      const toLocation = getTmpDir("small.nt");
+      await asset.toFile(toLocation);
+      expect(await fs.pathExists(toLocation)).to.be.true;
+      const originalFileContent = await fs.readFile(originalFile, "utf8");
+      const downloadedFileContent = await fs.readFile(toLocation, "utf8");
+      expect(originalFileContent).to.equal(downloadedFileContent);
+    });
     it("add and remove an asset", async function () {
       const assetsBefore = await testDs.getAssets().toArray();
-      const addedAsset = await testDs.uploadAsset("./package.json", "test");
+      const addedAsset = await testDs.uploadAsset("./package.json", { mode: "throw-if-exists", assetName: "test" });
       expect(await testDs.getAssets().toArray()).to.have.lengthOf(assetsBefore.length + 1);
       await addedAsset.delete();
       expect(await testDs.getAssets().toArray()).to.have.lengthOf(assetsBefore.length);
@@ -405,7 +457,7 @@ describe("Dataset", function () {
       const originalFile = getDataDir("test102.nt");
 
       const toLocation = getTmpDir("test102.nt");
-      await testDs.uploadAsset(originalFile, "test102.nt");
+      await testDs.uploadAsset(originalFile, { mode: "throw-if-exists", assetName: "test102.nt" });
       const asset = await testDs.getAsset("test102.nt");
       await asset.toFile(toLocation);
       expect(await fs.pathExists(toLocation)).to.be.true;
@@ -416,7 +468,7 @@ describe("Dataset", function () {
 
     it("stream through an asset", async function () {
       const originalFile = getDataDir("test102.nt");
-      await testDs.uploadAsset(originalFile, "test102.nt");
+      await testDs.uploadAsset(originalFile, { mode: "throw-if-exists", assetName: "test102.nt" });
       const asset = await testDs.getAsset("test102.nt");
 
       let content = Buffer.from("");

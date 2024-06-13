@@ -70,12 +70,14 @@ const command = program
       if (asset) {
         if (options.overwrite) {
           await asset.delete();
-          await dataset.uploadAsset(file, assetName);
+          // TODO check if this is what we want!
+          await dataset.uploadAsset(file, { mode: "throw-if-exists", assetName });
         } else {
           await asset.addVersion(file);
         }
       } else {
-        await dataset.uploadAsset(file, assetName);
+        //TODO check if this is what we want
+        await dataset.uploadAsset(file, { mode: "throw-if-exists", assetName });
       }
     }
     console.info(
