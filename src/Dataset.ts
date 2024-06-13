@@ -478,20 +478,31 @@ export default class Dataset {
         stringifyQueryObj.stringify({ limit: 50, ...pick(payload, "subject", "predicate", "object", "graph") }),
     });
   }
+  public async uploadAsset(fileOrPath: string | File, opts: { mode: UploadAssetModes; name?: string }): Promise<Asset>;
+  public async uploadAsset(fileOrPath: string | File, name?: string): Promise<Asset>;
   public async uploadAsset(
     fileOrPath: string | File,
-    opts: { mode: UploadAssetModes; assetName?: string },
+    opts?: { mode: UploadAssetModes; name?: string } | string,
   ): Promise<Asset> {
-    if (!opts.assetName) {
-      if (typeof fileOrPath === "string") {
-        opts.assetName = fileOrPath;
+    let setMode: UploadAssetModes = "throw-if-exists";
+    let assetName: string | undefined;
+    if (opts) {
+      if (typeof opts === "object") {
+        ({ mode: setMode, name: assetName } = opts);
       } else {
-        opts.assetName = fileOrPath.name;
+        assetName = opts;
+      }
+    }
+    if (!assetName) {
+      if (typeof fileOrPath === "string") {
+        assetName = fileOrPath;
+      } else {
+        assetName = fileOrPath.name;
       }
     }
     let asset: Asset | undefined;
     try {
-      asset = await this.getAsset(opts.assetName);
+      asset = await this.getAsset(assetName);
     } catch (e) {
       if (e instanceof TriplyDbJsError && e.statusCode === 404) {
         //this is fine
@@ -501,14 +512,14 @@ export default class Dataset {
     }
 
     if (asset) {
-      if (opts.mode === "append-version") return asset.addVersion(fileOrPath);
-      if (opts.mode === "throw-if-exists")
+      if (setMode === "append-version") return asset.addVersion(fileOrPath);
+      if (setMode === "throw-if-exists")
         throw new TriplyDbJsError(
-          `Tried to add asset '${opts.assetName}' to dataset ${this._getDatasetNameWithOwner()}, but an asset with that name already exists.`,
+          `Tried to add asset '${assetName}' to dataset ${this._getDatasetNameWithOwner()}, but an asset with that name already exists.`,
         ).setStatusCode(statuses.CONFLICT);
       await asset.delete();
     }
-    return new Asset(this, await Asset["uploadAsset"]({ fileOrPath, assetName: opts.assetName, dataset: this }));
+    return new Asset(this, await Asset["uploadAsset"]({ fileOrPath, assetName: assetName, dataset: this }));
   }
 
   public async addService(name: string, opts?: NewService) {

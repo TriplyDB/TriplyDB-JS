@@ -67,9 +67,9 @@ const command = program
       console.info("  - Uploading", filename);
       const assetName = filename || "unknown";
       if (options.overwrite) {
-        await dataset.uploadAsset(file, { mode: "replace-if-exists", assetName });
+        await dataset.uploadAsset(file, { mode: "replace-if-exists", name: assetName });
       } else {
-        await dataset.uploadAsset(file, { mode: "append-version", assetName });
+        await dataset.uploadAsset(file, { mode: "append-version", name: assetName });
       }
     }
     console.info(

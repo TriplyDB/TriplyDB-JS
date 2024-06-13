@@ -42,46 +42,46 @@ describe("Assets", function () {
   });
 
   it("Adding an asset", async function () {
-    const newAsset = await testDs.uploadAsset("./README.md", { mode: "throw-if-exists", assetName: this.test?.title });
+    const newAsset = await testDs.uploadAsset("./README.md", { mode: "throw-if-exists", name: this.test?.title });
     expect(newAsset.getInfo().fileSize).to.equal((await fs.stat("./README.md")).size);
   });
   it.skip("Adding a large asset", async function () {
     const filename = "PATH TO A 250MB FILE";
-    const newAsset = await testDs.uploadAsset(filename, { mode: "throw-if-exists", assetName: this.test?.title });
+    const newAsset = await testDs.uploadAsset(filename, { mode: "throw-if-exists", name: this.test?.title });
     expect(newAsset.getInfo().fileSize).to.equal((await fs.stat(filename)).size);
   });
   it("Adding an asset for which the name already exists", async function () {
-    await testDs.uploadAsset("./README.md", { mode: "throw-if-exists", assetName: this.test?.title });
+    await testDs.uploadAsset("./README.md", { mode: "throw-if-exists", name: this.test?.title });
     return expect(
-      testDs.uploadAsset(otherfile, { mode: "throw-if-exists", assetName: this.test?.title }),
+      testDs.uploadAsset(otherfile, { mode: "throw-if-exists", name: this.test?.title }),
     ).eventually.rejectedWith(/but an asset with that name already exists/);
   });
   it("Removing an asset", async function () {
     const assetsBefore = await testDs.getAssets().toArray();
-    const newAsset = await testDs.uploadAsset("./README.md", { mode: "throw-if-exists", assetName: this.test?.title });
+    const newAsset = await testDs.uploadAsset("./README.md", { mode: "throw-if-exists", name: this.test?.title });
     expect((await testDs.getAssets().toArray()).length).to.equal(assetsBefore.length + 1);
     await newAsset.delete();
     expect((await testDs.getAssets().toArray()).length).to.equal(assetsBefore.length);
   });
   it("Adding a version to an asset", async function () {
-    const newAsset = await testDs.uploadAsset("./README.md", { mode: "throw-if-exists", assetName: this.test?.title });
+    const newAsset = await testDs.uploadAsset("./README.md", { mode: "throw-if-exists", name: this.test?.title });
     expect(newAsset.getInfo().versions.length).to.equal(1);
     await newAsset.addVersion(otherfile);
     expect(newAsset.getInfo().versions.length).to.equal(2);
   });
   it("Removing a version that doesnt exist", async function () {
-    const newAsset = await testDs.uploadAsset("./README.md", { mode: "throw-if-exists", assetName: this.test?.title });
+    const newAsset = await testDs.uploadAsset("./README.md", { mode: "throw-if-exists", name: this.test?.title });
     await newAsset.addVersion(otherfile);
     await expect(newAsset.delete(10)).eventually.rejectedWith("This asset has no version 10");
   });
   it("Removing a version", async function () {
-    const newAsset = await testDs.uploadAsset("./README.md", { mode: "throw-if-exists", assetName: this.test?.title });
+    const newAsset = await testDs.uploadAsset("./README.md", { mode: "throw-if-exists", name: this.test?.title });
     await newAsset.addVersion(otherfile);
     await newAsset.delete(0);
     expect(newAsset.getInfo().versions.length).to.equal(1);
   });
   it("Removing the last version", async function () {
-    const newAsset = await testDs.uploadAsset("./README.md", { mode: "throw-if-exists", assetName: this.test?.title });
+    const newAsset = await testDs.uploadAsset("./README.md", { mode: "throw-if-exists", name: this.test?.title });
     await newAsset.delete(0);
     expect(() => newAsset.getInfo()).to.throw("This asset does not exist");
   });
