@@ -478,13 +478,16 @@ export default class Dataset {
         stringifyQueryObj.stringify({ limit: 50, ...pick(payload, "subject", "predicate", "object", "graph") }),
     });
   }
-  public async uploadAsset(fileOrPath: string | File, opts: { mode: UploadAssetModes; name?: string }): Promise<Asset>;
+  public async uploadAsset(
+    fileOrPath: string | File,
+    opts?: { mode?: UploadAssetModes; name?: string },
+  ): Promise<Asset>;
   public async uploadAsset(fileOrPath: string | File, name?: string): Promise<Asset>;
   public async uploadAsset(
     fileOrPath: string | File,
-    opts?: { mode: UploadAssetModes; name?: string } | string,
+    opts?: { mode?: UploadAssetModes; name?: string } | string,
   ): Promise<Asset> {
-    let setMode: UploadAssetModes = "throw-if-exists";
+    let setMode: UploadAssetModes | undefined;
     let assetName: string | undefined;
     if (opts) {
       if (typeof opts === "object") {
@@ -493,6 +496,9 @@ export default class Dataset {
         assetName = opts;
       }
     }
+    // this is the default value of setMode
+    if (!setMode) setMode = "throw-if-exists";
+
     if (!assetName) {
       if (typeof fileOrPath === "string") {
         assetName = fileOrPath;
