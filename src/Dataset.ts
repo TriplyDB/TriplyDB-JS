@@ -20,11 +20,11 @@ import AsyncIteratorHelper from "./utils/AsyncIteratorHelper.js";
 import Asset from "./Asset.js";
 import Graph from "./Graph.js";
 import stringifyQueryObj from "query-string";
-import statuses from "http-status-codes";
 import { NamedNode } from "@rdfjs/types";
 import NDEDatasetRegister from "./utils/NDEDatasetRegister.js";
 import { randomUUID } from "crypto";
 import { pipeline } from "stream/promises";
+import statuses from "http-status-codes";
 
 type JobDefaultsConfig = Omit<
   Routes.datasets._account._dataset.jobs.Post["Req"]["Body"],
@@ -51,6 +51,9 @@ type NewServiceJena = {
   type: "jena";
   config?: Models.ServiceConfigJena;
 };
+
+type UploadAssetModes = "throw-if-exists" | "replace-if-exists" | "append-version";
+
 export default class Dataset {
   public app: App;
   private _info?: Models.Dataset;
@@ -226,6 +229,7 @@ export default class Dataset {
       stream.on("finish", resolve);
     });
   }
+
   public async graphsToStream(
     type: "compressed" | "rdf-js",
     opts?: { graph?: Graph; extension?: string },
@@ -474,7 +478,27 @@ export default class Dataset {
         stringifyQueryObj.stringify({ limit: 50, ...pick(payload, "subject", "predicate", "object", "graph") }),
     });
   }
-  public async uploadAsset(fileOrPath: string | File, assetName?: string): Promise<Asset> {
+  public async uploadAsset(
+    fileOrPath: string | File,
+    opts?: { mode?: UploadAssetModes; name?: string },
+  ): Promise<Asset>;
+  public async uploadAsset(fileOrPath: string | File, name?: string): Promise<Asset>;
+  public async uploadAsset(
+    fileOrPath: string | File,
+    opts?: { mode?: UploadAssetModes; name?: string } | string,
+  ): Promise<Asset> {
+    let setMode: UploadAssetModes | undefined;
+    let assetName: string | undefined;
+    if (opts) {
+      if (typeof opts === "object") {
+        ({ mode: setMode, name: assetName } = opts);
+      } else {
+        assetName = opts;
+      }
+    }
+    // this is the default value of setMode
+    if (!setMode) setMode = "throw-if-exists";
+
     if (!assetName) {
       if (typeof fileOrPath === "string") {
         assetName = fileOrPath;
@@ -482,10 +506,9 @@ export default class Dataset {
         assetName = fileOrPath.name;
       }
     }
-    let assetAlreadyExists = false;
+    let asset: Asset | undefined;
     try {
-      await this.getAsset(assetName);
-      assetAlreadyExists = true; //if it doesnt exist, it would have thrown
+      asset = await this.getAsset(assetName);
     } catch (e) {
       if (e instanceof TriplyDbJsError && e.statusCode === 404) {
         //this is fine
@@ -493,10 +516,14 @@ export default class Dataset {
         throw e;
       }
     }
-    if (assetAlreadyExists) {
-      throw new TriplyDbJsError(
-        `Tried to add asset '${assetName}' to dataset ${this._getDatasetNameWithOwner()}, but an asset with that name already exists.`,
-      ).setStatusCode(statuses.CONFLICT);
+
+    if (asset) {
+      if (setMode === "append-version") return asset.addVersion(fileOrPath);
+      if (setMode === "throw-if-exists")
+        throw new TriplyDbJsError(
+          `Tried to add asset '${assetName}' to dataset ${this._getDatasetNameWithOwner()}, but an asset with that name already exists.`,
+        ).setStatusCode(statuses.CONFLICT);
+      await asset.delete();
     }
     return new Asset(this, await Asset["uploadAsset"]({ fileOrPath, assetName, dataset: this }));
   }
