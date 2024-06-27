@@ -4,7 +4,8 @@ import { program } from "commander";
 import colors from "colors";
 import App from "../App.js";
 import QueryJob, { QueryInformation } from "./QueryJob.js";
-import { QueryJobPipelineCreate as QueryJobPipelineCreate } from "./QueryJobModels.js";
+import { readFile } from "fs";
+import { QueryJobPipelineCreate } from "./QueryJobModels.js";
 
 let defaultTriplyDBToken = process.env["TRIPLYDB_TOKEN"];
 let defaultTriplyDBAccount = process.env["TRIPLYDB_ACCOUNT"];
@@ -14,8 +15,29 @@ let defaultHttpProxy = process.env["HTTP_PROXY"];
 const command = program
   .createCommand("create-query-job")
   .summary("Creates a query job")
+  .usage("[options] <json config file>")
   .description(
     "Creates a query job from an existing saved query to execute on provided source dataset. The job will then overwite the target dataset with the results. Make sure that the account used for the query job has access to the saved query, source dataset & the target dataset."
+  )
+  .addHelpText(
+    "after",
+    `
+    Sample json config:
+    {
+      "queries": [{
+          "queryName": "accountName/queryName", (Required)
+          "priority": 1, (Optional)
+        
+      },{
+          "queryName": "accountName/queryName",
+          "queryVersion": 2 (Optional)
+      }],
+      "sourceDataset": "accountName/queryName", (Required)
+      "targetDataset": "accountName/queryName", (Required)
+      "targetGraphName": "graphName", (Optional)
+      "version": "0.1" (Required)
+    } 
+    `
   )
   .option("-t, --token <token>", "TriplyDB access token (default: $TRIPLYDB_TOKEN)")
   .option(
@@ -34,23 +56,6 @@ const command = program
     "Use HTTP proxy for all requests (default: $HTTPS_PROXY)",
     defaultHttpsProxy || undefined
   )
-  .option(
-    "-q, --query <query...>",
-    "One or more saved queries create the query job pipeline with, in the form of <account>/<queryname>"
-  )
-  .option(
-    "--query-with-priority <query...>",
-    "One or more saved queries to be executed with priority in the query job pipeline, in the form of <account>/<queryname>"
-  )
-  .requiredOption(
-    "-s, --source-dataset <sourceDataset>",
-    "Source dataset where the query job runs on, in the form of <account>/<dataset>"
-  )
-  .requiredOption(
-    "-d, --target-dataset <targetDataset>",
-    "Target dataset the query job writes to, in the form of <account>/dataset>. Dataset is created when it doesn't exist"
-  )
-  .option("-g, --target-graph-name <graph-name>", "Target graph name to store the results in")
 
   .action(async () => {
     function sanityCheckError(msg: string) {
@@ -71,32 +76,9 @@ const command = program
       httpProxy?: string;
       httpsProxy?: string;
     }>();
-
+    const configFile = command.args;
+    if (!configFile.length) sanityCheckError("Missing query job config file");
     if (!options.token) sanityCheckError("Missing token as an argument");
-    if (!options.query && !options.queryWithPriority) sanityCheckError("Missing query as an argument");
-    const queryInfo: QueryInformation[] = [];
-    if (options.query) {
-      for (const query of options.query) {
-        const [queryAccountName, queryName] = query.split("/");
-        if (!queryAccountName) sanityCheckError(`Missing query account name for query "${query}"`);
-        if (!queryName) sanityCheckError(`Missing query name for query "${query}"`);
-        queryInfo.push({ queryAccountName, queryName });
-      }
-    }
-    if (options.queryWithPriority) {
-      for (const query of options.queryWithPriority) {
-        const [queryAccountName, queryName] = query.split("/");
-        if (!queryAccountName) sanityCheckError(`Missing query account name for query "${query}"`);
-        if (!queryName) sanityCheckError(`Missing query name for query "${query}"`);
-        queryInfo.push({ queryAccountName, queryName, priority: 1 });
-      }
-    }
-    const [sourceDatasetAccountName, sourceDatasetName] = options.sourceDataset.split("/");
-    if (!sourceDatasetAccountName) sanityCheckError("Missing source dataset account name");
-    if (!sourceDatasetName) sanityCheckError("Missing source dataset name");
-    const [targetDatasetAccountName, targetDatasetName] = options.targetDataset.split("/");
-    if (!targetDatasetAccountName) sanityCheckError("Missing target dataset account name");
-    if (!targetDatasetName) sanityCheckError("Missing target dataset name");
 
     const app = App.get({
       url: options.url,
@@ -107,29 +89,42 @@ const command = program
     const account = await app.getUser(options.account);
     // check whether account name exists
     await account.getInfo();
-    const queries: { queryId: string; priority?: number }[] = [];
-    for (const query of queryInfo) {
-      const queryAccount = await app.getAccount(query.queryAccountName);
-      const queryId = (await (await queryAccount.getQuery(query.queryName)).getInfo()).id;
-      queries.push({ queryId, priority: query.priority });
-    }
-    const sourceDatasetAccount = await app.getAccount(sourceDatasetAccountName);
-    const sourceDatasetId = (await (await sourceDatasetAccount.getDataset(sourceDatasetName)).getInfo()).id;
-    const targetDatasetAccount = await app.getAccount(targetDatasetAccountName);
-    const targetDatasetId = (await (await targetDatasetAccount.ensureDataset(targetDatasetName)).getInfo()).id;
-    const payload: QueryJobPipelineCreate = {
-      queries: queries,
-      sourceDatasetId: sourceDatasetId,
-      targetDatasetId: targetDatasetId,
-      targetGraphName: options.targetGraphName,
-    };
-    const queryJob: QueryJob = new QueryJob(app, account);
-    try {
-      await queryJob.createQueryJobPipeline(payload, queryInfo);
-    } catch (e) {
-      console.error(e);
-      process.exit(1);
-    }
+    readFile(configFile[0], async function (err, data) {
+      if (err) sanityCheckError(err.message);
+      if (data) {
+        let queryJobConfig: QueryJobPipelineCreate | undefined = undefined;
+        try {
+          queryJobConfig = JSON.parse(data.toString()) as QueryJobPipelineCreate;
+        } catch (e) {
+          console.error(e);
+          process.exit(1);
+        }
+        if (queryJobConfig) {
+          if ("version" in queryJobConfig) {
+            const queryInfo: QueryInformation[] = [];
+            if ("queries" in queryJobConfig && queryJobConfig.queries) {
+              for (const query of queryJobConfig.queries as any[]) {
+                const [queryAccountName, actualQueryName] = query.queryName.split("/");
+                if (!queryAccountName) sanityCheckError(`Missing query account name for query "${query.queryName}"`);
+                if (!actualQueryName) sanityCheckError(`Missing query name for query "${query.queryName}"`);
+                queryInfo.push({
+                  queryAccountName: queryAccountName,
+                  queryName: actualQueryName,
+                  priority: query.priority || 0,
+                });
+              }
+            }
+            const queryJob: QueryJob = new QueryJob(app, account);
+            try {
+              await queryJob.createQueryJobPipeline(queryJobConfig, queryInfo);
+            } catch (e) {
+              console.error(e);
+              process.exit(1);
+            }
+          } else sanityCheckError("Version not found in query job config");
+        } else sanityCheckError("Error in reading query job json config");
+      } else sanityCheckError("Query job config not provided");
+    });
   });
 
 export default command;

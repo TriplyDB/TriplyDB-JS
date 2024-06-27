@@ -45,12 +45,15 @@ export type QueryJobPipeline = {
   queries: Array<Pick<QueryJob, "ownerName" | "queryName" | "status" | "progress">>;
 };
 
-export type QueryJobPipelineCreate = {
-  queries: Array<{ queryId: string; queryVersion?: number; priority?: number }>;
-  sourceDatasetId: string;
-  targetDatasetId: string;
+export type QueryJobPipelineCreate = QueryJobPipelineConfigV01;
+
+export interface QueryJobPipelineConfigV01 {
+  queries: Array<{ queryName: `${string}/${string}` /* {owner}/{query} */; queryVersion?: number; priority?: number }>;
+  sourceDataset: `${string}/${string}`; // {owner}/{dataset}
+  targetDataset: `${string}/${string}`; // {owner}/{dataset}
   targetGraphName?: string;
-};
+  version: "0.1";
+}
 
 export namespace Routes_queryJobs {
   export namespace _account {
