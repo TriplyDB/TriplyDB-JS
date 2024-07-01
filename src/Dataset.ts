@@ -38,9 +38,13 @@ interface ImportFromDatasetArgs {
 }
 export type Prefixes = { [label: string]: n3.PrefixedToIri | string | NamedNode };
 type DsResourceType = "assets" | "graphs" | "services";
-export type NewService = NewServiceVirtuoso | NewServiceElasticsearch | NewServiceJena;
+export type NewService = NewServiceVirtuoso | NewServiceElasticsearch | NewServiceJena | NewServiceBlazegraph;
 type NewServiceVirtuoso = {
   type: "virtuoso";
+  config?: never;
+};
+type NewServiceBlazegraph = {
+  type: "blazegraph";
   config?: never;
 };
 type NewServiceElasticsearch = {

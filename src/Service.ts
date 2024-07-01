@@ -3,7 +3,8 @@ import App from "./App.js";
 import { wait } from "./utils/index.js";
 import { _get, _post, _delete, _patch } from "./RequestHandler.js";
 import { getErr, TriplyDbJsError } from "./utils/Error.js";
-import Dataset from "./Dataset.js";
+import Dataset, { NewService } from "./Dataset.js";
+import msTohms from "./utils/timeHelper.js";
 
 type ServiceAdminInfo = {
   autoResume?: boolean;
@@ -171,6 +172,53 @@ export default class Service {
       data: { sync: true },
     });
     await this.waitUntilRunning();
+  }
+
+  public async updateWithNoDownTime() {
+    const info = await this.getInfo();
+    if (info.outOfSync) {
+      if (info.status !== "running") {
+        throw getErr(
+          `Service '${info.name}' is of status '${info.status}' and will not be updated. Only services with status 'running' can be updated.`,
+        );
+        //skip
+      } else {
+        const type = info.type;
+        let newServicename = `temp-` + info.name;
+        let newServiceInfo: NewService = { type };
+        switch (info.type) {
+          case "elasticSearch":
+            //TODO i can assert instead of cast
+            newServiceInfo = {
+              type: "elasticSearch",
+              config: (info.config ?? {}) as Models.ServiceConfigElastic,
+            };
+            break;
+          case "jena":
+            newServiceInfo = {
+              type: "jena",
+              config: (info.config ?? {}) as Models.ServiceConfigJena,
+            };
+            break;
+        }
+        const now = Date.now();
+        console.info(`Creating temporary ${info.type} service '${newServicename}' for replacing '${info.name}'.`);
+
+        const createdService = await new Service({
+          app: this.app,
+          dataset: this.dataset,
+          name: newServicename,
+          type: newServiceInfo.type,
+          config: newServiceInfo.config || undefined,
+        }).create();
+        console.info(`Swapping service '${info.name}' with '${newServicename}'.`);
+        await this.rename(info.name + `-BAK`);
+        await createdService.rename(info.name);
+        await this.delete();
+        console.info(`Service '${info.name}' updated in ${msTohms(Date.now() - now)}.`);
+        return createdService;
+      }
+    }
   }
 
   public getDataset(): Dataset {
