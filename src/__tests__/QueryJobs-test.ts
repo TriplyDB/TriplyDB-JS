@@ -72,12 +72,12 @@ describe("Query Jobs", function () {
       {
         queries: [
           {
-            queryName: `${query1.owner.accountName}/${query1.name}`,
-            queryVersion: query1.version,
+            name: `${query1.owner.accountName}/${query1.name}`,
+            version: query1.version,
           },
           {
-            queryName: `${query2.owner.accountName}/${query2.name}`,
-            queryVersion: query2.version,
+            name: `${query2.owner.accountName}/${query2.name}`,
+            version: query2.version,
           },
         ],
         sourceDataset: `${testDsInfo.owner.accountName}/${testDsInfo.name}`,

@@ -25,12 +25,12 @@ const command = program
     Sample json config:
     {
       "queries": [{
-          "queryName": "accountName/queryName", (Required)
+          "name": "accountName/queryName", (Required)
           "priority": 1, (Optional)
         
       },{
-          "queryName": "accountName/queryName",
-          "queryVersion": 2 (Optional)
+          "name": "accountName/queryName",
+          "version": 2 (Optional)
       }],
       "sourceDataset": "accountName/queryName", (Required)
       "targetDataset": "accountName/queryName", (Required)
@@ -104,9 +104,9 @@ const command = program
             const queryInfo: QueryInformation[] = [];
             if ("queries" in queryJobConfig && queryJobConfig.queries) {
               for (const query of queryJobConfig.queries as any[]) {
-                const [queryAccountName, actualQueryName] = query.queryName.split("/");
-                if (!queryAccountName) sanityCheckError(`Missing query account name for query "${query.queryName}"`);
-                if (!actualQueryName) sanityCheckError(`Missing query name for query "${query.queryName}"`);
+                const [queryAccountName, actualQueryName] = query.name.split("/");
+                if (!queryAccountName) sanityCheckError(`Missing query account name for query "${query.name}"`);
+                if (!actualQueryName) sanityCheckError(`Missing query name for query "${query.name}"`);
                 queryInfo.push({
                   queryAccountName: queryAccountName,
                   queryName: actualQueryName,
