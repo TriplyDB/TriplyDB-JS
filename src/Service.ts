@@ -3,7 +3,7 @@ import App from "./App.js";
 import { wait } from "./utils/index.js";
 import { _get, _post, _delete, _patch } from "./RequestHandler.js";
 import { getErr, TriplyDbJsError } from "./utils/Error.js";
-import Dataset, { NewService } from "./Dataset.js";
+import Dataset from "./Dataset.js";
 import msTohms from "./utils/timeHelper.js";
 
 type ServiceAdminInfo = {
@@ -21,7 +21,7 @@ type ServiceAdminInfo = {
   foundInMongo?: boolean;
 };
 export type ServiceInfo = Omit<Models.ServiceMetadata, keyof ServiceAdminInfo>;
-
+type OnProgressUpdateType = "creating" | "swapping" | "deleting" | "finished";
 export default class Service {
   public app: App;
   private _info?: ServiceInfo;
@@ -166,11 +166,15 @@ export default class Service {
   public async update(opts?: { rollingUpdate: false }): Promise<void>;
   public async update(opts?: {
     rollingUpdate: true;
-    onProgress?: (type: string, message: string) => void;
+    onProgress: (opts?: { type: OnProgressUpdateType; message: string }) => void;
   }): Promise<void>;
-  public async update(opts?: { rollingUpdate: boolean; onProgress?: (type: string, message: string) => void }) {
+  public async update(opts?: {
+    rollingUpdate: boolean;
+    onProgress?: (opts?: { type: OnProgressUpdateType; message: string }) => void;
+  }) {
     if (opts?.rollingUpdate) {
-      await this.rollingUpdate();
+      if (!opts.onProgress) throw new Error(`'onProgress' is undefined. This is a bug.`);
+      await this.rollingUpdate(opts.onProgress);
     } else {
       await _post({
         errorWithCleanerStack: getErr(`Failed to update service ${this.slug} of dataset ${this.dataset.slug}.`),
@@ -182,53 +186,44 @@ export default class Service {
     }
   }
 
-  private async rollingUpdate() {
-    const info = await this.getInfo();
+  private async rollingUpdate(onProgress?: (opts?: { type: OnProgressUpdateType; message: string }) => void) {
+    // We have to make sure we get the most recent information about the service
+    const info = await this.getInfo(true);
+    const type = info.type;
+    const mainName = info.name;
     if (!info.outOfSync)
       throw getErr(
-        `Cannot update service '${info.name}' of dataset '${this.dataset.slug}', because it is not out of sync.`,
+        `Cannot update service '${mainName}' of dataset '${this.dataset.slug}', because it is not out of sync.`,
       );
     if (info.status !== "running")
       throw getErr(
-        `Service '${info.name}' is of status '${info.status}' and will not be updated. Only services with status 'running' can be updated.`,
+        `Service '${mainName}' is of status '${info.status}' and will not be updated. Only services with status 'running' can be updated.`,
       );
 
-    const type = info.type;
-    let newServicename = getSubstrForServiceNames(info.name) + `temp-`;
-    // The below cast is not correct,
-    // but we don't want to expose blazegraph to users that don't have it.
-    let newServiceInfo = { type } as NewService;
-    switch (info.type) {
-      case "elasticSearch":
-        newServiceInfo = {
-          type: "elasticSearch",
-          config: (info.config ?? {}) as Models.ServiceConfigElastic,
-        };
-        break;
-      case "jena":
-        newServiceInfo = {
-          type: "jena",
-          config: (info.config ?? {}) as Models.ServiceConfigJena,
-        };
-        break;
-    }
+    const newServiceTempName = getSubstrForServiceNames(mainName) + `-temp`;
     const now = Date.now();
-    console.info(`Creating temporary ${info.type} service '${newServicename}' for replacing '${info.name}'.`);
-
+    if (onProgress)
+      onProgress({
+        type: "creating",
+        message: `Creating temporary ${type} service '${newServiceTempName}' for replacing '${mainName}'.`,
+      });
     const createdService = await new Service({
       app: this.app,
       dataset: this.dataset,
-      name: newServicename,
-      type: newServiceInfo.type,
-      config: newServiceInfo.config || undefined,
+      name: newServiceTempName,
+      type,
+      config: info.config,
     }).create();
-    console.info(`Swapping service '${info.name}' with '${newServicename}'.`);
-    await this.rename(getSubstrForServiceNames(info.name) + `-BAK`);
-    await createdService.rename(info.name);
+    if (onProgress)
+      onProgress({ type: "swapping", message: `Swapping service '${mainName}' with '${newServiceTempName}'.` });
+    await this.rename(getSubstrForServiceNames(mainName) + `-BAK`);
+    await createdService.rename(mainName);
+    if (onProgress) onProgress({ type: "deleting", message: `Deleting old service '${this.slug}'.` });
     await this.delete();
     // we want to be able to work again with this service.
-    this.slug = info.name;
-    console.info(`Service '${info.name}' updated in ${msTohms(Date.now() - now)}.`);
+    this.slug = mainName;
+    if (onProgress)
+      onProgress({ type: "finished", message: `Service '${mainName}' updated in ${msTohms(Date.now() - now)}.` });
     return createdService;
   }
 
@@ -236,7 +231,13 @@ export default class Service {
     return this.dataset;
   }
 }
-
+/**
+ * Get the service name string and return a substring,
+ * so that when we make concatinations don't lead to an error
+ * (limit 40 characters for a service name)
+ *
+ * @param serviceName
+ */
 function getSubstrForServiceNames(serviceName: string) {
   return serviceName.substring(0, 30);
 }

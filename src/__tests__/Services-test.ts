@@ -96,9 +96,9 @@ describe("Services", function () {
     });
 
     it("Should create when not already existing", async function () {
-      await testDs.importFromFiles(["./src/__tests__/__data__/anotherSmall.nq"]);
       const ensuredService = await testDs.ensureService(`${CommonUnittestPrefix}-ensured`, { type: "jena" });
-      await ensuredService.update({ rollingUpdate: true });
+      await testDs.importFromFiles(["./src/__tests__/__data__/anotherSmall.nq"]);
+      await ensuredService.update({ rollingUpdate: true, onProgress: () => {} });
       let serviceList: Service[] = [];
       for await (const s of testDs.getServices()) serviceList.push(s);
       expect(serviceList).to.have.length(1);
@@ -116,8 +116,8 @@ describe("Services", function () {
     it("Should throw when service is not out of sync/2", async function () {
       await testDs.importFromFiles(["./src/__tests__/__data__/anotherSmall.nq"]);
       const ensuredService = await testDs.ensureService(`${CommonUnittestPrefix}-ensured`, { type: "jena" });
-      await ensuredService.update({ rollingUpdate: true });
-      await expect(ensuredService.update({ rollingUpdate: true })).to.be.eventually.rejectedWith(
+      await ensuredService.update({ rollingUpdate: true, onProgress: () => {} });
+      await expect(ensuredService.update({ rollingUpdate: true, onProgress: () => {} })).to.be.eventually.rejectedWith(
         `Cannot update service 'triplydb-js-ensured' of dataset 'triplydb-js-0', because it is not out of sync.`,
       );
     });
