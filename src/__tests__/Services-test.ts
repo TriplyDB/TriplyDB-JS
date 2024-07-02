@@ -97,7 +97,7 @@ describe("Services", function () {
     });
     it("Should create when not already existing", async function () {
       const ensuredService = await testDs.ensureService(`${CommonUnittestPrefix}-ensured`, { type: "jena" });
-      await ensuredService.updateWithNoDownTime();
+      await ensuredService.update({ rollingUpdate: true });
       let serviceList: Service[] = [];
       for await (const s of testDs.getServices()) serviceList.push(s);
       expect(serviceList).to.have.length(1);

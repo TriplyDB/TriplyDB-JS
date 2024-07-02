@@ -164,31 +164,35 @@ export default class Service {
     }
   }
 
-  public async update() {
-    await _post({
-      errorWithCleanerStack: getErr(`Failed to update service ${this.slug} of dataset ${this.dataset.slug}.`),
-      app: this.app,
-      path: this.api.path,
-      data: { sync: true },
-    });
-    await this.waitUntilRunning();
+  public async update(opts?: { rollingUpdate: boolean }) {
+    if (opts?.rollingUpdate) {
+      await this.rollingUpdate();
+    } else {
+      await _post({
+        errorWithCleanerStack: getErr(`Failed to update service ${this.slug} of dataset ${this.dataset.slug}.`),
+        app: this.app,
+        path: this.api.path,
+        data: { sync: true },
+      });
+      await this.waitUntilRunning();
+    }
   }
 
-  public async updateWithNoDownTime() {
+  private async rollingUpdate() {
     const info = await this.getInfo();
     if (info.outOfSync) {
       if (info.status !== "running") {
         throw getErr(
           `Service '${info.name}' is of status '${info.status}' and will not be updated. Only services with status 'running' can be updated.`,
         );
-        //skip
       } else {
         const type = info.type;
-        let newServicename = `temp-` + info.name;
-        let newServiceInfo: NewService = { type };
+        let newServicename = getSubstrForServiceNames(info.name) + `temp-`;
+        // The below cast is not correct,
+        // but we don't want to expose blazegraph to users that don't have it.
+        let newServiceInfo = { type } as NewService;
         switch (info.type) {
           case "elasticSearch":
-            //TODO i can assert instead of cast
             newServiceInfo = {
               type: "elasticSearch",
               config: (info.config ?? {}) as Models.ServiceConfigElastic,
@@ -212,7 +216,7 @@ export default class Service {
           config: newServiceInfo.config || undefined,
         }).create();
         console.info(`Swapping service '${info.name}' with '${newServicename}'.`);
-        await this.rename(info.name + `-BAK`);
+        await this.rename(getSubstrForServiceNames(info.name) + `-BAK`);
         await createdService.rename(info.name);
         await this.delete();
         console.info(`Service '${info.name}' updated in ${msTohms(Date.now() - now)}.`);
@@ -224,4 +228,8 @@ export default class Service {
   public getDataset(): Dataset {
     return this.dataset;
   }
+}
+
+function getSubstrForServiceNames(serviceName: string) {
+  return serviceName.substring(0, 30);
 }
