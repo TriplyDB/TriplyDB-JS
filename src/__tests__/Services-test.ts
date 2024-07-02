@@ -90,12 +90,13 @@ describe("Services", function () {
       await ensuredService?.delete();
     });
   });
-  describe("Update a service without downtime", async function () {
+  describe("Update a service", async function () {
     before(async function () {
       await testDs.ensureService(`${CommonUnittestPrefix}-ensured`, { type: "jena" });
-      await testDs.importFromFiles(["./src/__tests__/__data__/anotherSmall.nq"]);
     });
+
     it("Should create when not already existing", async function () {
+      await testDs.importFromFiles(["./src/__tests__/__data__/anotherSmall.nq"]);
       const ensuredService = await testDs.ensureService(`${CommonUnittestPrefix}-ensured`, { type: "jena" });
       await ensuredService.update({ rollingUpdate: true });
       let serviceList: Service[] = [];
@@ -103,6 +104,22 @@ describe("Services", function () {
       expect(serviceList).to.have.length(1);
       expect((await serviceList[0].getInfo()).name).to.equal(`${CommonUnittestPrefix}-ensured`);
       expect((await serviceList[0].getInfo()).type).to.equal("jena");
+    });
+    it("Should throw when service is not out of sync/1", async function () {
+      await testDs.importFromFiles(["./src/__tests__/__data__/anotherSmall.nq"]);
+      const ensuredService = await testDs.ensureService(`${CommonUnittestPrefix}-ensured`, { type: "jena" });
+      await ensuredService.update();
+      await expect(ensuredService.update()).to.be.eventually.rejectedWith(
+        `Failed to update service triplydb-js-ensured of dataset triplydb-js-0. (400: Cannot sync a service that is not out of sync.)`,
+      );
+    });
+    it("Should throw when service is not out of sync/2", async function () {
+      await testDs.importFromFiles(["./src/__tests__/__data__/anotherSmall.nq"]);
+      const ensuredService = await testDs.ensureService(`${CommonUnittestPrefix}-ensured`, { type: "jena" });
+      await ensuredService.update({ rollingUpdate: true });
+      await expect(ensuredService.update({ rollingUpdate: true })).to.be.eventually.rejectedWith(
+        `Cannot update service 'triplydb-js-ensured' of dataset 'triplydb-js-0', because it is not out of sync.`,
+      );
     });
   });
 });

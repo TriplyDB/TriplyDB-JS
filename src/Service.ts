@@ -163,8 +163,12 @@ export default class Service {
       await wait(5000);
     }
   }
-
-  public async update(opts?: { rollingUpdate: boolean }) {
+  public async update(opts?: { rollingUpdate: false }): Promise<void>;
+  public async update(opts?: {
+    rollingUpdate: true;
+    onProgress?: (type: string, message: string) => void;
+  }): Promise<void>;
+  public async update(opts?: { rollingUpdate: boolean; onProgress?: (type: string, message: string) => void }) {
     if (opts?.rollingUpdate) {
       await this.rollingUpdate();
     } else {
@@ -180,49 +184,52 @@ export default class Service {
 
   private async rollingUpdate() {
     const info = await this.getInfo();
-    if (info.outOfSync) {
-      if (info.status !== "running") {
-        throw getErr(
-          `Service '${info.name}' is of status '${info.status}' and will not be updated. Only services with status 'running' can be updated.`,
-        );
-      } else {
-        const type = info.type;
-        let newServicename = getSubstrForServiceNames(info.name) + `temp-`;
-        // The below cast is not correct,
-        // but we don't want to expose blazegraph to users that don't have it.
-        let newServiceInfo = { type } as NewService;
-        switch (info.type) {
-          case "elasticSearch":
-            newServiceInfo = {
-              type: "elasticSearch",
-              config: (info.config ?? {}) as Models.ServiceConfigElastic,
-            };
-            break;
-          case "jena":
-            newServiceInfo = {
-              type: "jena",
-              config: (info.config ?? {}) as Models.ServiceConfigJena,
-            };
-            break;
-        }
-        const now = Date.now();
-        console.info(`Creating temporary ${info.type} service '${newServicename}' for replacing '${info.name}'.`);
+    if (!info.outOfSync)
+      throw getErr(
+        `Cannot update service '${info.name}' of dataset '${this.dataset.slug}', because it is not out of sync.`,
+      );
+    if (info.status !== "running")
+      throw getErr(
+        `Service '${info.name}' is of status '${info.status}' and will not be updated. Only services with status 'running' can be updated.`,
+      );
 
-        const createdService = await new Service({
-          app: this.app,
-          dataset: this.dataset,
-          name: newServicename,
-          type: newServiceInfo.type,
-          config: newServiceInfo.config || undefined,
-        }).create();
-        console.info(`Swapping service '${info.name}' with '${newServicename}'.`);
-        await this.rename(getSubstrForServiceNames(info.name) + `-BAK`);
-        await createdService.rename(info.name);
-        await this.delete();
-        console.info(`Service '${info.name}' updated in ${msTohms(Date.now() - now)}.`);
-        return createdService;
-      }
+    const type = info.type;
+    let newServicename = getSubstrForServiceNames(info.name) + `temp-`;
+    // The below cast is not correct,
+    // but we don't want to expose blazegraph to users that don't have it.
+    let newServiceInfo = { type } as NewService;
+    switch (info.type) {
+      case "elasticSearch":
+        newServiceInfo = {
+          type: "elasticSearch",
+          config: (info.config ?? {}) as Models.ServiceConfigElastic,
+        };
+        break;
+      case "jena":
+        newServiceInfo = {
+          type: "jena",
+          config: (info.config ?? {}) as Models.ServiceConfigJena,
+        };
+        break;
     }
+    const now = Date.now();
+    console.info(`Creating temporary ${info.type} service '${newServicename}' for replacing '${info.name}'.`);
+
+    const createdService = await new Service({
+      app: this.app,
+      dataset: this.dataset,
+      name: newServicename,
+      type: newServiceInfo.type,
+      config: newServiceInfo.config || undefined,
+    }).create();
+    console.info(`Swapping service '${info.name}' with '${newServicename}'.`);
+    await this.rename(getSubstrForServiceNames(info.name) + `-BAK`);
+    await createdService.rename(info.name);
+    await this.delete();
+    // we want to be able to work again with this service.
+    this.slug = info.name;
+    console.info(`Service '${info.name}' updated in ${msTohms(Date.now() - now)}.`);
+    return createdService;
   }
 
   public getDataset(): Dataset {
