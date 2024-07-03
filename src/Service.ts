@@ -166,14 +166,13 @@ export default class Service {
   public async update(opts?: { rollingUpdate: false }): Promise<void>;
   public async update(opts?: {
     rollingUpdate: true;
-    onProgress: (opts?: { type: OnProgressUpdateType; message: string }) => void;
+    onProgress?: (opts?: { type: OnProgressUpdateType; message: string }) => void;
   }): Promise<void>;
   public async update(opts?: {
     rollingUpdate: boolean;
     onProgress?: (opts?: { type: OnProgressUpdateType; message: string }) => void;
   }) {
     if (opts?.rollingUpdate) {
-      if (!opts.onProgress) throw new Error(`'onProgress' is undefined. This is a bug.`);
       await this.rollingUpdate(opts.onProgress);
     } else {
       await _post({
