@@ -199,7 +199,7 @@ export default class Service {
         `Service '${mainName}' is of status '${info.status}' and will not be updated. Only services with status 'running' can be updated.`,
       );
 
-    const newServiceTempName = getSubstrForServiceNames(mainName) + `-temp`;
+    const newServiceTempName = getSafeShortenedServiceName(mainName) + `-temp`;
     const now = Date.now();
     if (onProgress)
       onProgress({
@@ -215,7 +215,7 @@ export default class Service {
     }).create();
     if (onProgress)
       onProgress({ type: "swapping", message: `Swapping service '${mainName}' with '${newServiceTempName}'.` });
-    await this.rename(getSubstrForServiceNames(mainName) + `-BAK`);
+    await this.rename(getSafeShortenedServiceName(mainName) + `-BAK`);
     await createdService.rename(mainName);
     if (onProgress) onProgress({ type: "deleting", message: `Deleting old service '${this.slug}'.` });
     await this.delete();
@@ -237,6 +237,6 @@ export default class Service {
  *
  * @param serviceName
  */
-function getSubstrForServiceNames(serviceName: string) {
+function getSafeShortenedServiceName(serviceName: string) {
   return serviceName.substring(0, 30);
 }
