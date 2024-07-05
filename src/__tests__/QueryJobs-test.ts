@@ -82,7 +82,7 @@ describe("Query Jobs", function () {
         ],
         sourceDataset: `${testDsInfo.owner.accountName}/${testDsInfo.name}`,
         targetDataset: `${testDsInfo.owner.accountName}/${testDsInfo.name}`,
-        version: "0.1",
+        version: 0.1,
       },
       [
         {

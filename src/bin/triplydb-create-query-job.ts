@@ -32,10 +32,10 @@ const command = program
           "name": "accountName/queryName",
           "version": 2 (Optional)
       }],
-      "sourceDataset": "accountName/queryName", (Required)
-      "targetDataset": "accountName/queryName", (Required)
+      "sourceDataset": "accountName/datasetName", (Required)
+      "targetDataset": "accountName/datasetName", (Required)
       "targetGraphName": "graphName", (Optional)
-      "version": "0.1" (Required)
+      "version": 0.1 (Required)
     } 
     `
   )

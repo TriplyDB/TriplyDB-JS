@@ -46,12 +46,18 @@ export type QueryJobPipeline = {
 };
 
 export type QueryJobPipelineCreate = QueryJobPipelineConfigV01;
+// Note that some of the string types below should be a string template (eg `${owner}/${dataset}`)
+// We dont apply that, as it breaks our json-schema <--> typescript checks
 export interface QueryJobPipelineConfigV01 {
-  queries: Array<{ name: `${string}/${string}` /* {owner}/{query} */; version?: number; priority?: number }>;
-  sourceDataset: `${string}/${string}`; // {owner}/{dataset}
-  targetDataset: `${string}/${string}`; // {owner}/{dataset}
-  targetGraphName?: string;
-  version: "0.1";
+  queries: Array<{
+    name: string /* {owner}/{query} */;
+    version?: number | null;
+    priority?: number | null;
+  }>;
+  sourceDataset: string; // {owner}/{dataset}
+  targetDataset: string; // {owner}/{dataset}
+  targetGraphName?: string | null;
+  version: 0.1;
 }
 
 export namespace Routes_queryJobs {
