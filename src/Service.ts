@@ -4,6 +4,7 @@ import { wait } from "./utils/index.js";
 import { _get, _post, _delete, _patch } from "./RequestHandler.js";
 import { getErr, TriplyDbJsError } from "./utils/Error.js";
 import Dataset from "./Dataset.js";
+import msToHms from "./utils/timeHelper.js";
 
 type ServiceAdminInfo = {
   autoResume?: boolean;
@@ -20,7 +21,7 @@ type ServiceAdminInfo = {
   foundInMongo?: boolean;
 };
 export type ServiceInfo = Omit<Models.ServiceMetadata, keyof ServiceAdminInfo>;
-
+type OnProgressUpdateType = "creating" | "swapping" | "deleting" | "finished";
 export default class Service {
   public app: App;
   private _info?: ServiceInfo;
@@ -162,18 +163,80 @@ export default class Service {
       await wait(5000);
     }
   }
+  public async update(opts?: { rollingUpdate: false }): Promise<void>;
+  public async update(opts?: {
+    rollingUpdate: true;
+    onProgress?: (opts?: { type: OnProgressUpdateType; message: string }) => void;
+  }): Promise<void>;
+  public async update(opts?: {
+    rollingUpdate: boolean;
+    onProgress?: (opts?: { type: OnProgressUpdateType; message: string }) => void;
+  }) {
+    if (opts?.rollingUpdate) {
+      await this.rollingUpdate(opts.onProgress);
+    } else {
+      await _post({
+        errorWithCleanerStack: getErr(`Failed to update service ${this.slug} of dataset ${this.dataset.slug}.`),
+        app: this.app,
+        path: this.api.path,
+        data: { sync: true },
+      });
+      await this.waitUntilRunning();
+    }
+  }
 
-  public async update() {
-    await _post({
-      errorWithCleanerStack: getErr(`Failed to update service ${this.slug} of dataset ${this.dataset.slug}.`),
+  private async rollingUpdate(onProgress?: (opts?: { type: OnProgressUpdateType; message: string }) => void) {
+    // We have to make sure we get the most recent information about the service
+    const info = await this.getInfo(true);
+    const type = info.type;
+    const mainName = info.name;
+    if (!info.outOfSync)
+      throw getErr(
+        `Cannot update service '${mainName}' of dataset '${this.dataset.slug}', because it is not out of sync.`,
+      );
+    if (info.status !== "running")
+      throw getErr(
+        `Service '${mainName}' is of status '${info.status}' and will not be updated. Only services with status 'running' can be updated.`,
+      );
+
+    const newServiceTempName = getSafeShortenedServiceName(mainName) + `-temp`;
+    const now = Date.now();
+    if (onProgress)
+      onProgress({
+        type: "creating",
+        message: `Creating temporary ${type} service '${newServiceTempName}' for replacing '${mainName}'.`,
+      });
+    const createdService = await new Service({
       app: this.app,
-      path: this.api.path,
-      data: { sync: true },
-    });
-    await this.waitUntilRunning();
+      dataset: this.dataset,
+      name: newServiceTempName,
+      type,
+      config: info.config,
+    }).create();
+    if (onProgress)
+      onProgress({ type: "swapping", message: `Swapping service '${mainName}' with '${newServiceTempName}'.` });
+    await this.rename(getSafeShortenedServiceName(mainName) + `-BAK`);
+    await createdService.rename(mainName);
+    if (onProgress) onProgress({ type: "deleting", message: `Deleting old service '${this.slug}'.` });
+    await this.delete();
+    // we want to be able to work again with this service.
+    this.slug = mainName;
+    if (onProgress)
+      onProgress({ type: "finished", message: `Service '${mainName}' updated in ${msToHms(Date.now() - now)}.` });
+    return createdService;
   }
 
   public getDataset(): Dataset {
     return this.dataset;
   }
+}
+/**
+ * Get the service name string and return a substring,
+ * so that when we make concatinations don't lead to an error
+ * (limit 40 characters for a service name)
+ *
+ * @param serviceName
+ */
+function getSafeShortenedServiceName(serviceName: string) {
+  return serviceName.substring(0, 30);
 }
