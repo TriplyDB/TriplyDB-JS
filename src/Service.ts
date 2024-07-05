@@ -4,7 +4,7 @@ import { wait } from "./utils/index.js";
 import { _get, _post, _delete, _patch } from "./RequestHandler.js";
 import { getErr, TriplyDbJsError } from "./utils/Error.js";
 import Dataset from "./Dataset.js";
-import msTohms from "./utils/timeHelper.js";
+import msToHms from "./utils/timeHelper.js";
 
 type ServiceAdminInfo = {
   autoResume?: boolean;
@@ -222,7 +222,7 @@ export default class Service {
     // we want to be able to work again with this service.
     this.slug = mainName;
     if (onProgress)
-      onProgress({ type: "finished", message: `Service '${mainName}' updated in ${msTohms(Date.now() - now)}.` });
+      onProgress({ type: "finished", message: `Service '${mainName}' updated in ${msToHms(Date.now() - now)}.` });
     return createdService;
   }
 
