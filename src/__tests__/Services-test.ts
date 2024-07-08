@@ -110,7 +110,7 @@ describe("Services", function () {
       const ensuredService = await testDs.ensureService(`${CommonUnittestPrefix}-ensured`, { type: "jena" });
       await ensuredService.update();
       await expect(ensuredService.update()).to.be.eventually.rejectedWith(
-        `(400: Cannot sync a service that is not out of sync.)`,
+        `Failed to update service ${CommonUnittestPrefix}-ensured of dataset ${CommonUnittestPrefix}-0. (400: Cannot sync a service that is not out of sync.)`,
       );
     });
     it("Should throw when service is not out of sync/2", async function () {
@@ -118,7 +118,7 @@ describe("Services", function () {
       const ensuredService = await testDs.ensureService(`${CommonUnittestPrefix}-ensured`, { type: "jena" });
       await ensuredService.update({ rollingUpdate: true });
       await expect(ensuredService.update({ rollingUpdate: true })).to.be.eventually.rejectedWith(
-        `because it is not out of sync.`,
+        `Cannot update service '${CommonUnittestPrefix}-ensured' of dataset '${CommonUnittestPrefix}-0', because it is not out of sync.`,
       );
     });
   });
