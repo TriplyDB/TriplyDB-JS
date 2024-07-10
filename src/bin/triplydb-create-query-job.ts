@@ -4,8 +4,8 @@ import { program } from "commander";
 import colors from "colors";
 import App from "../App.js";
 import QueryJob, { QueryInformation } from "./QueryJob.js";
-import { readFile } from "fs";
 import { QueryJobPipelineCreate } from "./QueryJobModels.js";
+import { readJson } from "fs-extra";
 
 let defaultTriplyDBToken = process.env["TRIPLYDB_TOKEN"];
 let defaultTriplyDBAccount = process.env["TRIPLYDB_ACCOUNT"];
@@ -76,7 +76,7 @@ const command = program
       httpProxy?: string;
       httpsProxy?: string;
     }>();
-    const configFile = command.args;
+    const [configFile] = command.args;
     if (!configFile.length) sanityCheckError("Missing query job config file");
     if (!options.token) sanityCheckError("Missing token as an argument");
 
@@ -89,42 +89,40 @@ const command = program
     const account = await app.getUser(options.account);
     // check whether account name exists
     await account.getInfo();
-    readFile(configFile[0], async function (err, data) {
-      if (err) sanityCheckError(err.message);
-      if (data) {
-        let queryJobConfig: QueryJobPipelineCreate | undefined = undefined;
+    readJson(configFile)
+      .then(async (data) => {
+        const queryJobConfig: QueryJobPipelineCreate = data;
+        if (!queryJobConfig) {
+          sanityCheckError("Error in reading query job json config");
+        }
+        if (!("version" in queryJobConfig)) {
+          sanityCheckError("Version not found in query job config");
+        }
+
+        const queryInfo: QueryInformation[] = [];
+        if ("queries" in queryJobConfig && queryJobConfig.queries) {
+          for (const query of queryJobConfig.queries as any[]) {
+            const [queryAccountName, actualQueryName] = query.name.split("/");
+            if (!queryAccountName) sanityCheckError(`Missing query account name for query "${query.name}"`);
+            if (!actualQueryName) sanityCheckError(`Missing query name for query "${query.name}"`);
+            queryInfo.push({
+              queryAccountName: queryAccountName,
+              queryName: actualQueryName,
+              priority: query.priority || 0,
+            });
+          }
+        }
+        const queryJob: QueryJob = new QueryJob(app, account);
         try {
-          queryJobConfig = JSON.parse(data.toString()) as QueryJobPipelineCreate;
+          await queryJob.createQueryJobPipeline(queryJobConfig, queryInfo);
         } catch (e) {
           console.error(e);
           process.exit(1);
         }
-        if (queryJobConfig) {
-          if ("version" in queryJobConfig) {
-            const queryInfo: QueryInformation[] = [];
-            if ("queries" in queryJobConfig && queryJobConfig.queries) {
-              for (const query of queryJobConfig.queries as any[]) {
-                const [queryAccountName, actualQueryName] = query.name.split("/");
-                if (!queryAccountName) sanityCheckError(`Missing query account name for query "${query.name}"`);
-                if (!actualQueryName) sanityCheckError(`Missing query name for query "${query.name}"`);
-                queryInfo.push({
-                  queryAccountName: queryAccountName,
-                  queryName: actualQueryName,
-                  priority: query.priority || 0,
-                });
-              }
-            }
-            const queryJob: QueryJob = new QueryJob(app, account);
-            try {
-              await queryJob.createQueryJobPipeline(queryJobConfig, queryInfo);
-            } catch (e) {
-              console.error(e);
-              process.exit(1);
-            }
-          } else sanityCheckError("Version not found in query job config");
-        } else sanityCheckError("Error in reading query job json config");
-      } else sanityCheckError("Query job config not provided");
-    });
+      })
+      .catch((e) => {
+        if (e) sanityCheckError(e.message);
+      });
   });
 
 export default command;
