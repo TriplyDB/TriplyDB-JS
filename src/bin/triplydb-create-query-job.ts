@@ -89,40 +89,34 @@ const command = program
     const account = await app.getUser(options.account);
     // check whether account name exists
     await account.getInfo();
-    readJson(configFile)
-      .then(async (data) => {
-        const queryJobConfig: QueryJobPipelineCreate = data;
-        if (!queryJobConfig) {
-          sanityCheckError("Error in reading query job json config");
-        }
-        if (!("version" in queryJobConfig)) {
-          sanityCheckError("Version not found in query job config");
-        }
+    try {
+      const queryJobConfig = (await readJson(configFile)) as QueryJobPipelineCreate;
+      if (!queryJobConfig) {
+        sanityCheckError("Error in reading query job json config");
+      }
+      if (!queryJobConfig.version) {
+        sanityCheckError("Version not found in query job config");
+      }
 
-        const queryInfo: QueryInformation[] = [];
-        if ("queries" in queryJobConfig && queryJobConfig.queries) {
-          for (const query of queryJobConfig.queries as any[]) {
-            const [queryAccountName, actualQueryName] = query.name.split("/");
-            if (!queryAccountName) sanityCheckError(`Missing query account name for query "${query.name}"`);
-            if (!actualQueryName) sanityCheckError(`Missing query name for query "${query.name}"`);
-            queryInfo.push({
-              queryAccountName: queryAccountName,
-              queryName: actualQueryName,
-              priority: query.priority || 0,
-            });
-          }
+      const queryInfo: QueryInformation[] = [];
+      if (queryJobConfig.queries) {
+        for (const query of queryJobConfig.queries as any[]) {
+          const [queryAccountName, actualQueryName] = query.name.split("/");
+          if (!queryAccountName) sanityCheckError(`Missing query account name for query "${query.name}"`);
+          if (!actualQueryName) sanityCheckError(`Missing query name for query "${query.name}"`);
+          queryInfo.push({
+            queryAccountName: queryAccountName,
+            queryName: actualQueryName,
+            priority: query.priority || 0,
+          });
         }
-        const queryJob: QueryJob = new QueryJob(app, account);
-        try {
-          await queryJob.createQueryJobPipeline(queryJobConfig, queryInfo);
-        } catch (e) {
-          console.error(e);
-          process.exit(1);
-        }
-      })
-      .catch((e) => {
-        if (e) sanityCheckError(e.message);
-      });
+      }
+      const queryJob: QueryJob = new QueryJob(app, account);
+      await queryJob.createQueryJobPipeline(queryJobConfig, queryInfo);
+    } catch (e) {
+      console.error(e);
+      process.exit(1);
+    }
   });
 
 export default command;
