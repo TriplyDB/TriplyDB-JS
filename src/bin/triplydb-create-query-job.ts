@@ -77,12 +77,13 @@ const command = program
       httpsProxy?: string;
     }>();
     const [configFile] = command.args;
-    if (!configFile.length) sanityCheckError("Missing query job config file");
-    if (!options.token) sanityCheckError("Missing token as an argument");
+    if (!configFile || !configFile.length) sanityCheckError("Missing query job config file");
+    const token = options.token ?? defaultTriplyDBToken;
+    if (!token) sanityCheckError("Missing token as an argument");
 
     const app = App.get({
       url: options.url,
-      token: options.token ?? defaultTriplyDBToken,
+      token,
       httpProxy: options.httpProxy,
       httpsProxy: options.httpsProxy,
     });
