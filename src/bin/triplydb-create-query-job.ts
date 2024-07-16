@@ -5,7 +5,7 @@ import colors from "colors";
 import App from "../App.js";
 import QueryJob, { QueryInformation } from "./QueryJob.js";
 import { QueryJobPipelineCreate } from "./QueryJobModels.js";
-import { readJson } from "fs-extra";
+import fs from "fs-extra";
 
 let defaultTriplyDBToken = process.env["TRIPLYDB_TOKEN"];
 let defaultTriplyDBAccount = process.env["TRIPLYDB_ACCOUNT"];
@@ -27,7 +27,7 @@ const command = program
       "queries": [{
           "name": "accountName/queryName", (Required)
           "priority": 1, (Optional)
-        
+
       },{
           "name": "accountName/queryName",
           "version": 2 (Optional)
@@ -36,7 +36,7 @@ const command = program
       "targetDataset": "accountName/datasetName", (Required)
       "targetGraphName": "graph:default", (Optional)
       "version": 0.1 (Required)
-    } 
+    }
     `,
   )
   .option("-t, --token <token>", "TriplyDB access token (default: $TRIPLYDB_TOKEN)")
@@ -90,7 +90,7 @@ const command = program
     // check whether account name exists
     await account.getInfo();
     try {
-      const queryJobConfig = (await readJson(configFile)) as QueryJobPipelineCreate;
+      const queryJobConfig = (await fs.readJson(configFile)) as QueryJobPipelineCreate;
       if (!queryJobConfig) {
         sanityCheckError("Error in reading query job json config");
       }
