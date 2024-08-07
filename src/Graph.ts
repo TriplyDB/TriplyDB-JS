@@ -28,7 +28,9 @@ export default class Graph {
   public async toStream(type: "compressed" | "rdf-js"): Promise<stream.Readable> {
     return this.dataset.graphsToStream(type, { graph: this });
   }
-
+  public get graphName() {
+    return this._info.graphName;
+  }
   public async getInfo(refresh = false) {
     if (refresh)
       this._info = await _get<Routes.datasets._account._dataset.graphs._graphId.Get>({

@@ -7,8 +7,10 @@ import User from "./User.js";
 import { _get, _post, _patch } from "./RequestHandler.js";
 import Dataset, { Prefixes } from "./Dataset.js";
 import { getErr, IncompatibleError } from "./utils/Error.js";
-import { AccessLevel, PinnedItemUpdate, SparqlQuery, VariableConfig } from "@triply/utils/Models.js";
-import { omit } from "lodash-es";
+import { AccessLevel, PinnedItemUpdate, PipelineConfig, SparqlQuery, VariableConfig } from "@triply/utils/Models.js";
+import { compact, omit, uniq } from "lodash-es";
+import Graph from "./Graph.js";
+import Pipeline, { PipelineProgress, createPipeline } from "./Pipeline.js";
 
 /* This file contains functions that are shared by the Org and User classes.
 Since the classes are implementing an interface rather than extending a class,
@@ -108,6 +110,87 @@ export async function getQuery<T extends Account>(this: T, name: string) {
     errorWithCleanerStack: getErr(`Failed to get query ${name} of account ${accountName}`),
   })) as Models.Query;
   return new Query(app, query, this);
+}
+export interface RunPipelineOpts {
+  onProgress?: (progress: PipelineProgress) => void;
+  /**
+   * Execute these queries in parallel
+   */
+  queries: Array<Query | { query: Query; priority?: number }>;
+  /**
+   * Store the results in this dataset
+   */
+  destination: {
+    dataset: Dataset;
+    graph?: Graph | string;
+  };
+  /**
+   * Execute the queries on this dataset. If all queries use the same dataset, you can leave this unset
+   */
+  source?: Dataset;
+}
+export async function runPipeline<T extends Account>(this: T, opts: RunPipelineOpts) {
+  if (!opts.queries.length) throw getErr("No queries given to run pipeline on");
+  const queries: Array<{ query: Query; priority?: number }> = opts.queries.map((q) => {
+    if (q instanceof Query) {
+      return {
+        query: q,
+        priority: undefined,
+      };
+    } else {
+      return q;
+    }
+  });
+  let sourceDataset: Dataset | undefined = opts.source;
+  if (!sourceDataset) {
+    const queryInfos = await Promise.all(
+      queries.map(async (q) => {
+        return {
+          query: q.query,
+          info: await q.query.getInfo(),
+        };
+      }),
+    );
+    let queryWithDataset: Query;
+    const usedDatasets = uniq(
+      compact(
+        queryInfos.map((q) => {
+          if (!q.info.dataset) return undefined;
+          queryWithDataset = q.query;
+          return `${q.info.dataset.owner.accountName}/${q.info.dataset.name}`;
+        }),
+      ),
+    );
+    if (usedDatasets.length !== 1) {
+      throw getErr(`Cannot create pipeline: pass a source document first`);
+    }
+    // We know we can populate this field
+    // (otherwise, we wouldnt have had metadata info in the original pipeline object about this dataset)
+    sourceDataset = (await queryWithDataset!.getDataset()) as Dataset;
+  }
+  let targetGraphName: undefined | string;
+  if (opts.destination.graph) {
+    targetGraphName =
+      typeof opts.destination.graph === "string" ? opts.destination.graph : opts.destination.graph.graphName;
+  }
+  const pipelineConfig: PipelineConfig = {
+    version: 0.1,
+    queries: queries.map((q) => {
+      if (q.query["_getQueryType"]() !== "CONSTRUCT")
+        throw getErr("Pipelines are only supported for construct queries");
+      return {
+        name: `${q.query.owner.slug}/${q.query.slug}`,
+        version: q.query.version,
+        priority: q.priority,
+      };
+    }),
+    sourceDataset: `${sourceDataset.owner.slug}/${sourceDataset.slug}`,
+    targetDataset: `${opts.destination.dataset.owner.slug}/${opts.destination.dataset.slug}`,
+    targetGraphName: targetGraphName,
+  };
+  const pipeline = new Pipeline(this.app, this, await createPipeline(this, pipelineConfig));
+  await pipeline.waitForPipelineToFinish(opts);
+  return pipeline;
 }
 
 export function getQueries<T extends Account>(this: T): AsyncIteratorHelper<Models.Query, Query> {

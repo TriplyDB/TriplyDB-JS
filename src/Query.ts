@@ -9,7 +9,7 @@ import sparqljs from "sparqljs";
 import stringifyQueryObj from "query-string";
 import AsyncIteratorHelperWithToFile from "./utils/AsyncIteratorHelperWithToFile.js";
 import { VariableConfig } from "@triply/utils/Models.js";
-import { AddQueryOptions } from "./commonAccountFunctions.js";
+import { AddQueryOptions, RunPipelineOpts } from "./commonAccountFunctions.js";
 import User from "./User.js";
 import Org from "./Org.js";
 import { isUndefined, omitBy } from "lodash-es";
@@ -144,10 +144,28 @@ export default class Query {
     });
     return this;
   }
+  public async getDataset() {
+    const info = await this.getInfo();
+    if (!info.dataset) return;
+    const datasetJson = info.dataset;
+    const datasetOwner = await this.app.getAccount(datasetJson.owner.accountName);
+    return datasetOwner.getDataset(datasetJson.name);
+  }
+
+  /**
+   * Run job as a pipeline on TriplyDB. This works for construct queries of arbitrary duration and output size.
+   */
+  public async runPipeline(opts: Omit<RunPipelineOpts, "queries">) {
+    return this.owner.runPipeline({ ...opts, queries: [this] });
+  }
+
   private _setInfo(info: Models.Query) {
     this._info = info;
     this.slug = info.name;
     return this;
+  }
+  public get version() {
+    return this._version;
   }
   public async useVersion(version: number | "latest") {
     const numVersions = this._info.numberOfVersions;

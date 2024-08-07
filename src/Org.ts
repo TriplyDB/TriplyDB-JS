@@ -20,6 +20,7 @@ import {
   addStory,
   ensureDataset,
   ensureStory,
+  runPipeline,
 } from "./commonAccountFunctions.js";
 import { getErr } from "./utils/Error.js";
 
@@ -54,6 +55,7 @@ export default class Org implements AccountBase {
   public pinItems = pinItems;
   public ensureDataset = ensureDataset;
   public ensureStory = ensureStory;
+  public runPipeline = runPipeline;
 
   public get api() {
     const path = `/accounts/${this.slug}`;

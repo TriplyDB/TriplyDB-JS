@@ -649,7 +649,7 @@ export default class Dataset {
 const datasetsWithOngoingJob: { [dsId: string]: true } = {};
 async function waitForJobToFinish(app: App, jobUrl: string, dsId: string) {
   let waitFor = 100; //100ms
-  const check = async (): Promise<Models.Job> => {
+  const check = async (): Promise<Models.IndexJob> => {
     const info = await _get<Routes.datasets._account._dataset.jobs._jobId.Get>({
       errorWithCleanerStack: getErr(`Failed to get upload job status`).addContext({ jobUrl }),
       app: app,
@@ -676,7 +676,7 @@ interface JobConfig extends JobDefaultsConfig {
 }
 export class JobUpload {
   private _config: JobConfig;
-  private _info?: Models.Job;
+  private _info?: Models.IndexJob;
   private jobUrl?: string;
   private urlMapper: (url: string) => string = (url: string) => url;
   public constructor(conf: JobConfig) {
