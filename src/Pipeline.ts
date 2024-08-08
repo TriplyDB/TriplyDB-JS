@@ -16,21 +16,26 @@ export type PipelineProgress = {
 const timeLog = (...args: string[]) => console.info(`[${new Date().toISOString()}]`, ...args);
 
 export function defaultLogger(progress: PipelineProgress) {
-  {
+  /**
+   * We currently don't report the total pipeline progress properly (it always returns zero)
+   * This should be fixed when we use the new pipeline model on the API
+   * To avoid showing a progress of 0% consistently, we're only rendering it when it's non-zero
+   */
+  if (progress.progress === 0) {
     const progressString = `${(progress.progress * 100).toFixed(0)}%`;
     timeLog(`Pipeline status (${progressString}):`);
-    timeLog(
-      `  - Running: ${progress.running.length} ${progress.running.length > 0 ? "| " : ""}${progress.running
-        .map((qj) => {
-          const progress = qj.progress >= 0 ? `${(qj.progress * 100).toFixed(0)}%` : "unknown";
-          return `${qj.query?.owner}/${qj.query?.name} (${progress})`;
-        })
-        .join(", ")}`,
-    );
-    timeLog(`  - Pending: ${progress.pending.length}`);
-    timeLog(`  - Finished: ${progress.finished.length}`);
-    if (progress.status === "finished") timeLog("Pipeline finished");
   }
+  timeLog(
+    `  - Running: ${progress.running.length} ${progress.running.length > 0 ? "| " : ""}${progress.running
+      .map((qj) => {
+        const progress = qj.progress >= 0 ? `${(qj.progress * 100).toFixed(0)}%` : "unknown";
+        return `${qj.query?.owner}/${qj.query?.name} (${progress})`;
+      })
+      .join(", ")}`,
+  );
+  timeLog(`  - Pending: ${progress.pending.length}`);
+  timeLog(`  - Finished: ${progress.finished.length}`);
+  if (progress.status === "finished") timeLog("Pipeline finished");
 }
 
 export async function createPipeline(forAccount: Account, args: Models.PipelineConfig) {
