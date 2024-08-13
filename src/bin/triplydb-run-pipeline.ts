@@ -92,7 +92,7 @@ const command = program
       }
 
       const pipeline: Pipeline = new Pipeline(app, account, await createPipeline(account, pipelineConfig));
-      const pipelineJson = pipeline["_pipeline"];
+      const pipelineJson = pipeline["_info"];
       timeLog(`Pipeline created (${pipelineJson.id}) for ${pipelineJson.jobs} queries:`);
       for (const job of pipelineJson.jobs) {
         timeLog(`  - ${job.query?.owner}/${job.query?.name}`);
