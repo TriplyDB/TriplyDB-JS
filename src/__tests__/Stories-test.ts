@@ -3,6 +3,7 @@ import fs from "fs-extra";
 import * as chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 import dotenv from "dotenv";
+import path from "path";
 dotenv.config();
 chai.use(chaiAsPromised);
 const expect = chai.expect;
@@ -12,6 +13,10 @@ process.on("unhandledRejection", function (reason: any, p: any) {
   console.warn("Possibly Unhandled Rejection at: Promise ", p, " reason: ", reason);
 });
 const tmpDir = "./src/__tests__/tmp";
+
+function getDataDir(...subpaths: string[]) {
+  return path.resolve("./src/__tests__/__data__", ...subpaths);
+}
 
 describe("Stories", function () {
   let app: App;
@@ -64,8 +69,22 @@ describe("Stories", function () {
       await expect(
         user.ensureStory(`${CommonUnittestPrefix}-ensured3`, {
           accessLevel: "private",
-        })
+        }),
       ).to.eventually.be.rejectedWith(/already exists with access level/);
+    });
+  });
+
+  describe("Change dataset metadata", function () {
+    it("Set banner", async function () {
+      const userInfo = await user.getInfo();
+      const story = await user.addStory("test-story", {
+        accessLevel: "public",
+      });
+      expect((await story.getInfo()).bannerUrl).to.be.undefined;
+      await story.setBanner(getDataDir("banner.jpg"));
+      const storyInfo = await story.getInfo();
+      expect(storyInfo.bannerUrl).to.contain(`/${userInfo.accountName}/${storyInfo.name}/banner.webp?v=1`);
+      await story.delete();
     });
   });
 });

@@ -1,6 +1,6 @@
 import { Models, Routes } from "@triply/utils";
 import App from "./App.js";
-import { _get, _delete } from "./RequestHandler.js";
+import { _get, _delete, _post } from "./RequestHandler.js";
 import { Account } from "./Account.js";
 import { getErr } from "./utils/Error.js";
 
@@ -45,5 +45,16 @@ export default class Story {
       path: this.api.path,
       expectedResponseBody: "empty",
     });
+  }
+  public async setBanner(pathBufferOrFile: string | Buffer | File) {
+    const info = await this.getInfo();
+    await _post<Routes.stories._account._story.banner.Post>({
+      errorWithCleanerStack: getErr(`Failed to set banner of story ${info.name}.`),
+      app: this.app,
+      path: `/stories/${info.owner.accountName}/${info.name}/banner.webp`,
+      attach: { banner: pathBufferOrFile },
+    });
+    await this.getInfo(true);
+    return this;
   }
 }
