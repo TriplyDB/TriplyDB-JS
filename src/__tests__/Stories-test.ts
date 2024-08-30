@@ -81,7 +81,7 @@ describe("Stories", function () {
         accessLevel: "public",
       });
       expect((await story.getInfo()).bannerUrl).to.be.undefined;
-      await story.setBanner(getDataDir("banner.jpg"));
+      await story.setBanner(getDataDir("banner.webp"));
       const storyInfo = await story.getInfo();
       expect(storyInfo.bannerUrl).to.contain(`/${userInfo.accountName}/${storyInfo.name}/banner.webp?v=1`);
       await story.delete();
