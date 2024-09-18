@@ -1,6 +1,8 @@
 import debug from "debug";
 import type { UploadOptions } from "@triply/tus-js-client";
-
+import { Readable } from "stream";
+import { finished } from "stream/promises";
+import fs from "fs-extra";
 export function wait(ms: number) {
   return new Promise<void>(function (resolve) {
     setTimeout(function () {
@@ -9,6 +11,20 @@ export function wait(ms: number) {
   });
 }
 
+export async function fetchFile(response: Response, toFile: string) {
+  if (!response.ok) throw new Error("Cannot fetch file");
+  const body = Readable.fromWeb(response.body as any); // @any cast, because types nodejs types and web streams don't allign well
+  const download_write_stream = fs.createWriteStream(toFile);
+  await finished(body.pipe(download_write_stream));
+}
+export async function resolveAndCatchNotFound<P extends Promise<any>>(promise: P): Promise<P | undefined> {
+  try {
+    return await promise;
+  } catch (e: any) {
+    if (e.statusCode === 404) return undefined;
+    throw e;
+  }
+}
 /**
  * Attempt to set a sticky session cookie in the given headers object. If this
  * somehow fails, the headers aren't changed and this function exits silently.
@@ -43,6 +59,6 @@ export function formatUploadProgress(
   return `uploaded ${bytesUploaded
     .toLocaleString("en")
     .padStart(
-      formattedBytesTotal.length
+      formattedBytesTotal.length,
     )} of ${formattedBytesTotal} bytes (${percentage}%, ~${formattedUploadSpeed}B/s)`;
 }

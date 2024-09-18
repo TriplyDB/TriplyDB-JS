@@ -3,7 +3,15 @@ import App from "./App.js";
 import { _get, _delete, _post } from "./RequestHandler.js";
 import { Account } from "./Account.js";
 import { getErr } from "./utils/Error.js";
+import { compact, uniq } from "lodash-es";
+import Query from "./Query.js";
+import { MarkOptional } from "ts-essentials";
+export type StoryElementParagraph = Models.StoryElementParagraph;
+export interface StoryElementQuery extends Omit<Models.StoryElementQuery, "query" | "queryVersion"> {
+  query?: Query;
+}
 
+export type StoryElementUpdate = MarkOptional<StoryElementQuery, "id"> | MarkOptional<StoryElementParagraph, "id">;
 export default class Story {
   public app: App;
   private _info: Models.Story;
@@ -56,5 +64,34 @@ export default class Story {
     });
     await this.getInfo(true);
     return this;
+  }
+  public async getContent(): Promise<Array<StoryElementParagraph | StoryElementQuery>> {
+    // When we create the `Query` objects, we need a reference to the account owner. Make sure we fetch the account
+    // references before in 1 go
+    let referencedAccounts = new Map<string, Account>();
+    const accounts = await Promise.all(
+      uniq(
+        compact(this._info.content.map((content) => content.type === "query" && content.query?.owner.accountName)),
+      ).map((accountName) => this.app.getAccount(accountName)),
+    );
+    for (const account of accounts) {
+      referencedAccounts.set(account.slug, account);
+    }
+    return Promise.all(
+      this._info.content.map(async (element: Models.Story["content"][number]) => {
+        if (element.type === "paragraph") return element;
+        const { query, queryVersion, ...queryProps } = element;
+        let queryObj: Query | undefined;
+        if (query) {
+          const queryOwner = referencedAccounts.get(query.owner.accountName) as Account;
+          queryObj = new Query(this.app, query, queryOwner);
+          if (queryVersion !== undefined) await queryObj.useVersion(queryVersion);
+        }
+        return {
+          ...queryProps,
+          query: queryObj,
+        };
+      }),
+    );
   }
 }

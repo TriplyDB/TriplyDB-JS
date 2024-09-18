@@ -2,7 +2,7 @@ import { Models, Routes } from "@triply/utils";
 import App from "./App.js";
 import { _get, _patch, _delete, _post } from "./RequestHandler.js";
 import { Account } from "./Account.js";
-import { getErr, IncompatibleError } from "./utils/Error.js";
+import { getErr, IncompatibleError, TriplyDbJsError } from "./utils/Error.js";
 import { Cache } from "./utils/cache.js";
 import * as n3 from "n3";
 import sparqljs from "sparqljs";
@@ -338,15 +338,28 @@ export default class Query {
             : undefined,
     };
 
+    return Query.create(
+      app,
+      accountToUse,
+      newQuery,
+      getErr(`Failed to make a copy of ${queryToCopy.name} to account ${accountName}.`),
+    );
+  }
+  private static async create(
+    app: App,
+    ownerAccount: Account,
+    data: Models.QueryCreate,
+    errorWithCleanerStack: TriplyDbJsError,
+  ) {
     return new Query(
       app,
       await _post<Routes.queries._account.Post>({
         app: app,
-        path: "/queries/" + accountName,
-        data: newQuery,
-        errorWithCleanerStack: getErr(`Failed to make a copy of ${queryToCopy.name} to account ${accountName}.`),
+        path: "/queries/" + ownerAccount.slug,
+        data,
+        errorWithCleanerStack,
       }),
-      accountToUse,
+      ownerAccount,
     );
   }
 }

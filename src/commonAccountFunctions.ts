@@ -1,17 +1,22 @@
 import Query from "./Query.js";
 import { Models, Routes } from "@triply/utils";
 import AsyncIteratorHelper from "./utils/AsyncIteratorHelper.js";
-import Story from "./Story.js";
+import Story, { StoryElementQuery, StoryElementUpdate } from "./Story.js";
 import { Account } from "./Account.js";
 import User from "./User.js";
-import { _get, _post, _patch } from "./RequestHandler.js";
+import { _get, _post, _patch, getFetchOpts } from "./RequestHandler.js";
 import Dataset, { Prefixes } from "./Dataset.js";
 import { getErr, IncompatibleError } from "./utils/Error.js";
 import { AccessLevel, PinnedItemUpdate, PipelineConfig, SparqlQuery, VariableConfig } from "@triply/utils/Models.js";
 import { compact, omit, uniq } from "lodash-es";
 import Graph from "./Graph.js";
 import Pipeline, { PipelineProgress, createPipeline } from "./Pipeline.js";
-
+import fs from "fs-extra";
+import os from "os";
+import path from "path";
+import { fetchFile, resolveAndCatchNotFound } from "./utils/index.js";
+import debug from "debug";
+const importLogger = debug("triply:triplydb-js:import");
 /* This file contains functions that are shared by the Org and User classes.
 Since the classes are implementing an interface rather than extending a class,
 'private' fields such as 'app' are not available on items of type Account.
@@ -83,24 +88,55 @@ export async function addQuery<T extends Account>(this: T, name: string, opts: A
     this,
   );
 }
-export type NewStory = Omit<Models.StoryCreate, "name">;
-export async function addStory<T extends Account>(this: T, name: string, args?: NewStory) {
+
+export type NewStory_deprecated = Omit<Models.StoryCreate, "name">;
+export interface NewStory extends Omit<Models.StoryCreate, "name" | "content"> {
+  content?: Array<StoryElementUpdate>;
+}
+export async function addStory<T extends Account>(this: T, name: string, args?: NewStory | NewStory_deprecated) {
   const app = (this as User).app;
   const accountName = this.slug;
-  const story: Models.StoryCreate = { ...args, name };
+
+  const story: Models.StoryCreate = { ...args, name, content: [] };
   if (!story.accessLevel) story.accessLevel = "private";
+
+  /**
+   * The POST route of stories doesn't support setting a width and height props. The Patch route does. This is fixed as
+   * of 24.09.2.
+   * For now, we've added a workaround, by creating an empty story, and using patch to set the content
+   */
+  await _post<Routes.stories._account.Post>({
+    app: app,
+    path: "/stories/" + accountName,
+    data: story,
+    errorWithCleanerStack: getErr(`Failed to add a story to account ${accountName}.`),
+  });
+
+  const content: Array<Models.StoryElementUpdate> = await Promise.all(
+    (args?.content || []).map(async (element: StoryElementUpdate | Models.StoryElementUpdate) => {
+      if (element.type === "paragraph") return element;
+      if (element.query && typeof element.query === "object" && "getInfo" in element.query) {
+        const info = await element.query.getInfo();
+        return { ...element, query: info.id, queryVersion: element.query.version };
+      }
+      return { ...(element as Models.StoryElementUpdate) };
+    }),
+  );
+
   return new Story(
     app,
-    await _post<Routes.stories._account.Post>({
+    await _patch<Routes.stories._account._story.Patch>({
       app: app,
-      path: "/stories/" + accountName,
-      data: story,
+      path: `/stories/${accountName}/${name}`,
+      data: { content },
       errorWithCleanerStack: getErr(`Failed to add a story to account ${accountName}.`),
     }),
     this,
   );
 }
-
+export async function hasQuery<T extends Account>(this: T, name: string) {
+  return !!(await resolveAndCatchNotFound(this.getQuery(name)));
+}
 export async function getQuery<T extends Account>(this: T, name: string) {
   const app = (this as User).app;
   const accountName = this.slug;
@@ -204,7 +240,9 @@ export function getQueries<T extends Account>(this: T): AsyncIteratorHelper<Mode
     mapResult: async (queryInfo) => new Query(app, queryInfo, this),
   });
 }
-
+export async function hasStory<T extends Account>(this: T, name: string) {
+  return !!(await resolveAndCatchNotFound(this.getStory(name)));
+}
 export async function getStory<T extends Account>(this: T, name: string) {
   const app = (this as User).app;
   const accountName = this.slug;
@@ -226,7 +264,9 @@ export function getStories<T extends Account>(this: T): AsyncIteratorHelper<Mode
     mapResult: async (queryInfo) => new Story(app, queryInfo, this),
   });
 }
-
+export async function hasDataset<T extends Account>(this: T, name: string) {
+  return !!(await resolveAndCatchNotFound(this.getDataset(name)));
+}
 export async function getDataset<T extends Account>(this: T, ds: string) {
   const app = (this as User).app;
   const accountName = this.slug;
@@ -361,6 +401,203 @@ export async function ensureDataset<T extends Account>(this: T, name: string, ne
     return this.addDataset(name, newDs);
   }
 }
+export interface ImportDatasetOpts {
+  overwrite: true;
+}
+/**
+ * Import query from a different TriplyDB deployment. This is a destructive operation, and overwrites an existing
+ * dataset if it exists already
+ */
+export async function importDataset<T extends Account>(this: T, sourceDataset: Dataset, _opts: ImportDatasetOpts) {
+  importLogger(`Importing dataset ${sourceDataset.slug}`);
+  // For scoping purposes, only supporting import functionality between instances for now
+  if (this.app.url === sourceDataset.app.url)
+    throw getErr("Importing datasets is only supported between different instances.");
+  const sourceDatasetInfo = await sourceDataset.getInfo();
+  const tmpdir = path.resolve(os.tmpdir(), "triplydb-js-import-dataset", sourceDatasetInfo.id);
+  await fs.ensureDir(tmpdir);
+  /**
+   * Create target dataset
+   */
+  let targetDataset = await resolveAndCatchNotFound(this.getDataset(sourceDataset.slug));
+  if (targetDataset) {
+    importLogger(`  Target dataset ${sourceDataset.slug} already exists. Deleting`);
+    await targetDataset.delete();
+  }
+  // When creating, copy basic info
+  importLogger(`  Creating target dataset ${sourceDataset.slug}`);
+  targetDataset = await this.addDataset(sourceDataset.slug, {
+    ...sourceDatasetInfo,
+    prefixes: await sourceDataset.getPrefixes(),
+  });
+  /**
+   * Copy assets
+   */
+  importLogger(`  Migrating assets to dataset ${sourceDataset.slug}`);
+  for await (const asset of sourceDataset.getAssets()) {
+    const name = asset.getInfo().assetName;
+    const id = asset.getInfo().identifier;
+    const tmpAssetFile = path.resolve(tmpdir, `asset-${id}`);
+    await asset.toFile(tmpAssetFile);
+    await targetDataset.uploadAsset(tmpAssetFile, { name: name });
+    // cleanup
+    await fs.remove(tmpAssetFile);
+  }
+
+  /**
+   * Import data
+   */
+  importLogger(`  Importing graphs to dataset ${sourceDataset.slug}`);
+  const tmpTrigFile = path.resolve(tmpdir, `${sourceDatasetInfo.id}.trig.gz`);
+  await sourceDataset.graphsToFile(tmpTrigFile);
+  await targetDataset.importFromFiles([tmpTrigFile]);
+  await fs.remove(tmpTrigFile);
+  /**
+   * Import services
+   */
+  importLogger(`  Starting services on dataset ${sourceDataset.slug}`);
+  for await (const service of sourceDataset.getServices()) {
+    const serviceInfo = await service.getInfo();
+
+    await targetDataset.addService(service.slug, {
+      type: serviceInfo.type as any, // cast to any, as blazegraph is omitted from the tdbjs types
+      config: serviceInfo.config,
+    });
+  }
+  return targetDataset;
+}
+
+/**
+ * Import query from a different TriplyDB deployment. This is a destructive operation, and overwrites an existing
+ * query if it exists already
+ *
+ *
+ */
+export interface ImportQueryOpts {
+  fallbackDataset: (sourceDataset?: Dataset) => Promise<Dataset | undefined>;
+  overwrite: true;
+}
+export async function importQuery<T extends Account>(this: T, sourceQuery: Query, opts: ImportQueryOpts) {
+  importLogger(`Importing query `, sourceQuery.slug);
+  // For scoping purposes, only supporting import functionality between instances for now
+  if (this.app.url === sourceQuery.app.url)
+    throw getErr("Importing queries is only supported between different instances.");
+  const sourceQueryInfo = await sourceQuery.getInfo();
+  if (!sourceQueryInfo.requestConfig)
+    throw getErr(`Cannot import ${sourceQuery.slug}: it does not contain any versions`);
+  let targetDataset: Dataset | undefined;
+  importLogger(`  Resolving source dataset of query ${sourceQuery.slug}`);
+  let sourceDataset = await resolveAndCatchNotFound(sourceQuery.getDataset());
+  if (sourceDataset) {
+    importLogger(
+      `  Found the source dataset ${sourceDataset.owner.slug}/${sourceDataset.slug} of query '${sourceQuery.slug}'`,
+    );
+    const targetDatasetOwner = await resolveAndCatchNotFound(this.app.getAccount(sourceDataset.owner.slug));
+    if (targetDatasetOwner) {
+      importLogger(`  Finding a target dataset for query '${sourceQuery.slug}'`);
+      targetDataset = await resolveAndCatchNotFound(targetDatasetOwner.getDataset(sourceDataset.slug));
+      importLogger(`  Found target dataset ${sourceDataset.slug}?`, !!targetDataset);
+    } else {
+      importLogger(`  Cannot find target account ${sourceDataset.owner.slug} for dataset '${sourceDataset.slug}'`);
+    }
+  }
+  if (!targetDataset) {
+    importLogger(
+      `  Could not automatically resolve target dataset. Calling the fallback argument to fetch the dataset instead`,
+    );
+    targetDataset = await opts.fallbackDataset(sourceDataset);
+    if (!targetDataset) throw getErr("Cannot import query: no dataset reference found.");
+  }
+  /**
+   * Create target dataset
+   */
+  let targetQuery = await resolveAndCatchNotFound(this.getQuery(sourceQuery.slug));
+  if (targetQuery) {
+    importLogger(`  Target query ${targetQuery.slug} already exists. Deleting`);
+    await targetQuery.delete();
+  }
+
+  const targetQueryInfo: Models.QueryCreate = {
+    name: sourceQueryInfo.name,
+    accessLevel: sourceQueryInfo.accessLevel,
+    dataset: (await targetDataset.getInfo()).id,
+    description: sourceQueryInfo.description,
+    displayName: sourceQueryInfo.displayName,
+    renderConfig: sourceQueryInfo.renderConfig,
+    requestConfig: sourceQueryInfo.requestConfig,
+    serviceConfig: {
+      type: sourceQueryInfo.serviceConfig.type,
+    },
+    variables: sourceQueryInfo.variables,
+  };
+  importLogger(`  Creating target query ${sourceQuery.slug}`);
+  return Query["create"](
+    this.app,
+    this,
+    targetQueryInfo,
+    getErr(`Failed to import ${sourceQueryInfo.name} to account ${this.slug}.`),
+  );
+}
+
+export interface ImportStoryOpts {
+  fallbackQuery: (sourceQuery: Query) => Promise<Query>;
+  overwrite: true;
+}
+/**
+ * Import query from a different TriplyDB deployment. This is a destructive operation, and overwrites an existing
+ * query if it exists already
+ */
+export async function importStory<T extends Account>(this: T, sourceStory: Story, opts: ImportStoryOpts) {
+  importLogger(`Importing story ${sourceStory.slug}`);
+  // For scoping purposes, only supporting import functionality between instances for now
+  if (this.app.url === sourceStory.app.url)
+    throw getErr("Importing stories is only supported between different instances.");
+  const sourceStoryInfo = await sourceStory.getInfo();
+  const sourceContent = await sourceStory.getContent();
+
+  const targetContent = compact(
+    await Promise.all(
+      sourceContent.map(async (sourceElement) => {
+        if (sourceElement.type === "paragraph") return omit(sourceElement, "id");
+        if (!sourceElement.query) {
+          importLogger(`  Cannot find query for story element. Skipping this story element in the import`);
+          return;
+        }
+        let targetQuery = await resolveAndCatchNotFound(this.getQuery(sourceElement.query.slug));
+        if (!targetQuery) {
+          targetQuery = await opts.fallbackQuery(sourceElement.query);
+        }
+        return {
+          ...omit(sourceElement, "id"),
+          query: targetQuery,
+        };
+      }),
+    ),
+  );
+
+  let targetStory = await resolveAndCatchNotFound(this.getStory(sourceStory.slug));
+  if (targetStory) {
+    await targetStory.delete();
+  }
+
+  targetStory = await this.addStory(sourceStory.slug, {
+    accessLevel: sourceStoryInfo.accessLevel,
+    displayName: sourceStoryInfo.displayName,
+    content: targetContent,
+  });
+  targetStory.getContent;
+
+  if (sourceStoryInfo.bannerUrl) {
+    const tmpDir = path.resolve(os.tmpdir(), "triplydb-js-import-story", sourceStoryInfo.id);
+    await fs.ensureDir(tmpDir);
+    const ext = path.extname(sourceStoryInfo.bannerUrl);
+    const bannerFile = path.resolve(tmpDir, "banner." + ext);
+
+    await fetchFile(await fetch(sourceStoryInfo.bannerUrl, getFetchOpts({}, { app: sourceStory.app })), bannerFile);
+    await targetStory.setBanner(bannerFile);
+  }
+  return targetStory;
+}
 
 // ensureQuery functionality to be refined: https://issues.triply.cc/issues/6296
 // Leave commented out meanwhile
@@ -388,7 +625,7 @@ export async function ensureDataset<T extends Account>(this: T, name: string, ne
 //   }
 // }
 
-export async function ensureStory<T extends Account>(this: T, name: string, newStory?: NewStory) {
+export async function ensureStory<T extends Account>(this: T, name: string, newStory?: NewStory | NewStory_deprecated) {
   try {
     const story = await this.getStory(name);
     const info = await story.getInfo();
