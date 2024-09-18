@@ -104,6 +104,7 @@ async function handleFetchAsPromise<T extends HttpMethodTemplate>(
   try {
     response = await fetch(url, reqOpts);
   } catch (e: any) {
+    log(`Cannot get response`, e);
     // This error only occurs when there are network errors and such
     throw opts.errorWithCleanerStack.addContext(errorContext).setCause(e);
   }

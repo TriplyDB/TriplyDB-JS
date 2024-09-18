@@ -9,26 +9,39 @@ import Query from "./Query.js";
 import Story from "./Story.js";
 import { getErr } from "./utils/Error.js";
 import { NewDataset } from "@triply/utils/Models.js";
-import { AddQueryOptions, NewStory } from "./commonAccountFunctions.js";
+import {
+  AddQueryOptions,
+  ImportDatasetOpts,
+  ImportQueryOpts,
+  ImportStoryOpts,
+  NewStory,
+  NewStory_deprecated,
+} from "./commonAccountFunctions.js";
 export interface AccountBase {
-  getInfo(): Promise<Models.Account>;
-  getDataset(name: string): Promise<Dataset>;
-  getDatasets(): AsyncIteratorHelper<Models.Dataset, Dataset>;
+  hasDataset(name: string): Promise<boolean>;
+  hasQuery(name: string): Promise<boolean>;
+  hasStory(name: string): Promise<boolean>;
+  importDataset(sourceDataset: Dataset, opts: ImportDatasetOpts): Promise<Dataset>;
+  importQuery(sourceQuery: Query, opts: ImportQueryOpts): Promise<Query>;
+  importStory(sourceStory: Story, opts: ImportStoryOpts): Promise<Story>;
   addDataset(name: string, ds?: Omit<Models.NewDataset, "name">): Promise<Dataset>;
-  update(updateObj: Omit<Models.AccountUpdate, "pinnedDatasets">): Promise<User | Org>;
+  addQuery(name: string, opts: AddQueryOptions): Promise<Query>;
+  addStory(name: string, args?: NewStory | NewStory_deprecated): Promise<Story>;
   asOrganization(): Promise<Org>;
   asUser(): Promise<User>;
-  setAvatar(pathOrBuffer: string | Buffer): Promise<void>;
-  getQuery(name: string): Promise<Query>;
-  getQueries(): AsyncIteratorHelper<Models.Query, Query>;
-  addQuery(name: string, opts: AddQueryOptions): Promise<Query>;
-  getStory(name: string): Promise<Story>;
-  getStories(): AsyncIteratorHelper<Models.Story, Story>;
-  addStory(name: string, args?: Omit<Models.StoryCreate, "name">): Promise<Story>;
-  getPinnedItems(): Promise<Array<Dataset | Story | Query>>;
-  pinItems(items: Array<Dataset | Story | Query>): Promise<User | Org>;
   ensureDataset(name: string, newDs?: NewDataset): Promise<Dataset>;
-  ensureStory(name: string, newStory?: NewStory): Promise<Story>;
+  ensureStory(name: string, newStory?: NewStory | NewStory_deprecated): Promise<Story>;
+  getDataset(name: string): Promise<Dataset>;
+  getDatasets(): AsyncIteratorHelper<Models.Dataset, Dataset>;
+  getInfo(): Promise<Models.Account>;
+  getPinnedItems(): Promise<Array<Dataset | Story | Query>>;
+  getQueries(): AsyncIteratorHelper<Models.Query, Query>;
+  getQuery(name: string): Promise<Query>;
+  getStories(): AsyncIteratorHelper<Models.Story, Story>;
+  getStory(name: string): Promise<Story>;
+  pinItems(items: Array<Dataset | Story | Query>): Promise<User | Org>;
+  setAvatar(pathOrBuffer: string | Buffer): Promise<void>;
+  update(updateObj: Omit<Models.AccountUpdate, "pinnedDatasets">): Promise<User | Org>;
 }
 export type Account = User | Org;
 export interface AccountType {

@@ -21,6 +21,12 @@ import {
   ensureDataset,
   ensureStory,
   runPipeline,
+  importDataset,
+  importQuery,
+  hasDataset,
+  hasQuery,
+  hasStory,
+  importStory,
 } from "./commonAccountFunctions.js";
 import { getErr } from "./utils/Error.js";
 
@@ -39,24 +45,28 @@ export default class Org implements AccountBase {
       this.slug = infoOrAccountName.accountName;
     }
   }
-
-  public getDataset = getDataset;
-  public getDatasets = getDatasets;
   public addDataset = addDataset;
-  public update = update;
-  public setAvatar = setAvatar;
-  public getQuery = getQuery;
-  public getQueries = getQueries;
   public addQuery = addQuery;
-  public getStory = getStory;
-  public getStories = getStories;
   public addStory = addStory;
-  public getPinnedItems = getPinnedItems;
-  public pinItems = pinItems;
   public ensureDataset = ensureDataset;
   public ensureStory = ensureStory;
+  public getDataset = getDataset;
+  public getDatasets = getDatasets;
+  public getPinnedItems = getPinnedItems;
+  public getQueries = getQueries;
+  public getQuery = getQuery;
+  public getStories = getStories;
+  public getStory = getStory;
+  public hasDataset = hasDataset;
+  public hasQuery = hasQuery;
+  public hasStory = hasStory;
+  public importDataset = importDataset;
+  public importQuery = importQuery;
+  public importStory = importStory;
+  public pinItems = pinItems;
   public runPipeline = runPipeline;
-
+  public setAvatar = setAvatar;
+  public update = update;
   public get api() {
     const path = `/accounts/${this.slug}`;
     return {
