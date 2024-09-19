@@ -9,7 +9,7 @@ chai.use(chaiAsPromised);
 const expect = chai.expect;
 import { resetUnittestAccount, CommonUnittestPrefix } from "./utils.js";
 import User from "../User.js";
-import { StoryElementParagraph } from "../Story.js";
+import { StoryElementParagraph } from "@triply/utils/Models.js";
 process.on("unhandledRejection", function (reason: any, p: any) {
   console.warn("Possibly Unhandled Rejection at: Promise ", p, " reason: ", reason);
 });
@@ -47,7 +47,9 @@ describe("Stories", function () {
       });
       const storyInfo = await ensuredStory.getInfo();
       expect(storyInfo.accessLevel).to.equal("public");
-      expect((storyInfo.content[0] as StoryElementParagraph).paragraph).to.include(paragraph);
+      expect(
+        storyInfo.content.filter((el) => el.type === "paragraph").map((el) => (el as StoryElementParagraph).paragraph),
+      ).to.include(paragraph);
     });
     it("Should get existing when already existing", async function () {
       const firstStory = await user.addStory(`${CommonUnittestPrefix}-ensured2`, {
@@ -61,7 +63,11 @@ describe("Stories", function () {
       expect(firstStoryInfo.id).to.equal(ensuredStoryInfo.id);
       // since the ensuredStory was not new, the newStoryInfo should not have been applied
       expect(ensuredStoryInfo.accessLevel).to.equal("private");
-      expect((ensuredStoryInfo.content[0] as StoryElementParagraph).paragraph).to.include(paragraph);
+      expect(
+        ensuredStoryInfo.content
+          .filter((el) => el.type === "paragraph")
+          .map((el) => (el as StoryElementParagraph).paragraph),
+      ).to.include(paragraph);
     });
     it("Should throw when access level doesn't match", async function () {
       await user.addStory(`${CommonUnittestPrefix}-ensured3`, {

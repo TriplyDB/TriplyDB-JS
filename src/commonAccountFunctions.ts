@@ -152,7 +152,7 @@ export interface RunPipelineOpts {
   /**
    * Execute these queries in parallel
    */
-  queries: Array<Query | { query: Query; priority?: number }>;
+  queries: Array<Query | { query: Query; priority?: number; variables?: { [variable: string]: string | undefined } }>;
   /**
    * Store the results in this dataset
    */
@@ -167,16 +167,18 @@ export interface RunPipelineOpts {
 }
 export async function runPipeline<T extends Account>(this: T, opts: RunPipelineOpts) {
   if (!opts.queries.length) throw getErr("No queries given to run pipeline on");
-  const queries: Array<{ query: Query; priority?: number }> = opts.queries.map((q) => {
-    if (q instanceof Query) {
-      return {
-        query: q,
-        priority: undefined,
-      };
-    } else {
-      return q;
-    }
-  });
+  const queries: Array<{ query: Query; priority?: number; variables?: { [variable: string]: string | undefined } }> =
+    opts.queries.map((q) => {
+      if (q instanceof Query) {
+        return {
+          query: q,
+          priority: undefined,
+          variables: undefined,
+        };
+      } else {
+        return q;
+      }
+    });
   let sourceDataset: Dataset | undefined = opts.source;
   if (!sourceDataset) {
     const queryInfos = await Promise.all(
@@ -210,7 +212,7 @@ export async function runPipeline<T extends Account>(this: T, opts: RunPipelineO
       typeof opts.destination.graph === "string" ? opts.destination.graph : opts.destination.graph.graphName;
   }
   const pipelineConfig: PipelineConfig = {
-    version: 0.1,
+    version: 0.2,
     queries: queries.map((q) => {
       if (q.query["_getQueryType"]() !== "CONSTRUCT")
         throw getErr("Pipelines are only supported for construct queries");
@@ -218,6 +220,7 @@ export async function runPipeline<T extends Account>(this: T, opts: RunPipelineO
         name: `${q.query.owner.slug}/${q.query.slug}`,
         version: q.query.version,
         priority: q.priority,
+        variables: q.variables,
       };
     }),
     sourceDataset: `${sourceDataset.owner.slug}/${sourceDataset.slug}`,

@@ -23,11 +23,15 @@ const command = program
   .addHelpText(
     "after",
     `
-    Sample json config:
+    Sample json version 0.2 config:
     {
       "queries": [{
           "name": "accountName/queryName", (Required)
           "priority": 1, (Optional)
+          "variables": {
+            "var1": "value1",
+            "var2": "value2"
+          } (Optional)
 
       },{
           "name": "accountName/queryName",
@@ -36,7 +40,7 @@ const command = program
       "sourceDataset": "accountName/datasetName", (Required)
       "targetDataset": "accountName/datasetName", (Required)
       "targetGraphName": "graph:default", (Optional)
-      "version": 0.1 (Required)
+      "version": 0.2 (Required)
     }
     `,
   )
