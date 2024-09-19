@@ -11,12 +11,6 @@ export function wait(ms: number) {
   });
 }
 
-export async function fetchFile(response: Response, toFile: string) {
-  if (!response.ok) throw new Error("Cannot fetch file");
-  const body = Readable.fromWeb(response.body as any); // @any cast, because types nodejs types and web streams don't allign well
-  const download_write_stream = fs.createWriteStream(toFile);
-  await finished(body.pipe(download_write_stream));
-}
 export async function resolveAndCatchNotFound<P extends Promise<any>>(promise: P): Promise<P | undefined> {
   try {
     return await promise;

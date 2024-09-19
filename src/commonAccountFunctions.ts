@@ -14,7 +14,7 @@ import Pipeline, { PipelineProgress, createPipeline } from "./Pipeline.js";
 import fs from "fs-extra";
 import os from "os";
 import path from "path";
-import { fetchFile, resolveAndCatchNotFound } from "./utils/index.js";
+import { resolveAndCatchNotFound } from "./utils/index.js";
 import debug from "debug";
 const importLogger = debug("triply:triplydb-js:import");
 /* This file contains functions that are shared by the Org and User classes.
@@ -595,8 +595,13 @@ export async function importStory<T extends Account>(this: T, sourceStory: Story
     await fs.ensureDir(tmpDir);
     const ext = path.extname(sourceStoryInfo.bannerUrl);
     const bannerFile = path.resolve(tmpDir, "banner." + ext);
-
-    await fetchFile(await fetch(sourceStoryInfo.bannerUrl, getFetchOpts({}, { app: sourceStory.app })), bannerFile);
+    const bannerBuffer = await _get({
+      errorWithCleanerStack: getErr(`Failed to get banner of story ${sourceStory.slug}.`),
+      app: sourceStory.app,
+      url: sourceStoryInfo.bannerUrl,
+      expectedResponseBody: "buffer",
+    });
+    await fs.writeFile(bannerFile, bannerBuffer);
     await targetStory.setBanner(bannerFile);
   }
   return targetStory;
