@@ -2,7 +2,7 @@
 
 ## Documentation
 
-See [here](https://triply.cc/docs/triplydb-js) for the TriplyDB JavaScript client documentation.
+See [here](https://docs.triply.cc/triplydb-js/) for the TriplyDB JavaScript client documentation.
 
 ## Local development
 
