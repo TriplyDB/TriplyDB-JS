@@ -648,8 +648,10 @@ export default class Dataset {
 }
 const datasetsWithOngoingJob: { [dsId: string]: true } = {};
 async function waitForJobToFinish(app: App, jobUrl: string, dsId: string) {
-  let waitFor = 100; //100ms
+  let waitFor = 500; // 500ms
   const check = async (): Promise<Models.IndexJob> => {
+    await wait(waitFor);
+    waitFor = Math.min(10_000, waitFor * 3); //max 10 seconds
     const info = await _get<Routes.datasets._account._dataset.jobs._jobId.Get>({
       errorWithCleanerStack: getErr(`Failed to get upload job status`).addContext({ jobUrl }),
       app: app,
@@ -657,8 +659,6 @@ async function waitForJobToFinish(app: App, jobUrl: string, dsId: string) {
     });
     if (info.status === "error") throw getErr(info.error?.message || "Failed to upload file");
     if (info.status === "canceled" || info.status === "finished") return info;
-    await wait(waitFor);
-    if (waitFor < 10 * 1000) waitFor = waitFor * 2; //max 10 seconds
     return check();
   };
   try {
