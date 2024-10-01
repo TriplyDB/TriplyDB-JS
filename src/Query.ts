@@ -339,7 +339,7 @@ export default class Query {
     };
 
     return Query.create(
-      app,
+      accountToUse.app,
       accountToUse,
       newQuery,
       getErr(`Failed to make a copy of ${queryToCopy.name} to account ${accountName}.`),
