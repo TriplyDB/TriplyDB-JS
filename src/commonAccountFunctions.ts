@@ -199,8 +199,15 @@ export async function runPipeline<T extends Account>(this: T, opts: RunPipelineO
         }),
       ),
     );
-    if (usedDatasets.length !== 1) {
-      throw getErr(`Cannot create pipeline: pass a source document first`);
+    if (usedDatasets.length === 0) {
+      throw getErr(
+        "Cannot create pipeline: the queries do not reference any dataset. Please pass the dataset you want to query as argument.",
+      );
+    }
+    if (usedDatasets.length > 1) {
+      throw getErr(
+        `Cannot create pipeline: the queries reference different datasets. Therefore, please pass the dataset you want to query as argument explicitly.`,
+      );
     }
     // We know we can populate this field
     // (otherwise, we wouldnt have had metadata info in the original pipeline object about this dataset)
@@ -215,7 +222,7 @@ export async function runPipeline<T extends Account>(this: T, opts: RunPipelineO
     version: 0.2,
     queries: queries.map((q) => {
       if (q.query["_getQueryType"]() !== "CONSTRUCT")
-        throw getErr("Pipelines are only supported for construct queries");
+        throw getErr(`Cannot run query ${this.slug} as pipeline: pipelines are only supported for construct queries`);
       return {
         name: `${q.query.owner.slug}/${q.query.slug}`,
         version: q.query.version,
