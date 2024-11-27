@@ -33,7 +33,12 @@ interface AddVersionVisualization extends AddVersionBase {
 
 type AddVersion = AddVersionVisualization | AddVersionLDFrame;
 
-type DuplicateOptions = Partial<AddQueryOptions>;
+type DuplicateOptions = Partial<AddQueryOptions> & {
+  /** * Adjust the settings of a visualization, will be better typed in future */
+  updateRenderConfig?: (
+    renderConfig: Models.QueryRenderConfig["settings"] | undefined,
+  ) => Models.QueryRenderConfig["settings"];
+};
 
 export default class Query {
   public app: App;
@@ -327,17 +332,16 @@ export default class Query {
         metadataToReplace && metadataToReplace.queryString
           ? { payload: { query: metadataToReplace.queryString } }
           : queryToCopy.requestConfig,
-      renderConfig: metadataToReplace?.output ? { output: metadataToReplace.output } : queryToCopy.renderConfig,
+      renderConfig:
+        metadataToReplace?.output || metadataToReplace?.updateRenderConfig
+          ? {
+              output: metadataToReplace.output || queryToCopy.renderConfig?.output || "Table",
+              settings: metadataToReplace.updateRenderConfig?.(queryToCopy.renderConfig?.settings),
+            }
+          : queryToCopy.renderConfig,
       variables: metadataToReplace?.variables || queryToCopy.variables,
-      serviceConfig:
-        metadataToReplace && metadataToReplace.serviceType
-          ? { configuredAs: "serviceType", type: metadataToReplace.serviceType }
-          : (("configuredAs" in queryToCopy.serviceConfig) as any) &&
-              (queryToCopy.serviceConfig as any).configuredAs === "serviceType" // Any cast, for backwards compatability
-            ? queryToCopy.serviceConfig
-            : undefined,
+      serviceConfig: { type: metadataToReplace?.serviceType || queryToCopy.serviceConfig.type },
     };
-
     return Query.create(
       accountToUse.app,
       accountToUse,

@@ -18,6 +18,7 @@ import Service from "../Service.js";
 import dedent from "dedent";
 
 import dotenv from "dotenv";
+import { Models } from "@triply/utils";
 dotenv.config();
 
 process.on("unhandledRejection", function (reason: any, p: any) {
@@ -55,7 +56,7 @@ describe("Queries", function () {
     const query = await user.addQuery(`${CommonUnittestPrefix}-test-query`, {
       accessLevel: "private",
       queryString: "select ?s?p?o where {?s?p?o}",
-      output: "geo",
+      output: "Geo",
       dataset: testDs,
       serviceType: "speedy",
     });
@@ -66,7 +67,7 @@ describe("Queries", function () {
   it("Should create a query with all possible 'addQuery' options", async () => {
     const accessLevel = "internal";
     const queryString = "select ?s?p?o where {?s?p?o}";
-    const output = "response";
+    const output = "Response";
     const description = "description";
     const displayName = "displayName";
     const query = await user.addQuery(`${CommonUnittestPrefix}-test-query-properties`, {
@@ -114,14 +115,14 @@ describe("Queries", function () {
     });
     expect((await query.getInfo(true)).numberOfVersions).to.equal(1);
     // Version 2
-    await query.addVersion({ output: "network", variables: [{ name: "version2", termType: "NamedNode" }] });
+    await query.addVersion({ output: "Network", variables: [{ name: "version2", termType: "NamedNode" }] });
     expect((await query.getInfo(true)).numberOfVersions).to.equal(2);
     // Version 3
     await query.addVersion({ queryString: "select ?a?b?c where {?a?b?c}" });
     expect((await query.getInfo(true)).numberOfVersions).to.equal(3);
     // Version 4
     await query.addVersion({
-      output: "markup",
+      output: "Gallery",
       queryString: "select ?s?p?o where {?s?p?o}",
       variables: [{ name: "version4", termType: "NamedNode" }],
     });
@@ -159,7 +160,7 @@ describe("Queries", function () {
     expect(version3Variable?.map((v) => v.name))
       .to.be.an("array")
       .that.includes("version2");
-    expect(queryVersion3Info.renderConfig?.output).to.equal("network");
+    expect(queryVersion3Info.renderConfig?.output).to.equal("Network");
     // Version 4 will be completely different
 
     const queryVersion4 = await query.useVersion(4);
@@ -168,7 +169,7 @@ describe("Queries", function () {
       select ?s ?p ?o where {
         ?s ?p ?o.
       }`);
-    expect((await queryVersion4.getInfo()).renderConfig?.output).to.equal("markup");
+    expect((await queryVersion4.getInfo()).renderConfig?.output).to.equal("Gallery");
 
     //Version 5 will be a ldFrame with no render config
     const queryVersion5 = await query.useVersion(5);
@@ -182,20 +183,24 @@ describe("Queries", function () {
     expect(JSON.stringify(queryVersion5Info.requestConfig?.ldFrame)).to.equal(JSON.stringify(frame));
   });
 
-  it("Duplicate Queries", async function () {
-    const query = await user.addQuery(`${CommonUnittestPrefix}-to-duplicate`, {
-      accessLevel: "private",
-      dataset: testDs,
-      queryString: "select ?s?p?o where {?s?p?o}",
-      serviceType: "virtuoso",
-      description: "testDescription",
-      displayName: "testDisplayName",
+  describe("Duplicate Queries", async function () {
+    let query: Query;
+    let queryInfo: Models.Query;
+    before(async function () {
+      query = await user.addQuery(`${CommonUnittestPrefix}-to-duplicate`, {
+        accessLevel: "private",
+        dataset: testDs,
+        queryString: "select ?s?p?o where {?s?p?o}",
+        serviceType: "virtuoso",
+        description: "testDescription",
+        displayName: "testDisplayName",
+      });
+
+      await query.addVersion({ output: "Network", variables: [{ name: "version2", termType: "NamedNode" }] });
+      await query.addVersion({ output: "Gallery", variables: [{ name: "version3", termType: "NamedNode" }] });
+      queryInfo = await query.getInfo(true);
     });
 
-    await query.addVersion({ output: "network", variables: [{ name: "version2", termType: "NamedNode" }] });
-    await query.addVersion({ output: "markup", variables: [{ name: "version3", termType: "NamedNode" }] });
-
-    const queryInfo = await query.getInfo();
     it("Duplicate Query (latest version) with no non-mandatory metadata added", async function () {
       const duplicateQueryName = `${CommonUnittestPrefix}-duplicate-1`;
       const duplicateQuery = await query.copy(duplicateQueryName);
@@ -207,9 +212,9 @@ describe("Queries", function () {
       expect(duplicateQueryInfo.dataset?.id).equal(queryInfo.dataset?.id);
       expect(JSON.stringify(duplicateQueryInfo.serviceConfig)).equal(JSON.stringify(queryInfo.serviceConfig));
       expect(JSON.stringify(duplicateQueryInfo.requestConfig)).equal(JSON.stringify(queryInfo.requestConfig));
-      expect(JSON.stringify(duplicateQueryInfo.renderConfig?.output)).equal("markup");
+      expect(duplicateQueryInfo.renderConfig?.output).equal("Gallery");
       expect(JSON.stringify(duplicateQueryInfo.variables)).equal(
-        JSON.stringify([{ name: "version3", termType: "NamedNode" }]),
+        JSON.stringify([{ name: "version3", termType: "NamedNode", required: false, allowedValues: [] }]),
       );
     });
 
@@ -231,10 +236,34 @@ describe("Queries", function () {
       expect(duplicateQueryInfo.dataset?.id).equal(queryInfo.dataset?.id);
       expect(JSON.stringify(duplicateQueryInfo.serviceConfig)).equal(JSON.stringify(queryInfo.serviceConfig));
       expect(JSON.stringify(queryInfo.requestConfig)).equal(JSON.stringify(duplicateQueryInfo.requestConfig));
-      expect(JSON.stringify(duplicateQueryInfo.renderConfig?.output)).equal("network");
+      expect(duplicateQueryInfo.renderConfig?.output).equal("Network");
       expect(JSON.stringify(duplicateQueryInfo.variables)).equal(
-        JSON.stringify([{ name: "version2", termType: "NamedNode" }]),
+        JSON.stringify([{ name: "version2", termType: "NamedNode", required: false, allowedValues: [] }]),
       );
+    });
+    it("Allows for updateing the query visualization config", async function () {
+      const duplicateQueryName = `${CommonUnittestPrefix}-duplicate-3`;
+      const duplicateQuery = await (
+        await query.useVersion(2)
+      ).copy(duplicateQueryName, undefined, {
+        output: "Geo",
+        updateRenderConfig(renderConfig) {
+          return { ...renderConfig, defaultBearing: 90, perspective: "Tilted" };
+        },
+      });
+      const firstQueryInfo = await duplicateQuery.getInfo();
+      expect(firstQueryInfo.renderConfig?.settings.defaultBearing).to.equal(90);
+      expect(firstQueryInfo.renderConfig?.settings.perspective).to.equal("Tilted");
+      const secondDuplicate = `${CommonUnittestPrefix}-duplicate-4`;
+      const secondDuplicateQuery = await duplicateQuery.copy(secondDuplicate, undefined, {
+        output: "Geo",
+        updateRenderConfig(renderConfig) {
+          return { ...renderConfig, defaultBearing: 180 };
+        },
+      });
+      const secondQueryInfo = await secondDuplicateQuery.getInfo();
+      expect(secondQueryInfo.renderConfig?.settings.defaultBearing).to.equal(180);
+      expect(secondQueryInfo.renderConfig?.settings.perspective).to.equal("Tilted");
     });
   });
 
@@ -269,7 +298,7 @@ describe("Queries", function () {
           accessLevel: "private",
           // a construct query that gives twice the number of statements as there are in the dataset
           queryString: "construct {?s?p?o. ?s ?p ?newo} where {?s?p?o. bind(concat(str(?o), str(?o)) as ?newo)}",
-          output: "table",
+          output: "Table",
           variables: [{ name: "s", termType: "NamedNode" }],
           dataset,
           serviceType: "speedy",
@@ -334,7 +363,7 @@ describe("Queries", function () {
           accessLevel: "private",
           // a select query that gives same number of statements as there are in the dataset
           queryString: "select ?s?p?o where {?s?p?o}",
-          output: "table",
+          output: "Table",
           variables: [{ name: "s", termType: "NamedNode" }],
           dataset,
           serviceType: "speedy",
@@ -385,12 +414,12 @@ describe("Queries", function () {
           data.responseText = "[]";
           await fs.writeFile(
             file,
-            await new Promise<Buffer>((resolve, reject) =>
+            (await new Promise<Buffer>((resolve, reject) =>
               gzip(JSON.stringify(data), (error, result) => {
                 if (error) return reject(error);
                 resolve(result);
               }),
-            ),
+            )) as any, // Casting goes wrong here.
           );
         }
 
@@ -428,7 +457,7 @@ describe("Queries", function () {
       const query1 = await user.addQuery(queryName, {
         queryString: `select ("1" as ?a) where {}`,
         accessLevel: "private",
-        output: "table",
+        output: "Table",
         dataset,
         serviceType: "speedy",
       });
@@ -442,7 +471,7 @@ describe("Queries", function () {
       const query2 = await user.addQuery(queryName, {
         queryString: `select ("2" as ?a) where {}`,
         accessLevel: "private",
-        output: "table",
+        output: "Table",
         dataset,
         serviceType: "speedy",
       });

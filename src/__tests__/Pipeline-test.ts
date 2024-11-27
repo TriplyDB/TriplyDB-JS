@@ -48,35 +48,35 @@ describe("Pipeline", function () {
     testQuery1 = await user.addQuery(`${CommonUnittestPrefix}-test-query1`, {
       accessLevel: "private",
       queryString: "construct WHERE { <a:a> ?b ?c }",
-      output: "table",
+      output: "Table",
       dataset: testDs,
       serviceType: "speedy",
     });
     testQuery2 = await user.addQuery(`${CommonUnittestPrefix}-test-query2`, {
       accessLevel: "private",
       queryString: "construct WHERE { <x:x> ?y ?z }",
-      output: "table",
+      output: "Table",
       dataset: testDs,
       serviceType: "speedy",
     });
     testQuery3 = await user.addQuery(`${CommonUnittestPrefix}-test-query3`, {
       accessLevel: "private",
       queryString: "construct WHERE { <x:x3> ?y ?z }",
-      output: "table",
+      output: "Table",
       dataset: testDs,
       serviceType: "speedy",
     });
     testQuery4 = await user.addQuery(`${CommonUnittestPrefix}-test-query4`, {
       accessLevel: "private",
       queryString: "construct WHERE { <x:x4> ?y ?z }",
-      output: "table",
+      output: "Table",
       dataset: testDs,
       serviceType: "speedy",
     });
     testQuery5 = await user.addQuery(`${CommonUnittestPrefix}-test-query5`, {
       accessLevel: "private",
       queryString: "construct WHERE { <x:x5> ?y ?z }",
-      output: "table",
+      output: "Table",
       dataset: testDs,
       serviceType: "speedy",
     });
@@ -89,6 +89,7 @@ describe("Pipeline", function () {
       queries: [testQuery1, testQuery2, testQuery3, testQuery4, testQuery5],
       destination: {
         dataset: testDs,
+        graph: (await testDs.getPrefixes())["graph"], // default graph that should be created when the DS is created
       },
     });
 
