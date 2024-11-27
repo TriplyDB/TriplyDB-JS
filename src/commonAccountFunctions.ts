@@ -25,7 +25,7 @@ This should not influence the interfaces of the functions.
 */
 export interface AddQueryOptions {
   queryString: SparqlQuery["query"];
-  /**   * By Default "table", other options may include: "response", "geo", "gallery", "markup", etc   */
+  /**   * By Default "Table", other options may include: "Response", "Geo", "Gallery"  etc   */
   output?: string;
   accessLevel?: AccessLevel;
   variables?: Array<VariableConfig>;
@@ -59,7 +59,7 @@ export async function addQuery<T extends Account>(this: T, name: string, opts: A
     requestConfig.ldFrame = opts.ldFrame;
   } else {
     renderConfig = {
-      output: "table",
+      output: "Table",
     };
   }
 
