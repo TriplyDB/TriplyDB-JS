@@ -458,11 +458,15 @@ export async function importDataset<T extends Account>(this: T, sourceDataset: D
   /**
    * Import data
    */
-  importLogger(`  Importing graphs to dataset ${sourceDataset.slug}`);
-  const tmpTrigFile = path.resolve(tmpdir, `${sourceDatasetInfo.id}.trig.gz`);
-  await sourceDataset.graphsToFile(tmpTrigFile);
-  await targetDataset.importFromFiles([tmpTrigFile]);
-  await fs.remove(tmpTrigFile);
+  if (sourceDatasetInfo.statements > 0) {
+    importLogger(`  Importing graphs to dataset ${sourceDataset.slug}`);
+    const tmpTrigFile = path.resolve(tmpdir, `${sourceDatasetInfo.id}.trig.gz`);
+    await sourceDataset.graphsToFile(tmpTrigFile);
+    await targetDataset.importFromFiles([tmpTrigFile]);
+    await fs.remove(tmpTrigFile);
+  } else {
+    importLogger(`  Not importing any graphs (the source dataset '${sourceDataset.slug}' is empty)`);
+  }
   /**
    * Import services
    */
