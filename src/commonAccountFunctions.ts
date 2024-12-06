@@ -503,13 +503,13 @@ export async function importQuery<T extends Account>(this: T, sourceQuery: Query
     importLogger(
       `  Found the source dataset ${sourceDataset.owner.slug}/${sourceDataset.slug} of query '${sourceQuery.slug}'`,
     );
-    const targetDatasetOwner = await resolveAndCatchNotFound(this.app.getAccount(sourceDataset.owner.slug));
-    if (targetDatasetOwner) {
-      importLogger(`  Finding a target dataset for query '${sourceQuery.slug}'`);
-      targetDataset = await resolveAndCatchNotFound(targetDatasetOwner.getDataset(sourceDataset.slug));
-      importLogger(`  Found target dataset ${sourceDataset.slug}?`, !!targetDataset);
+
+    importLogger(`  Finding a target dataset for query '${sourceQuery.slug}'`);
+    targetDataset = await resolveAndCatchNotFound(this.getDataset(sourceDataset.slug));
+    if (targetDataset) {
+      importLogger(`  Found target dataset ${sourceDataset.slug} in ${this.slug}`);
     } else {
-      importLogger(`  Cannot find target account ${sourceDataset.owner.slug} for dataset '${sourceDataset.slug}'`);
+      importLogger(`  Did not find target dataset ${sourceDataset.slug} in ${this.slug}`);
     }
   }
   if (!targetDataset) {
