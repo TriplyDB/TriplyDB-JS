@@ -424,6 +424,7 @@ export async function importDataset<T extends Account>(this: T, sourceDataset: D
   if (this.app.url === sourceDataset.app.url)
     throw getErr("Importing datasets is only supported between different instances.");
   const sourceDatasetInfo = await sourceDataset.getInfo();
+  sourceDatasetInfo.topics = []; // Reset, as this doesn't play well with other instance where topics may not exist
   const tmpdir = path.resolve(os.tmpdir(), "triplydb-js-import-dataset", sourceDatasetInfo.id);
   await fs.ensureDir(tmpdir);
   /**
