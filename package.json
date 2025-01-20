@@ -50,7 +50,7 @@
   },
   "dependencies": {
     "@triply/tus-js-client": "2.3.0",
-    "@triply/utils": "5.0.0",
+    "@triply/utils": "5.0.1",
     "colors": "^1.4.0",
     "cross-fetch": "^4.0.0",
     "debug": "^4.3.4",

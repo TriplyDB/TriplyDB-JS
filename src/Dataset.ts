@@ -291,9 +291,6 @@ export default class Dataset {
     }
 
     const overwrite = !!args?.overwrite;
-    if (overwrite && !(await this.app.isCompatible("2.2.7"))) {
-      throw new IncompatibleError("Overwriting graphs is only supported by TriplyDB API version 2.2.7 or greater");
-    }
     if (!graphs) {
       // import all the graphs, keeping the original names.
       const graphNames = await Promise.all(
@@ -396,9 +393,6 @@ export default class Dataset {
     this._throwIfJobRunning(dsId);
     try {
       datasetsWithOngoingJob[dsId] = true;
-      if (defaultsConfig?.overwriteAll && !(await this.app.isCompatible("2.2.7"))) {
-        throw new IncompatibleError("Overwriting graphs is only supported by TriplyDB API version 2.2.7 or greater");
-      }
       const job = new JobUpload({
         app: this.app,
         ...defaultsConfig,
@@ -428,9 +422,6 @@ export default class Dataset {
     try {
       this._throwIfJobRunning(dsId);
       datasetsWithOngoingJob[dsId] = true;
-      if (defaultConfig?.overwriteAll && !(await this.app.isCompatible("2.2.7"))) {
-        throw new IncompatibleError("Overwriting graphs is only supported by TriplyDB API version 2.2.7 or greater");
-      }
       let info = await _post<Routes.datasets._account._dataset.jobs.Post>({
         errorWithCleanerStack: getErr(
           `Failed to delete import from ${urls.length} URLs in dataset ${this._getDatasetNameWithOwner()}.`,

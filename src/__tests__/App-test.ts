@@ -60,11 +60,13 @@ describe("App", function () {
     });
   });
   it("Should correctly compare versions", async function () {
-    const app = App.get({ url: "https://api.triplydb.com" });
-    expect(await app.isCompatible("1.1.1")).to.equal(true);
-    expect(await app.isCompatible("1.1.1-9")).to.equal(true);
-    expect(await app.isCompatible("9.9.9")).to.equal(true);
-    expect(await app.isCompatible("9.9.9-9")).to.equal(true);
+    const app = App.get({ url: "https://api.collectiedata.hetnieuweinstituut.nl" });
+    // old calver notation
+    expect(await app.isCompatible("24.12.1-1")).to.equal(true);
+    expect(await app.isCompatible("23.09.0")).to.equal(true);
+    // new calver notation
+    expect(await app.isCompatible("23.9.100")).to.equal(true);
+    expect(await app.isCompatible("30.1.101")).to.equal(false);
   });
   it("Should postprocess URLs when needed", async function () {
     const app = App.get({ url: "http://something.com:5000/" });
