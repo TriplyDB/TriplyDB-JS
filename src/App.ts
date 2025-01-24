@@ -141,8 +141,8 @@ export default class App {
   /**
    * Get a TriplyDB resource using a string identifier.
    * Examples:
-   * - To get one of your datasets, run `app.get('dataset/my-dataset-name')`
-   * - To get a dataset of a different account, run `app.get('dataset/other-account/my-dataset-name')`
+   * - To get one of your datasets, run `app.get('dataset:my-dataset-name')`
+   * - To get a dataset of a different account, run `app.get('dataset:other-account:my-dataset-name')`
    * Apply the same for any string starting with user, account, org, dataset, query or story
    */
   public async get(idString: `account:${string}`): Promise<Account>;
