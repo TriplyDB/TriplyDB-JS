@@ -174,11 +174,7 @@ export default class App {
     const apiInfo = await this.getInfo();
     if (!apiInfo.version) throw getErr(`The TriplyDB API ${apiInfo.apiUrl} does not report its version.`);
     if (apiInfo.version === "unset") return true;
-    if (calver.isSemver(apiInfo.version) && calver.isSemver(minimumVersion)) {
-      return semver.gte(apiInfo.version, minimumVersion);
-    } else {
-      return calver.gte(apiInfo.version, minimumVersion);
-    }
+    return calver.gte(apiInfo.version, minimumVersion);
   }
 
   /**

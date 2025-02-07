@@ -2,9 +2,9 @@ import App from "../App.js";
 import fs from "fs-extra";
 import * as chai from "chai";
 import chaiAsPromised from "chai-as-promised";
-import dotenv from "dotenv";
+
 import path from "path";
-dotenv.config();
+
 chai.use(chaiAsPromised);
 const expect = chai.expect;
 import { resetUnittestAccount, CommonUnittestPrefix } from "./utils.js";

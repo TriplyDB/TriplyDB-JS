@@ -5,8 +5,8 @@ import path from "path";
 import * as chai from "chai";
 import { resetUnittestAccount, CommonUnittestPrefix } from "./utils.js";
 import User from "../User.js";
-import dotenv from "dotenv";
-dotenv.config();
+
+
 const expect = chai.expect;
 process.on("unhandledRejection", function (reason: any, p: any) {
   console.warn("Possibly Unhandled Rejection at: Promise ", p, " reason: ", reason);

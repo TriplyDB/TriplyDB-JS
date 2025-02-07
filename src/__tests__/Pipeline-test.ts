@@ -9,11 +9,11 @@ import { resetUnittestAccount, CommonUnittestPrefix } from "./utils.js";
 import User from "../User.js";
 import Query from "../Query.js";
 
-import dotenv from "dotenv";
+
 import { _get } from "../RequestHandler.js";
 import { getErr } from "../utils/Error.js";
 import { Routes } from "@triply/utils";
-dotenv.config();
+
 
 process.on("unhandledRejection", function (reason: any, p: any) {
   console.warn("Possibly Unhandled Rejection at: Promise ", p, " reason: ", reason);

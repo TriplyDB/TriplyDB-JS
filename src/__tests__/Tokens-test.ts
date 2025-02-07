@@ -8,8 +8,8 @@ import App from "../App.js";
 import User from "../User.js";
 import { resetUnittestAccount, CommonUnittestPrefix } from "./utils.js";
 import { TriplyDbJsError, getErr } from "../utils/Error.js";
-import dotenv from "dotenv";
-dotenv.config();
+
+
 
 const readToken = process.env.UNITTEST_TOKEN_READ;
 const writeToken = process.env.UNITTEST_TOKEN_WRITE;

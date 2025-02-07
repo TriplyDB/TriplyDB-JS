@@ -17,9 +17,9 @@ import { gzip, gunzip } from "zlib";
 import Service from "../Service.js";
 import dedent from "dedent";
 
-import dotenv from "dotenv";
+
 import { Models } from "@triply/utils";
-dotenv.config();
+
 
 process.on("unhandledRejection", function (reason: any, p: any) {
   console.warn("Possibly Unhandled Rejection at: Promise ", p, " reason: ", reason);
