@@ -61,8 +61,9 @@ const command = program
     "Use HTTP proxy for all requests (default: $HTTPS_PROXY)",
     defaultHttpsProxy || undefined,
   )
+  .argument('<configfile>')
 
-  .action(async () => {
+  .action(async (configFile:string) => {
     function sanityCheckError(msg: string) {
       console.error(colors.red(msg));
       command.outputHelp();
@@ -75,7 +76,6 @@ const command = program
       httpProxy?: string;
       httpsProxy?: string;
     }>();
-    const [configFile] = command.args;
     if (!configFile || !configFile.length) sanityCheckError("Missing query job config file");
     const token = options.token ?? defaultTriplyDBToken;
     if (!token) sanityCheckError("Missing token as an argument");
