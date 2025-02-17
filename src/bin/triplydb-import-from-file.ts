@@ -35,6 +35,7 @@ const command = program
     "Use HTTP proxy for all requests (default: $HTTPS_PROXY)",
     defaultHttpsProxy || undefined
   )
+  .argument('<files...>')
   // deprecated
   .addOption(new Option("-p, --append").hideHelp())
   .option("--default-graph-name <graph>", "Default graph, used when e.g. ntriples are uploaded")
@@ -43,8 +44,7 @@ const command = program
       .choices(["overwrite", "rename", "merge"])
       .default("rename")
   )
-  .action(async () => {
-    const files = command.args;
+  .action(async (files:string[]) => {
     function sanityCheckError(msg: string): never {
       console.error(colors.red(msg));
       command.outputHelp();
@@ -65,6 +65,7 @@ const command = program
     if (!options.token) sanityCheckError("Missing token as argument");
     if (!options.dataset) sanityCheckError("Missing dataset as argument");
     if (!files.length) sanityCheckError("No files given to upload for");
+    
     if (options.append) {
       console.warn("Ignoring the 'append' option as it is deprecated. Use the --mode option instead.");
     }

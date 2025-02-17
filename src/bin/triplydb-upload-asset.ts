@@ -31,13 +31,13 @@ const command = program
     "Overwrite the asset if it already exists. By default, this script will add a new version if an asset already exists",
     false,
   )
-  .action(async () => {
+  .argument('<files...>')
+  .action(async (files:string[]) => {
     function sanityCheckError(msg: string) {
       console.error(colors.red(msg));
       command.outputHelp();
       process.exit(1);
     }
-    const files = command.args;
     const options = command.opts();
     if (!options.token) sanityCheckError("Missing token as argument");
     if (!options.dataset) sanityCheckError("Missing dataset as argument");
